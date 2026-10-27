@@ -1,6 +1,6 @@
 # ==============================================================================
 # ROBOTS.TXT: SISTEM ASESMEN SEKOLAH INDONESIA (SASIPEDIA)
-# Domain Resmi: https://sasipedia.my.id
+# Domain: https://www.sasipedia.my.id
 # ==============================================================================
 
 User-agent: *
@@ -25,4 +25,5 @@ Disallow: /*?*token=*
 Disallow: /*?*password=*
 
 # Tautan Peta Situs (Sitemap Resmi)
+Sitemap: https://www.sasipedia.my.id/sitemap.xml
 Sitemap: https://sasipedia.my.id/sitemap.xml
