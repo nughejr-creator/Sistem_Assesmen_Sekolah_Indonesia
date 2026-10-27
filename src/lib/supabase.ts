@@ -9,9 +9,13 @@ import {
   StudentAnswer 
 } from '../types/database';
 
-// Supabase live configuration provided by user
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://lmlflfkdukcdhkdjssmm.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_jCtI_SZy-jxcJoDkeXPN-g_HKO4LEXX';
+// Safe environment variable resolution (Vite browser + Node test runner)
+const env = (typeof import.meta !== 'undefined' && (import.meta as any).env) 
+  ? (import.meta as any).env 
+  : (typeof process !== 'undefined' && process.env ? process.env : {});
+
+const SUPABASE_URL = env.VITE_SUPABASE_URL || 'https://lmlflfkdukcdhkdjssmm.supabase.co';
+const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_jCtI_SZy-jxcJoDkeXPN-g_HKO4LEXX';
 
 export const isLiveSupabase = Boolean(
   SUPABASE_URL && 
