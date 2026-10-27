@@ -229,16 +229,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-blue-600/80 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
-            {/* Clean Flyout Dropdown (Tray Background dengan Kotak Sub-menu Terang Estetik) */}
-            <div className="absolute left-0 top-full pt-2 w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-72 bg-slate-100/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl rounded-2xl p-2.5 space-y-1.5">
+            {/* Clean Flyout Dropdown (Modern Soft Pastel Gradient Cards) */}
+            <div className="absolute left-0 top-full pt-2 w-76 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
+              <div className="w-76 bg-white/98 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
                 {wawasanItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white hover:bg-blue-50/80 border border-slate-200/90 hover:border-blue-300 shadow-2xs hover:shadow-xs transition-all text-xs font-bold text-slate-800 hover:text-blue-900 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-100/75 via-sky-50 to-blue-50/90 hover:from-blue-200/80 hover:via-sky-100 hover:to-blue-100 border border-blue-200/90 hover:border-blue-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-blue-950 hover:text-blue-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50/90 border border-blue-200/80 text-base shadow-2xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-blue-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -264,16 +264,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-indigo-600/80 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
-            {/* Clean Flyout Dropdown (Tray Background dengan Kotak Sub-menu Terang Estetik) */}
+            {/* Clean Flyout Dropdown (Modern Soft Pastel Gradient Cards) */}
             <div className="absolute left-0 top-full pt-2 w-76 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-76 bg-slate-100/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl rounded-2xl p-2.5 space-y-1.5">
+              <div className="w-76 bg-white/98 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
                 {bankSoalItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white hover:bg-indigo-50/80 border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:shadow-xs transition-all text-xs font-bold text-slate-800 hover:text-indigo-900 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-100/75 via-violet-50 to-purple-50/90 hover:from-indigo-200/80 hover:via-violet-100 hover:to-purple-100 border border-indigo-200/90 hover:border-indigo-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-indigo-950 hover:text-indigo-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50/90 border border-indigo-200/80 text-base shadow-2xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-indigo-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -302,21 +302,21 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-amber-700/80 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
-            {/* Clean Flyout Dropdown (2 Kategori dengan Kotak Sub-menu Terang Estetik) */}
+            {/* Clean Flyout Dropdown (2 Kategori dengan Kartu Gradasi Berwarna) */}
             <div className="absolute right-0 top-full pt-2 w-84 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-84 bg-slate-100/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl rounded-2xl p-2.5 max-h-[480px] overflow-y-auto space-y-1.5">
+              <div className="w-84 bg-white/98 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-2.5 max-h-[480px] overflow-y-auto space-y-2">
                 
                 {/* Header 1: Asisten Guru AI */}
-                <div className="text-[10px] font-extrabold text-slate-500 px-3 py-0.5 tracking-wider uppercase">
+                <div className="text-[10px] font-extrabold text-amber-800/80 px-3 py-0.5 tracking-wider uppercase">
                   ASISTEN GURU AI
                 </div>
                 {kreativitasAiItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white hover:bg-amber-50/80 border border-slate-200/90 hover:border-amber-300 shadow-2xs hover:shadow-xs transition-all text-xs font-bold text-slate-800 hover:text-amber-950 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-100/75 via-orange-50 to-amber-50/90 hover:from-amber-200/80 hover:via-orange-100 hover:to-amber-100 border border-amber-200/90 hover:border-amber-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-amber-950 hover:text-amber-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50/90 border border-amber-200/80 text-base shadow-2xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-amber-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -327,16 +327,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 <div className="border-t border-slate-200/80 my-1" />
 
                 {/* Header 2: Sumber Belajar */}
-                <div className="text-[10px] font-extrabold text-slate-500 px-3 py-0.5 tracking-wider uppercase">
+                <div className="text-[10px] font-extrabold text-teal-800/80 px-3 py-0.5 tracking-wider uppercase">
                   SUMBER BELAJAR
                 </div>
                 {kreativitasSumberItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white hover:bg-sky-50/80 border border-slate-200/90 hover:border-sky-300 shadow-2xs hover:shadow-xs transition-all text-xs font-bold text-slate-800 hover:text-sky-950 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-100/75 via-emerald-50 to-cyan-50/90 hover:from-teal-200/80 hover:via-emerald-100 hover:to-cyan-100 border border-teal-200/90 hover:border-teal-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-teal-950 hover:text-teal-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50/90 border border-sky-200/80 text-base shadow-2xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-teal-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -433,14 +433,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               </button>
 
               {mobileAccordion === 'wawasan' && (
-                <div className="p-2 bg-white space-y-1 border-t border-blue-200/80">
+                <div className="p-2.5 bg-white space-y-1.5 border-t border-blue-200/80">
                   {wawasanItems.map((item) => (
                     <div
                       key={item.label}
                       onClick={() => handleItemClick(item)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-xs font-semibold text-slate-700 hover:text-blue-600 cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-100/70 via-sky-50 to-blue-50/90 border border-blue-200/80 text-xs font-bold text-blue-950 cursor-pointer shadow-2xs"
                     >
-                      <span className="text-base">{item.icon}</span>
+                      <div className="w-7 h-7 rounded-lg bg-white border border-blue-200 flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+                        {item.icon}
+                      </div>
                       <span>{item.label}</span>
                     </div>
                   ))}
@@ -463,14 +465,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               </button>
 
               {mobileAccordion === 'bank' && (
-                <div className="p-2 bg-white space-y-1 border-t border-indigo-200/80">
+                <div className="p-2.5 bg-white space-y-1.5 border-t border-indigo-200/80">
                   {bankSoalItems.map((item) => (
                     <div
                       key={item.label}
                       onClick={() => handleItemClick(item)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-xs font-semibold text-slate-700 hover:text-indigo-600 cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-100/70 via-violet-50 to-purple-50/90 border border-indigo-200/80 text-xs font-bold text-indigo-950 cursor-pointer shadow-2xs"
                     >
-                      <span className="text-base">{item.icon}</span>
+                      <div className="w-7 h-7 rounded-lg bg-white border border-indigo-200 flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+                        {item.icon}
+                      </div>
                       <span>{item.label}</span>
                     </div>
                   ))}
@@ -496,30 +500,38 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               </button>
 
               {mobileAccordion === 'kreativitas' && (
-                <div className="p-2 bg-white space-y-1 border-t border-slate-200">
-                  <div className="text-[10px] font-bold text-slate-400 px-3 py-1 uppercase">ASISTEN GURU AI</div>
-                  {kreativitasAiItems.map((item) => (
-                    <div
-                      key={item.label}
-                      onClick={() => handleItemClick(item)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-amber-50/70 text-xs font-semibold text-slate-700 hover:text-amber-800 cursor-pointer"
-                    >
-                      <span className="text-base">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
-                  <div className="border-t border-slate-100 my-1" />
-                  <div className="text-[10px] font-bold text-slate-400 px-3 py-1 uppercase">SUMBER BELAJAR</div>
-                  {kreativitasSumberItems.map((item) => (
-                    <div
-                      key={item.label}
-                      onClick={() => handleItemClick(item)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 text-xs font-semibold text-slate-700 hover:text-blue-600 cursor-pointer"
-                    >
-                      <span className="text-base">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
+                <div className="p-2.5 bg-white space-y-2 border-t border-amber-200/80">
+                  <div className="text-[10px] font-extrabold text-amber-800/80 px-2 uppercase tracking-wider">ASISTEN GURU AI</div>
+                  <div className="space-y-1.5">
+                    {kreativitasAiItems.map((item) => (
+                      <div
+                        key={item.label}
+                        onClick={() => handleItemClick(item)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-100/70 via-orange-50 to-amber-50/90 border border-amber-200/80 text-xs font-bold text-amber-950 cursor-pointer shadow-2xs"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-white border border-amber-200 flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+                          {item.icon}
+                        </div>
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-slate-200 my-1" />
+                  <div className="text-[10px] font-extrabold text-teal-800/80 px-2 uppercase tracking-wider">SUMBER BELAJAR</div>
+                  <div className="space-y-1.5">
+                    {kreativitasSumberItems.map((item) => (
+                      <div
+                        key={item.label}
+                        onClick={() => handleItemClick(item)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-100/70 via-emerald-50 to-cyan-50/90 border border-teal-200/80 text-xs font-bold text-teal-950 cursor-pointer shadow-2xs"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-white border border-teal-200 flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+                          {item.icon}
+                        </div>
+                        <span>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
