@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- 1. Halaman Beranda Utama (Landing Page Publik) -->
   <url>
-    <loc>https://sasi-cbt.id/</loc>
+    <loc>https://sasipedia.my.id/</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -10,7 +10,7 @@
 
   <!-- 2. Halaman Gerbang Masuk / Portal Login -->
   <url>
-    <loc>https://sasi-cbt.id/login</loc>
+    <loc>https://sasipedia.my.id/login</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

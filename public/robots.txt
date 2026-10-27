@@ -1,6 +1,6 @@
 # ==============================================================================
-# ROBOTS.TXT: SISTEM ASESMEN SEKOLAH INDONESIA (SASI CBT)
-# Mengizinkan perayapan halaman publik & melindungi privasi ruang ujian
+# ROBOTS.TXT: SISTEM ASESMEN SEKOLAH INDONESIA (SASIPEDIA)
+# Domain Resmi: https://sasipedia.my.id
 # ==============================================================================
 
 User-agent: *
@@ -24,5 +24,5 @@ Disallow: /api/
 Disallow: /*?*token=*
 Disallow: /*?*password=*
 
-# Tautan Peta Situs (Sitemap)
-Sitemap: https://sasi-cbt.id/sitemap.xml
+# Tautan Peta Situs (Sitemap Resmi)
+Sitemap: https://sasipedia.my.id/sitemap.xml
