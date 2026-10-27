@@ -255,3 +255,6 @@ export interface QuestionWriterAssignment {
   created_at?: string;
   updated_at?: string;
 }
+
+// Re-export Public Educational Portal & E-E-A-T Types
+export * from './publicPortal';
