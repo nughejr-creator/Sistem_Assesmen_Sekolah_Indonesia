@@ -22,7 +22,15 @@ import {
   ShieldCheck,
   Send,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Sliders,
+  Pin,
+  Globe,
+  TrendingUp,
+  Flame,
+  Calendar,
+  HelpCircle,
+  Bookmark
 } from 'lucide-react';
 import { 
   PublicArticle, 
@@ -31,7 +39,9 @@ import {
   DeveloperProfile,
   ArticleCategory,
   ResourceCategory,
-  ContributionStatus 
+  ContributionStatus,
+  SidebarWidgetConfig,
+  PortalQuickLink
 } from '../../../types/publicPortal';
 import { 
   getAllPublicArticlesAdmin, 
@@ -45,7 +55,12 @@ import {
   updateTeacherContributionStatus,
   getDeveloperProfile,
   saveDeveloperProfile,
-  uploadEducationalResourceFile
+  uploadEducationalResourceFile,
+  getSidebarWidgetConfig,
+  saveSidebarWidgetConfig,
+  getPortalQuickLinks,
+  savePortalQuickLink,
+  deletePortalQuickLink
 } from '../../../lib/publicPortalService';
 import { UserProfile } from '../../../types/database';
 import { WordRibbonEditor } from './WordRibbonEditor';
@@ -57,7 +72,7 @@ interface AdminPortalManagerProps {
 }
 
 export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentUser }) => {
-  const [activeTab, setActiveTab] = useState<'articles' | 'resources' | 'curation' | 'profile'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'resources' | 'curation' | 'profile' | 'widgets'>('articles');
 
   // ===========================================================================
   // TAB 1: ARTICLES STATE
@@ -92,6 +107,21 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
   const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const [profileSavedToast, setProfileSavedToast] = useState(false);
 
+  // ===========================================================================
+  // TAB 5: SIDEBAR WIDGETS & QUICK LINKS STATE
+  // ===========================================================================
+  const [sidebarConfig, setSidebarConfig] = useState<SidebarWidgetConfig>({
+    show_search: true,
+    show_pinned: true,
+    show_popular_tabs: true,
+    show_categories: true,
+    show_quick_links: true
+  });
+  const [quickLinks, setQuickLinks] = useState<PortalQuickLink[]>([]);
+  const [editingQuickLink, setEditingQuickLink] = useState<Partial<PortalQuickLink> | null>(null);
+  const [isQuickLinkModalOpen, setIsQuickLinkModalOpen] = useState(false);
+  const [widgetSavedToast, setWidgetSavedToast] = useState(false);
+
   // Load initial data
   useEffect(() => {
     loadAllData();
@@ -106,6 +136,10 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
     setContributions(contribs);
     const prof = await getDeveloperProfile();
     setProfile(prof);
+    const cfg = await getSidebarWidgetConfig();
+    setSidebarConfig(cfg);
+    const links = await getPortalQuickLinks();
+    setQuickLinks(links);
   };
 
   // ===========================================================================
@@ -120,6 +154,9 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       content: '',
       featured_image: '',
       tags: [],
+      is_pinned: false,
+      pinned_until: '',
+      is_featured: false,
       read_time: 5,
       is_published: true,
       author_name: currentUser.full_name || 'Agi Hamdani, M.Pd'
@@ -323,6 +360,67 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
     }
   };
 
+  // ===========================================================================
+  // SIDEBAR WIDGETS & QUICK LINKS HANDLERS
+  // ===========================================================================
+  const handleToggleWidgetConfig = async (key: keyof SidebarWidgetConfig) => {
+    const updated = { ...sidebarConfig, [key]: !sidebarConfig[key] };
+    setSidebarConfig(updated);
+    await saveSidebarWidgetConfig(updated);
+    setWidgetSavedToast(true);
+    setTimeout(() => setWidgetSavedToast(false), 2000);
+  };
+
+  const handleOpenAddQuickLink = () => {
+    setEditingQuickLink({
+      title: '',
+      url: '',
+      icon: 'ExternalLink',
+      description: '',
+      is_new_tab: true,
+      is_active: true,
+      order_index: quickLinks.length + 1
+    });
+    setIsQuickLinkModalOpen(true);
+  };
+
+  const handleEditQuickLink = (link: PortalQuickLink) => {
+    setEditingQuickLink({ ...link });
+    setIsQuickLinkModalOpen(true);
+  };
+
+  const handleDeleteQuickLink = async (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus tautan cepat ini?')) {
+      await deletePortalQuickLink(id);
+      setQuickLinks(prev => prev.filter(l => l.id !== id));
+    }
+  };
+
+  const handleSaveQuickLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingQuickLink?.title || !editingQuickLink?.url) return;
+    const res = await savePortalQuickLink(editingQuickLink);
+    if (res.success && res.data) {
+      setQuickLinks(prev => {
+        const idx = prev.findIndex(l => l.id === res.data?.id);
+        if (idx >= 0) {
+          const clone = [...prev];
+          clone[idx] = res.data!;
+          return clone.sort((a, b) => a.order_index - b.order_index);
+        }
+        return [...prev, res.data!].sort((a, b) => a.order_index - b.order_index);
+      });
+      setIsQuickLinkModalOpen(false);
+      setEditingQuickLink(null);
+    }
+  };
+
+  const handleToggleQuickLinkStatus = async (link: PortalQuickLink) => {
+    const updated = { ...link, is_active: !link.is_active };
+    await savePortalQuickLink(updated);
+    setQuickLinks(prev => prev.map(l => l.id === link.id ? updated : l));
+  };
+
   return (
     <div className="space-y-6">
       
@@ -409,6 +507,19 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
           <span>Profil Pengembang (E-E-A-T)</span>
         </button>
 
+        <button
+          type="button"
+          onClick={() => setActiveTab('widgets')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            activeTab === 'widgets'
+              ? 'bg-indigo-600 text-white shadow-xs font-black'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          <span>Panel Samping & Widget Portal</span>
+        </button>
+
       </div>
 
       {/* =======================================================================
@@ -456,7 +567,19 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
                 {articles.filter(a => a.title.toLowerCase().includes(articleSearch.toLowerCase())).map(art => (
                   <tr key={art.id} className="hover:bg-slate-50">
                     <td className="py-3 px-4 max-w-xs">
-                      <div className="font-bold text-slate-900 line-clamp-1">{art.title}</div>
+                      <div className="flex items-center space-x-1.5">
+                        {art.is_pinned && (
+                          <span className="p-0.5 rounded bg-amber-100 text-amber-700 shrink-0" title="Disematkan di Sidebar (Pinned)">
+                            <Pin className="w-3 h-3 fill-amber-700" />
+                          </span>
+                        )}
+                        {art.is_featured && (
+                          <span className="p-0.5 rounded bg-rose-100 text-rose-600 shrink-0" title="Artikel Pilihan/Populer (Featured)">
+                            <Flame className="w-3 h-3" />
+                          </span>
+                        )}
+                        <span className="font-bold text-slate-900 line-clamp-1">{art.title}</span>
+                      </div>
                       <div className="text-[10px] text-slate-400 font-mono truncate">{art.slug}</div>
                     </td>
                     <td className="py-3 px-4">
@@ -795,6 +918,263 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       )}
 
       {/* =======================================================================
+          TAB 5: PENGATURAN PANEL SAMPING & WIDGET PORTAL PUBLIK
+      ======================================================================= */}
+      {activeTab === 'widgets' && (
+        <div className="space-y-6 animate-fade-in">
+          
+          {/* Section 1: Manajer Tata Letak Widget (Visibility Toggles) */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 flex items-center space-x-2">
+                  <Sliders className="w-4 h-4 text-indigo-600" />
+                  <span>Manajer Tata Letak & Visibilitas Widget Sidebar</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Aktifkan atau sembunyikan komponen widget di panel samping (sidebar) portal publik secara instan.
+                </p>
+              </div>
+
+              {widgetSavedToast && (
+                <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center space-x-1.5 animate-in fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Pengaturan Tersimpan Otomatis!</span>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              
+              {/* Toggle 1: Search */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-1.5 font-black text-xs text-slate-800">
+                    <Search className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Pencarian Cepat (Instant Search)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Input pencarian artikel dengan pintasan keyboard Ctrl+K dan hasil dropdown instan.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleWidgetConfig('show_search')}
+                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5 ml-3 ${
+                    sidebarConfig.show_search ? 'bg-indigo-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                    sidebarConfig.show_search ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Toggle 2: Pinned */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-1.5 font-black text-xs text-slate-800">
+                    <Pin className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Pengumuman Tersemat (Pinned)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Kartu aksen penting untuk artikel/pengumuman yang disematkan dengan tanggal kedaluwarsa.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleWidgetConfig('show_pinned')}
+                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5 ml-3 ${
+                    sidebarConfig.show_pinned ? 'bg-indigo-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                    sidebarConfig.show_pinned ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Toggle 3: Tabs Populer/Terbaru */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-1.5 font-black text-xs text-slate-800">
+                    <Flame className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Tab Populer & Teranyar</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Tab interaktif artikel terpopuler (peringkat 1, 2, 3) dan rilisan naskah terbaru.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleWidgetConfig('show_popular_tabs')}
+                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5 ml-3 ${
+                    sidebarConfig.show_popular_tabs ? 'bg-indigo-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                    sidebarConfig.show_popular_tabs ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Toggle 4: Kategori */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-1.5 font-black text-xs text-slate-800">
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Kategori & Taksonomi</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Daftar kategori wawasan asesmen lengkap dengan pill badge counter jumlah artikel.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleWidgetConfig('show_categories')}
+                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5 ml-3 ${
+                    sidebarConfig.show_categories ? 'bg-indigo-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                    sidebarConfig.show_categories ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Toggle 5: Quick Links */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-1.5 font-black text-xs text-slate-800">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Tautan Layanan Cepat</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Tombol mini kartu untuk navigasi langsung ke kalender, download modul, dan CBT.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleWidgetConfig('show_quick_links')}
+                  className={`w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5 ml-3 ${
+                    sidebarConfig.show_quick_links ? 'bg-indigo-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                    sidebarConfig.show_quick_links ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Section 2: Pengaturan Tautan Cepat (Quick Links Manager CRUD) */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Daftar Tautan Layanan Cepat (Quick Links Manager)</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Kelola item tautan pintas yang muncul pada widget sidebar portal publik.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddQuickLink}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs flex items-center space-x-1.5 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Tautan Cepat</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-700 font-black uppercase text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Urutan</th>
+                    <th className="py-3 px-4">Ikon & Judul</th>
+                    <th className="py-3 px-4">URL Tujuan</th>
+                    <th className="py-3 px-4">Deskripsi</th>
+                    <th className="py-3 px-4 text-center">Buka Tab Baru</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                    <th className="py-3 px-4 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {quickLinks.map(ql => (
+                    <tr key={ql.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-500">#{ql.order_index}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px]">
+                            {ql.icon}
+                          </span>
+                          <span>{ql.title}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[11px] text-sky-600 max-w-xs truncate">
+                        {ql.url}
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 max-w-xs truncate">
+                        {ql.description || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          ql.is_new_tab ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {ql.is_new_tab ? 'Ya' : 'Tab Sama'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleQuickLinkStatus(ql)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase transition-all ${
+                            ql.is_active 
+                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {ql.is_active ? 'Aktif' : 'Nonaktif'}
+                        </button>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end space-x-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleEditQuickLink(ql)}
+                            className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-amber-600"
+                            title="Sunting Tautan"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuickLink(ql.id)}
+                            className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-rose-600"
+                            title="Hapus Tautan"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* =======================================================================
           MODAL 1: FORM TAMBAH / SUNTING ARTIKEL DENGAN WORD RIBBON WYSIWYG
       ======================================================================= */}
       {isArticleModalOpen && editingArticle && (
@@ -967,6 +1347,61 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
                       placeholder="https://images.unsplash.com/photo-..."
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
                     />
+                  </div>
+                </div>
+
+                {/* Grid Baris 3: Pengaturan Widget Sidebar & Sorotan (Pinned & Featured) */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* Pinned Toggle */}
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 cursor-pointer font-bold text-slate-800">
+                      <input
+                        type="checkbox"
+                        checked={!!editingArticle.is_pinned}
+                        onChange={(e) => setEditingArticle({ ...editingArticle, is_pinned: e.target.checked })}
+                        className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      />
+                      <span className="flex items-center space-x-1.5">
+                        <Pin className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Sematkan ke Pengumuman Penting Sidebar</span>
+                      </span>
+                    </label>
+
+                    {editingArticle.is_pinned && (
+                      <div className="pl-6">
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                          Kedaluwarsa Pin (Opsional)
+                        </label>
+                        <input
+                          type="date"
+                          value={editingArticle.pinned_until ? editingArticle.pinned_until.split('T')[0] : ''}
+                          onChange={(e) => setEditingArticle({ 
+                            ...editingArticle, 
+                            pinned_until: e.target.value ? new Date(e.target.value).toISOString() : null 
+                          })}
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Featured Toggle */}
+                  <div>
+                    <label className="flex items-center space-x-2 cursor-pointer font-bold text-slate-800 pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={!!editingArticle.is_featured}
+                        onChange={(e) => setEditingArticle({ ...editingArticle, is_featured: e.target.checked })}
+                        className="rounded text-sky-600 focus:ring-sky-500 w-4 h-4"
+                      />
+                      <span className="flex items-center space-x-1.5">
+                        <Flame className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Jadikan Artikel Pilihan / Populer (Featured)</span>
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-slate-400 pl-6 mt-1">
+                      Memprioritaskan artikel tampil di tab Populer dan bagian sorotan portal.
+                    </p>
                   </div>
                 </div>
 
@@ -1290,6 +1725,141 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
           onClose={() => setPreviewArticle(null)}
           article={previewArticle}
         />
+      )}
+
+      {/* =======================================================================
+          MODAL 5: TAMBAH / SUNTING TAUTAN CEPAT (QUICK LINK)
+      ======================================================================= */}
+      {isQuickLinkModalOpen && editingQuickLink && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden flex flex-col shadow-2xl border-2 border-slate-300">
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                {editingQuickLink.id ? 'Sunting Tautan Cepat' : 'Tambah Tautan Cepat Baru'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsQuickLinkModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuickLink} className="p-6 overflow-y-auto space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Label Judul Tautan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingQuickLink.title || ''}
+                  onChange={(e) => setEditingQuickLink({ ...editingQuickLink, title: e.target.value })}
+                  placeholder="Contoh: Kalender Asesmen Nasional"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Alamat URL Tujuan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingQuickLink.url || ''}
+                  onChange={(e) => setEditingQuickLink({ ...editingQuickLink, url: e.target.value })}
+                  placeholder="https://... atau #resources"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Deskripsi Singkat (Sub-judul)</label>
+                <input
+                  type="text"
+                  value={editingQuickLink.description || ''}
+                  onChange={(e) => setEditingQuickLink({ ...editingQuickLink, description: e.target.value })}
+                  placeholder="Contoh: Jadwal resmi simulasi & ANBK Kemdikbud"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Pilihan Ikon Lucide</label>
+                  <select
+                    value={editingQuickLink.icon || 'ExternalLink'}
+                    onChange={(e) => setEditingQuickLink({ ...editingQuickLink, icon: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs bg-white font-semibold"
+                  >
+                    <option value="Calendar">Calendar (Kalender)</option>
+                    <option value="Download">Download (Unduh)</option>
+                    <option value="Globe">Globe (Portal / Web)</option>
+                    <option value="HelpCircle">HelpCircle (Bantuan)</option>
+                    <option value="FileText">FileText (Dokumen)</option>
+                    <option value="BookOpen">BookOpen (Buku / Panduan)</option>
+                    <option value="Layers">Layers (Kisi-Kisi / Bank Soal)</option>
+                    <option value="Sparkles">Sparkles (Fitur AI)</option>
+                    <option value="ExternalLink">ExternalLink (Tautan Luar)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Nomor Urutan Tampil</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={editingQuickLink.order_index || 1}
+                    onChange={(e) => setEditingQuickLink({ ...editingQuickLink, order_index: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="flex items-center space-x-2 cursor-pointer font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={!!editingQuickLink.is_new_tab}
+                    onChange={(e) => setEditingQuickLink({ ...editingQuickLink, is_new_tab: e.target.checked })}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  />
+                  <span>Buka di tab peramban baru (target="_blank")</span>
+                </label>
+
+                <label className="flex items-center space-x-2 cursor-pointer font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editingQuickLink.is_active ?? true}
+                    onChange={(e) => setEditingQuickLink({ ...editingQuickLink, is_active: e.target.checked })}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>Status Aktif (Tampilkan di sidebar publik)</span>
+                </label>
+              </div>
+
+              <div className="px-6 py-4 -mx-6 -mb-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickLinkModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold"
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md"
+                >
+                  Simpan Tautan Cepat
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </div>

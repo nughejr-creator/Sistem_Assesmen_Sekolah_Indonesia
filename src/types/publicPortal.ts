@@ -17,6 +17,9 @@ export interface PublicArticle {
   author_id?: string | null;
   featured_image?: string | null;
   tags?: string[] | null;
+  is_pinned?: boolean;
+  pinned_until?: string | null;
+  is_featured?: boolean;
   read_time: number;
   views_count: number;
   is_published: boolean;
@@ -103,3 +106,23 @@ export interface DeveloperProfile {
   is_primary: boolean;
   updated_at?: string;
 }
+
+export interface SidebarWidgetConfig {
+  show_search: boolean;
+  show_pinned: boolean;
+  show_popular_tabs: boolean;
+  show_categories: boolean;
+  show_quick_links: boolean;
+}
+
+export interface PortalQuickLink {
+  id: string;
+  title: string;
+  url: string;
+  icon: string;
+  description?: string;
+  is_new_tab: boolean;
+  is_active: boolean;
+  order_index: number;
+}
+

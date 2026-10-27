@@ -4,7 +4,9 @@ import {
   TeachingResource, 
   TeacherContribution, 
   DeveloperProfile,
-  BlueprintMatrixRow 
+  BlueprintMatrixRow,
+  SidebarWidgetConfig,
+  PortalQuickLink
 } from '../types/publicPortal';
 
 // ==============================================================================
@@ -39,12 +41,67 @@ export const FALLBACK_DEVELOPER_PROFILE: DeveloperProfile = {
   is_primary: true
 };
 
+export const FALLBACK_SIDEBAR_CONFIG: SidebarWidgetConfig = {
+  show_search: true,
+  show_pinned: true,
+  show_popular_tabs: true,
+  show_categories: true,
+  show_quick_links: true
+};
+
+export const FALLBACK_QUICK_LINKS: PortalQuickLink[] = [
+  {
+    id: 'ql-1',
+    title: 'Kalender Asesmen Nasional',
+    url: 'https://pusmendik.kemdikbud.go.id/an',
+    icon: 'Calendar',
+    description: 'Jadwal resmi simulasi & ANBK Kemdikbud',
+    is_new_tab: true,
+    is_active: true,
+    order_index: 1
+  },
+  {
+    id: 'ql-2',
+    title: 'Download Modul & RPP',
+    url: '#resources',
+    icon: 'Download',
+    description: 'Kumpulan perangkat ajar SD siap pakai',
+    is_new_tab: false,
+    is_active: true,
+    order_index: 2
+  },
+  {
+    id: 'ql-3',
+    title: 'Portal Guru & Layanan CBT',
+    url: '#cbt',
+    icon: 'Globe',
+    description: 'Akses instan modul ujian CBT mandiri',
+    is_new_tab: false,
+    is_active: true,
+    order_index: 3
+  },
+  {
+    id: 'ql-4',
+    title: 'Pusat Bantuan & Panduan',
+    url: '#about',
+    icon: 'HelpCircle',
+    description: 'Konsultasi kaidah penulisan kisi-kisi',
+    is_new_tab: false,
+    is_active: true,
+    order_index: 4
+  }
+];
+
 export const FALLBACK_PUBLIC_ARTICLES: PublicArticle[] = [
   {
     id: 'art-1',
     slug: 'kaidah-penulisan-soal-asesmen-sekolah-sd',
     title: 'Kaidah Baku Penulisan Soal Asesmen Sekolah Tingkat Sekolah Dasar',
     excerpt: 'Panduan komprehensif bagi pendidik dalam merumuskan stimulus kontekstual, pokok soal bebas bias, dan opsi jawaban yang logis sesuai standar asesmen nasional.',
+    featured_image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+    tags: ['Asesmen SD', 'Kaidah Soal', 'AKM', 'Evaluasi'],
+    is_pinned: true,
+    is_featured: true,
     content: `## Pendahuluan
 Penulisan butir soal yang bermutu merupakan prasyarat utama dalam memperoleh data capaian kompetensi peserta didik yang valid dan reliabel. Pada jenjang Sekolah Dasar, butir soal harus memperhatikan perkembangan kognitif anak serta menggunakan bahasa yang lugas dan tidak menimbulkan penafsiran ganda.
 
@@ -106,6 +163,9 @@ Numerasi bukan sekadar berhitung cepat, melainkan bernalar matematis dalam tiga 
     author_name: 'Agi Hamdani, M.Pd',
     read_time: 8,
     views_count: 980,
+    featured_image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80',
+    tags: ['AKM Literasi', 'Numerasi', 'Fase C', 'Stimulus'],
+    is_featured: true,
     is_published: true,
     published_at: '2026-10-26T09:30:00Z'
   },
@@ -143,6 +203,8 @@ Pengecoh berfungsi baik jika dipilih oleh minimal **5%** peserta tes dari kelomp
     author_name: 'Agi Hamdani, M.Pd',
     read_time: 7,
     views_count: 1150,
+    featured_image: 'https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?auto=format&fit=crop&w=600&q=80',
+    tags: ['Analisis Butir', 'Daya Beda', 'Tingkat Kesukaran'],
     is_published: true,
     published_at: '2026-10-27T10:15:00Z'
   },
@@ -861,3 +923,108 @@ export async function saveDeveloperProfile(
   };
   return { success: true, data: adminProfileStore };
 }
+
+// ==============================================================================
+// SIDEBAR WIDGETS & QUICK LINKS FUNCTIONS
+// ==============================================================================
+
+let adminSidebarConfigStore: SidebarWidgetConfig = { ...FALLBACK_SIDEBAR_CONFIG };
+let adminQuickLinksStore: PortalQuickLink[] = [...FALLBACK_QUICK_LINKS];
+
+/**
+ * Mengambil konfigurasi visibilitas widget sidebar
+ */
+export async function getSidebarWidgetConfig(): Promise<SidebarWidgetConfig> {
+  try {
+    const local = localStorage.getItem('sasi_sidebar_config');
+    if (local) {
+      adminSidebarConfigStore = JSON.parse(local);
+      return adminSidebarConfigStore;
+    }
+  } catch (e) {}
+  return adminSidebarConfigStore;
+}
+
+/**
+ * Menyimpan konfigurasi visibilitas widget sidebar
+ */
+export async function saveSidebarWidgetConfig(
+  config: SidebarWidgetConfig
+): Promise<{ success: boolean; data?: SidebarWidgetConfig }> {
+  try {
+    adminSidebarConfigStore = { ...config };
+    localStorage.setItem('sasi_sidebar_config', JSON.stringify(adminSidebarConfigStore));
+    return { success: true, data: adminSidebarConfigStore };
+  } catch (err: any) {
+    return { success: true, data: config };
+  }
+}
+
+/**
+ * Mengambil daftar tautan cepat (Quick Links) aktif
+ */
+export async function getPortalQuickLinks(): Promise<PortalQuickLink[]> {
+  try {
+    const local = localStorage.getItem('sasi_quick_links');
+    if (local) {
+      adminQuickLinksStore = JSON.parse(local);
+      return adminQuickLinksStore.sort((a, b) => a.order_index - b.order_index);
+    }
+  } catch (e) {}
+  return adminQuickLinksStore.sort((a, b) => a.order_index - b.order_index);
+}
+
+/**
+ * Menyimpan atau memperbarui tautan cepat (Quick Link)
+ */
+export async function savePortalQuickLink(
+  link: Partial<PortalQuickLink>
+): Promise<{ success: boolean; data?: PortalQuickLink }> {
+  try {
+    if (link.id) {
+      const idx = adminQuickLinksStore.findIndex(q => q.id === link.id);
+      if (idx >= 0) {
+        adminQuickLinksStore[idx] = {
+          ...adminQuickLinksStore[idx],
+          ...link
+        } as PortalQuickLink;
+      }
+    } else {
+      const newLink: PortalQuickLink = {
+        id: `ql-${Date.now()}`,
+        title: link.title || 'Tautan Cepat Baru',
+        url: link.url || '#',
+        icon: link.icon || 'ExternalLink',
+        description: link.description || '',
+        is_new_tab: link.is_new_tab ?? false,
+        is_active: link.is_active ?? true,
+        order_index: link.order_index || (adminQuickLinksStore.length + 1)
+      };
+      adminQuickLinksStore.push(newLink);
+    }
+
+    try {
+      localStorage.setItem('sasi_quick_links', JSON.stringify(adminQuickLinksStore));
+    } catch (e) {}
+
+    const item = link.id 
+      ? adminQuickLinksStore.find(q => q.id === link.id) 
+      : adminQuickLinksStore[adminQuickLinksStore.length - 1];
+
+    return { success: true, data: item };
+  } catch (err: any) {
+    return { success: false };
+  }
+}
+
+/**
+ * Menghapus tautan cepat
+ */
+export async function deletePortalQuickLink(id: string): Promise<{ success: boolean }> {
+  adminQuickLinksStore = adminQuickLinksStore.filter(q => q.id !== id);
+  try {
+    localStorage.setItem('sasi_quick_links', JSON.stringify(adminQuickLinksStore));
+  } catch (e) {}
+  return { success: true };
+}
+
