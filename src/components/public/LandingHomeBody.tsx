@@ -119,8 +119,8 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
           {/* Dua Kartu Interaktif Berdampingan */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-14 max-w-4xl mx-auto">
             
-            {/* KARTU 1: AKSES CEPAT SISWA (MASUKKAN TOKEN TES) */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xl relative overflow-hidden group text-slate-900">
+            {/* KARTU 1: AKSES CEPAT SISWA (DENGAN BORDER TEGAS KONTRASTING) */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-sky-400/60 shadow-2xl shadow-black/60 relative overflow-hidden group text-slate-900 transition-all duration-300 hover:border-sky-300">
               <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-full -mr-10 -mt-10 pointer-events-none" />
               
               <div className="flex items-center space-x-3 mb-3">
