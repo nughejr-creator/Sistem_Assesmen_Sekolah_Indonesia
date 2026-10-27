@@ -164,41 +164,41 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               </form>
             </div>
 
-            {/* KARTU 2: RINGKASAN STATUS ASESMEN & KEANDALAN CBT */}
-            <div className="bg-[#0b172d]/90 rounded-3xl p-6 sm:p-7 border border-slate-700/80 shadow-2xl relative overflow-hidden flex flex-col justify-between text-white backdrop-blur-md">
+            {/* KARTU 2: RINGKASAN STATUS ASESMEN & KEANDALAN CBT (KONTRASTING CARD & VISIBLE BORDER) */}
+            <div className="bg-gradient-to-br from-[#162952] via-[#112040] to-[#0d1830] rounded-3xl p-6 sm:p-7 border-2 border-sky-400/60 shadow-2xl shadow-black/60 relative overflow-hidden flex flex-col justify-between text-white backdrop-blur-md transition-all duration-300 hover:border-sky-300">
               
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center justify-between pb-3.5 border-b border-sky-500/25">
                   <div className="flex items-center space-x-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                     <span className="text-xs font-black tracking-wider uppercase text-emerald-400">
                       Sesi CBT Berjalan
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-slate-300 border border-white/10">
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md bg-sky-500/15 text-sky-200 border border-sky-400/40 shadow-xs">
                     Live Server SASI
                   </span>
                 </div>
 
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 space-y-3.5">
                   <div>
-                    <span className="text-[11px] text-slate-400 font-medium">Asesmen Aktif Saat Ini:</span>
+                    <span className="text-[11px] text-sky-200/80 font-medium">Asesmen Aktif Saat Ini:</span>
                     <h4 className="font-extrabold text-base text-white mt-0.5">
                       Sumatif Akhir Semester (SAS), Formatif & Remedial
                     </h4>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5 pt-1">
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
-                      <span className="text-[10px] text-slate-400 block">Daya Tahan Gangguan</span>
+                    <div className="bg-[#09152b]/90 border border-sky-500/30 rounded-xl p-2.5 shadow-inner">
+                      <span className="text-[10px] text-slate-400 block font-medium">Daya Tahan Gangguan</span>
                       <span className="text-sm font-black text-emerald-400 flex items-center space-x-1 mt-0.5">
                         <CheckCircle2 className="w-3.5 h-3.5 inline text-emerald-400" />
                         <span>Autosave Ganda</span>
                       </span>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
-                      <span className="text-[10px] text-slate-400 block">Kesiapan Butir Soal</span>
+                    <div className="bg-[#09152b]/90 border border-sky-500/30 rounded-xl p-2.5 shadow-inner">
+                      <span className="text-[10px] text-slate-400 block font-medium">Kesiapan Butir Soal</span>
                       <span className="text-sm font-black text-sky-300 mt-0.5 block">
                         Multi-Varian Paralel
                       </span>
@@ -208,7 +208,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               </div>
 
               {/* Status footer inside card */}
-              <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+              <div className="pt-4 mt-4 border-t border-sky-500/25 flex items-center justify-between text-xs text-slate-300">
                 <span>Skoring: Otomatis & Koreksi Guru</span>
                 <span className="text-emerald-400 font-bold">100% Real-Time</span>
               </div>
