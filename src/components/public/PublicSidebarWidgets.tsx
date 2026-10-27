@@ -99,23 +99,7 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    // Total articles count calculation
-  const totalArticlesCount = useMemo(() => {
-    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
-    return Math.max(fromCategories, searchableArticles.length);
-  }, [categoryCounts, searchableArticles]);
-
-  if (isLoading && !aggregateData) {
-    return (
-      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
-      </aside>
-    );
-  }
-
-  return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Effective Config
