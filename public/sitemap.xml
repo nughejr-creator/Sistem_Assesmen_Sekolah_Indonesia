@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- 1. Halaman Beranda Utama (Landing Page Publik) -->
+  <url>
+    <loc>https://sasi-cbt.id/</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 2. Halaman Gerbang Masuk / Portal Login -->
+  <url>
+    <loc>https://sasi-cbt.id/login</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

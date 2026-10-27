@@ -1,0 +1,28 @@
+# ==============================================================================
+# ROBOTS.TXT: SISTEM ASESMEN SEKOLAH INDONESIA (SASI CBT)
+# Mengizinkan perayapan halaman publik & melindungi privasi ruang ujian
+# ==============================================================================
+
+User-agent: *
+
+# Halaman & Aset Publik yang Diizinkan Terindeks
+Allow: /
+Allow: /login
+Allow: /favicon.png
+Allow: /sasipedia-icon.png
+Allow: /sasipedia-logo.png
+Allow: /logo.png
+
+# Proteksi Keamanan: Blokir Perayapan Ruang Ujian & Panel Internal Sensitif
+Disallow: /exam/
+Disallow: /cbt/
+Disallow: /proctor/
+Disallow: /teacher/
+Disallow: /admin/
+Disallow: /super-admin/
+Disallow: /api/
+Disallow: /*?*token=*
+Disallow: /*?*password=*
+
+# Tautan Peta Situs (Sitemap)
+Sitemap: https://sasi-cbt.id/sitemap.xml
