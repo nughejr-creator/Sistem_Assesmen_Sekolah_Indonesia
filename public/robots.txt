@@ -5,25 +5,41 @@
 
 User-agent: *
 
-# Halaman & Aset Publik yang Diizinkan Terindeks
+# Halaman & Aset Publik yang Diizinkan Terindeks Googlebot & Mesin Pencari
 Allow: /
 Allow: /login
+Allow: /wawasan-asesmen
+Allow: /wawasan-asesmen/*
+Allow: /bank-soal
+Allow: /ruang-kreativitas
+Allow: /profil-pengembang
+Allow: /privacy-policy
+Allow: /terms
+Allow: /about
+Allow: /contact
 Allow: /favicon.png
 Allow: /sasipedia-icon.png
 Allow: /sasipedia-logo.png
 Allow: /logo.png
 
-# Proteksi Keamanan: Blokir Perayapan Ruang Ujian & Panel Internal Sensitif
+# Proteksi Keamanan: Blokir Perayapan Ruang Ujian & Panel Internal Sensitif (STERIL 100%)
 Disallow: /exam/
+Disallow: /exam/*
 Disallow: /cbt/
+Disallow: /cbt/*
 Disallow: /proctor/
+Disallow: /proctor/*
 Disallow: /teacher/
+Disallow: /teacher/*
 Disallow: /admin/
+Disallow: /admin/*
 Disallow: /super-admin/
+Disallow: /super-admin/*
 Disallow: /api/
+Disallow: /api/*
 Disallow: /*?*token=*
 Disallow: /*?*password=*
 
-# Tautan Peta Situs (Sitemap Resmi)
+# Tautan Peta Situs (Sitemap Resmi Canonical)
 Sitemap: https://www.sasipedia.my.id/sitemap.xml
 Sitemap: https://sasipedia.my.id/sitemap.xml

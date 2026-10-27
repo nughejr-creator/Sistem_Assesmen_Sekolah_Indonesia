@@ -23,6 +23,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   const getRouteFromHash = (): PublicNavRoute => {
     try {
       const hash = window.location.hash.replace(/^#\/?/, '');
+      if (hash === 'about' || hash === 'contact') {
+        return 'about-contact';
+      }
       const validRoutes: PublicNavRoute[] = [
         'beranda',
         'wawasan-asesmen',
