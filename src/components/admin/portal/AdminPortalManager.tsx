@@ -1,0 +1,1123 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  BookOpen, 
+  Layers, 
+  Award, 
+  UserCheck, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  Eye, 
+  CheckCircle2, 
+  AlertCircle, 
+  Search, 
+  Upload, 
+  Download, 
+  FileText, 
+  Check, 
+  X, 
+  Save, 
+  Filter, 
+  Clock, 
+  ShieldCheck,
+  Send,
+  ExternalLink
+} from 'lucide-react';
+import { 
+  PublicArticle, 
+  TeachingResource, 
+  TeacherContribution, 
+  DeveloperProfile,
+  ArticleCategory,
+  ResourceCategory,
+  ContributionStatus 
+} from '../../../types/publicPortal';
+import { 
+  getAllPublicArticlesAdmin, 
+  savePublicArticle, 
+  deletePublicArticle, 
+  toggleArticlePublish,
+  getAllTeachingResourcesAdmin,
+  saveTeachingResource,
+  deleteTeachingResource,
+  getAllTeacherContributionsAdmin,
+  updateTeacherContributionStatus,
+  getDeveloperProfile,
+  saveDeveloperProfile,
+  uploadEducationalResourceFile
+} from '../../../lib/publicPortalService';
+import { UserProfile } from '../../../types/database';
+
+interface AdminPortalManagerProps {
+  currentUser: UserProfile;
+}
+
+export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentUser }) => {
+  const [activeTab, setActiveTab] = useState<'articles' | 'resources' | 'curation' | 'profile'>('articles');
+
+  // ===========================================================================
+  // TAB 1: ARTICLES STATE
+  // ===========================================================================
+  const [articles, setArticles] = useState<PublicArticle[]>([]);
+  const [articleSearch, setArticleSearch] = useState('');
+  const [editingArticle, setEditingArticle] = useState<Partial<PublicArticle> | null>(null);
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
+  const [previewArticle, setPreviewArticle] = useState<PublicArticle | null>(null);
+
+  // ===========================================================================
+  // TAB 2: RESOURCES STATE
+  // ===========================================================================
+  const [resources, setResources] = useState<TeachingResource[]>([]);
+  const [resourceSearch, setResourceSearch] = useState('');
+  const [editingResource, setEditingResource] = useState<Partial<TeachingResource> | null>(null);
+  const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  // ===========================================================================
+  // TAB 3: CURATION STATE
+  // ===========================================================================
+  const [contributions, setContributions] = useState<TeacherContribution[]>([]);
+  const [curationFilter, setCurationFilter] = useState<string>('pending_review');
+  const [reviewingContribution, setReviewingContribution] = useState<TeacherContribution | null>(null);
+  const [reviewNotes, setReviewNotes] = useState('');
+
+  // ===========================================================================
+  // TAB 4: DEVELOPER PROFILE STATE
+  // ===========================================================================
+  const [profile, setProfile] = useState<DeveloperProfile | null>(null);
+  const [profileSavedToast, setProfileSavedToast] = useState(false);
+
+  // Load initial data
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  const loadAllData = async () => {
+    const arts = await getAllPublicArticlesAdmin();
+    setArticles(arts);
+    const res = await getAllTeachingResourcesAdmin();
+    setResources(res);
+    const contribs = await getAllTeacherContributionsAdmin();
+    setContributions(contribs);
+    const prof = await getDeveloperProfile();
+    setProfile(prof);
+  };
+
+  // ===========================================================================
+  // ARTICLE HANDLERS
+  // ===========================================================================
+  const handleOpenAddArticle = () => {
+    setEditingArticle({
+      title: '',
+      slug: '',
+      category: 'Panduan Asesmen',
+      excerpt: '',
+      content: '',
+      read_time: 5,
+      is_published: true,
+      author_name: currentUser.full_name || 'Agi Hamdani, M.Pd'
+    });
+    setIsArticleModalOpen(true);
+  };
+
+  const handleEditArticle = (art: PublicArticle) => {
+    setEditingArticle({ ...art });
+    setIsArticleModalOpen(true);
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus artikel publik ini?')) {
+      await deletePublicArticle(id);
+      setArticles(prev => prev.filter(a => a.id !== id));
+    }
+  };
+
+  const handleTogglePublish = async (art: PublicArticle) => {
+    const newStatus = !art.is_published;
+    await toggleArticlePublish(art.id, newStatus);
+    setArticles(prev => prev.map(a => a.id === art.id ? { ...a, is_published: newStatus } : a));
+  };
+
+  const handleSaveArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArticle?.title?.trim()) return;
+
+    const res = await savePublicArticle(editingArticle);
+    if (res.success && res.data) {
+      setArticles(prev => {
+        const idx = prev.findIndex(a => a.id === res.data?.id);
+        if (idx >= 0) {
+          const clone = [...prev];
+          clone[idx] = res.data!;
+          return clone;
+        }
+        return [res.data!, ...prev];
+      });
+      setIsArticleModalOpen(false);
+      setEditingArticle(null);
+    }
+  };
+
+  // ===========================================================================
+  // RESOURCE HANDLERS
+  // ===========================================================================
+  const handleOpenAddResource = () => {
+    setEditingResource({
+      title: '',
+      description: '',
+      category: 'Matriks Kisi-Kisi',
+      phase: 'Fase B',
+      grade_level: 'Kelas 4',
+      subject: 'Bahasa Indonesia',
+      file_type: 'DOCX',
+      file_url: '',
+      file_size: '1.5 MB',
+      is_active: true
+    });
+    setIsResourceModalOpen(true);
+  };
+
+  const handleEditResource = (r: TeachingResource) => {
+    setEditingResource({ ...r });
+    setIsResourceModalOpen(true);
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    if (confirm('Hapus berkas sumber belajar ini dari repositori publik?')) {
+      await deleteTeachingResource(id);
+      setResources(prev => prev.filter(r => r.id !== id));
+    }
+  };
+
+  const handleSaveResource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingResource?.title?.trim()) return;
+
+    const res = await saveTeachingResource(editingResource);
+    if (res.success && res.data) {
+      setResources(prev => {
+        const idx = prev.findIndex(r => r.id === res.data?.id);
+        if (idx >= 0) {
+          const clone = [...prev];
+          clone[idx] = res.data!;
+          return clone;
+        }
+        return [res.data!, ...prev];
+      });
+      setIsResourceModalOpen(false);
+      setEditingResource(null);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    const res = await uploadEducationalResourceFile(file, 'resources');
+    setUploadingFile(false);
+
+    if (res.success && res.publicUrl) {
+      const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+      setEditingResource(prev => ({
+        ...prev,
+        file_url: res.publicUrl,
+        file_type: ext,
+        file_size: sizeMb
+      }));
+    } else {
+      alert('Gagal mengunggah berkas. Menggunakan format standar.');
+    }
+  };
+
+  // ===========================================================================
+  // CURATION HANDLERS
+  // ===========================================================================
+  const handleOpenReview = (c: TeacherContribution) => {
+    setReviewingContribution(c);
+    setReviewNotes(c.review_notes || '');
+  };
+
+  const handleProcessCuration = async (status: ContributionStatus) => {
+    if (!reviewingContribution) return;
+    const res = await updateTeacherContributionStatus(
+      reviewingContribution.id,
+      status,
+      reviewNotes,
+      currentUser.full_name
+    );
+
+    if (res.success && res.data) {
+      setContributions(prev => prev.map(c => c.id === res.data!.id ? res.data! : c));
+      setReviewingContribution(null);
+    }
+  };
+
+  // ===========================================================================
+  // PROFILE HANDLERS
+  // ===========================================================================
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+
+    const res = await saveDeveloperProfile(profile);
+    if (res.success) {
+      setProfileSavedToast(true);
+      setTimeout(() => setProfileSavedToast(false), 2500);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* CMS Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-md border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="space-y-1 text-center md:text-left">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-400/30">
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <span>Panel Manajemen Konten Publik (CMS) • Super Admin</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+            Pusat Kendali Zona Publik SASIPEDIA
+          </h1>
+          <p className="text-xs text-slate-300 max-w-2xl">
+            Kelola artikel wawasan edukasi, berkas kisi-kisi dan modul, kurasi naskah kiriman guru, serta pembaruan profil inisiator resmi secara dinamis.
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2 shrink-0">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center space-x-1.5 transition-colors border border-white/20"
+          >
+            <span>Buka Web Publik</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      </div>
+
+      {/* 4 Main Tabs */}
+      <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap gap-1.5">
+        
+        <button
+          type="button"
+          onClick={() => setActiveTab('articles')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            activeTab === 'articles'
+              ? 'bg-sky-600 text-white shadow-xs font-black'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Artikel & Wawasan Asesmen ({articles.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('resources')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            activeTab === 'resources'
+              ? 'bg-emerald-600 text-white shadow-xs font-black'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Bank Soal & Dokumen ({resources.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('curation')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            activeTab === 'curation'
+              ? 'bg-amber-500 text-slate-950 shadow-xs font-black'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>Meja Kurasi Guru ({contributions.filter(c => c.status === 'pending_review').length} Antrean)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+            activeTab === 'profile'
+              ? 'bg-purple-600 text-white shadow-xs font-black'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <UserCheck className="w-4 h-4" />
+          <span>Profil Pengembang (E-E-A-T)</span>
+        </button>
+
+      </div>
+
+      {/* =======================================================================
+          TAB 1: MANAJEMEN ARTIKEL & WAWASAN ASESMEN
+      ======================================================================= */}
+      {activeTab === 'articles' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+          
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={articleSearch}
+                onChange={(e) => setArticleSearch(e.target.value)}
+                placeholder="Cari judul artikel..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenAddArticle}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black shadow-xs flex items-center justify-center space-x-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tulis Artikel Baru</span>
+            </button>
+          </div>
+
+          {/* Tabel Artikel */}
+          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-700 font-black uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">Judul & Slug</th>
+                  <th className="py-3 px-4">Kategori</th>
+                  <th className="py-3 px-4 text-center">Waktu Baca</th>
+                  <th className="py-3 px-4 text-center">Pembaca</th>
+                  <th className="py-3 px-4 text-center">Status Tayang</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {articles.filter(a => a.title.toLowerCase().includes(articleSearch.toLowerCase())).map(art => (
+                  <tr key={art.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 max-w-xs">
+                      <div className="font-bold text-slate-900 line-clamp-1">{art.title}</div>
+                      <div className="text-[10px] text-slate-400 font-mono truncate">{art.slug}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-sky-50 text-sky-800 border border-sky-100">
+                        {art.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center text-slate-600">{art.read_time} menit</td>
+                    <td className="py-3 px-4 text-center font-mono font-semibold text-slate-700">{art.views_count}</td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublish(art)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase transition-all ${
+                          art.is_published 
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {art.is_published ? 'Published' : 'Draft'}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end space-x-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewArticle(art)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-sky-600"
+                          title="Pratinjau Artikel"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEditArticle(art)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-amber-600"
+                          title="Sunting Artikel"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteArticle(art.id)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-rose-600"
+                          title="Hapus Artikel"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      )}
+
+      {/* =======================================================================
+          TAB 2: MANAJEMEN DOKUMEN SUMBER BELAJAR
+      ======================================================================= */}
+      {activeTab === 'resources' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+          
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={resourceSearch}
+                onChange={(e) => setResourceSearch(e.target.value)}
+                placeholder="Cari judul berkas / kisi-kisi..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenAddResource}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs flex items-center justify-center space-x-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Berkas Sumber Belajar</span>
+            </button>
+          </div>
+
+          {/* Tabel Dokumen */}
+          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-700 font-black uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">Judul Dokumen</th>
+                  <th className="py-3 px-4">Kategori</th>
+                  <th className="py-3 px-4">Fase / Kelas</th>
+                  <th className="py-3 px-4 text-center">Format</th>
+                  <th className="py-3 px-4 text-center">Unduhan</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {resources.filter(r => r.title.toLowerCase().includes(resourceSearch.toLowerCase())).map(res => (
+                  <tr key={res.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 max-w-xs">
+                      <div className="font-bold text-slate-900 line-clamp-1">{res.title}</div>
+                      <div className="text-[10px] text-slate-400 line-clamp-1">{res.description}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-100">
+                        {res.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      {res.phase} • {res.grade_level}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        res.file_type === 'DOCX' ? 'bg-sky-100 text-sky-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {res.file_type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center font-mono font-semibold text-slate-700">
+                      {res.download_count}x
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end space-x-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleEditResource(res)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-amber-600"
+                          title="Sunting Berkas"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteResource(res.id)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-rose-600"
+                          title="Hapus Berkas"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      )}
+
+      {/* =======================================================================
+          TAB 3: MEJA KURASI KARYA PENDIDIK
+      ======================================================================= */}
+      {activeTab === 'curation' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+          
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold text-slate-500">Filter Antrean:</span>
+              {(['pending_review', 'published', 'draft', 'rejected', 'Semua'] as const).map(st => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setCurationFilter(st)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    curationFilter === st
+                      ? 'bg-amber-500 text-slate-950 shadow-2xs font-black'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {st === 'pending_review' ? 'Menunggu Riviu' : 
+                   st === 'published' ? 'Terbit' :
+                   st === 'rejected' ? 'Ditolak' : 
+                   st === 'draft' ? 'Draf' : 'Semua'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tabel Kontribusi Guru */}
+          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-700 font-black uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">Judul Karya</th>
+                  <th className="py-3 px-4">Penulis & Sekolah</th>
+                  <th className="py-3 px-4">Jenis Konten</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {contributions.filter(c => curationFilter === 'Semua' || c.status === curationFilter).map(c => (
+                  <tr key={c.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-4 max-w-xs">
+                      <div className="font-bold text-slate-900 line-clamp-1">{c.title}</div>
+                      <div className="text-[10px] text-slate-400 line-clamp-1">{c.summary}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-800">{c.teacher_name}</div>
+                      <div className="text-[10px] text-slate-500">{c.teacher_school}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 text-slate-700">
+                        {c.content_type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                        c.status === 'published' ? 'bg-emerald-100 text-emerald-800' :
+                        c.status === 'pending_review' ? 'bg-amber-100 text-amber-800 animate-pulse' :
+                        c.status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {c.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReview(c)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs flex items-center space-x-1 ml-auto"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Tinjau Naskah</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      )}
+
+      {/* =======================================================================
+          TAB 4: PENGATURAN PROFIL PENGEMBANG (E-E-A-T)
+      ======================================================================= */}
+      {activeTab === 'profile' && profile && (
+        <form onSubmit={handleSaveProfile} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
+          
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-black text-slate-900">
+                Pembaruan Profil Inisiator Resmi (E-E-A-T)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Data ini ditampilkan secara publik di footer dan halaman `/profil-pengembang` untuk memenuhi standar Experience, Expertise, Authoritativeness, dan Trustworthiness Google.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-md flex items-center space-x-1.5 transition-transform active:scale-95"
+            >
+              <Save className="w-4 h-4" />
+              <span>Simpan Profil E-E-A-T</span>
+            </button>
+          </div>
+
+          {profileSavedToast && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Data profil pengembang berhasil diperbarui dan disinkronkan ke zona publik!</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Nama Lengkap & Gelar</label>
+              <input
+                type="text"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Jabatan & Peran Inisiator</label>
+              <input
+                type="text"
+                value={profile.title}
+                onChange={(e) => setProfile({ ...profile, title: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-sky-700"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1">Deskripsi Singkat Peran</label>
+              <input
+                type="text"
+                value={profile.role_description || ''}
+                onChange={(e) => setProfile({ ...profile, role_description: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block font-bold text-slate-700 mb-1">Biografi Profesional & Visi Pendidikan</label>
+              <textarea
+                rows={4}
+                value={profile.bio || ''}
+                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs resize-y leading-relaxed"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Email Resmi</label>
+              <input
+                type="email"
+                value={profile.email || ''}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Nomor Telepon / WhatsApp</label>
+              <input
+                type="text"
+                value={profile.phone || ''}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono"
+              />
+            </div>
+          </div>
+
+        </form>
+      )}
+
+      {/* =======================================================================
+          MODAL 1: FORM TAMBAH / SUNTING ARTIKEL
+      ======================================================================= */}
+      {isArticleModalOpen && editingArticle && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+            
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                {editingArticle.id ? 'Sunting Artikel Publik' : 'Tulis Artikel Wawasan Baru'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsArticleModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveArticle} className="p-6 overflow-y-auto space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Judul Artikel <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={editingArticle.title || ''}
+                  onChange={(e) => setEditingArticle({ ...editingArticle, title: e.target.value })}
+                  placeholder="Kaidah Baku Penulisan Soal..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Kategori</label>
+                  <select
+                    value={editingArticle.category}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, category: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+                  >
+                    <option>Panduan Asesmen</option>
+                    <option>Bedah AKM</option>
+                    <option>Analisis Butir</option>
+                    <option>Rubrik & Penskoran</option>
+                    <option>Wawasan Kurikulum</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Estimasi Waktu Baca (Menit)</label>
+                  <input
+                    type="number"
+                    value={editingArticle.read_time || 5}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, read_time: parseInt(e.target.value) || 5 })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Ringkasan Singkat (Excerpt)</label>
+                <textarea
+                  rows={2}
+                  value={editingArticle.excerpt || ''}
+                  onChange={(e) => setEditingArticle({ ...editingArticle, excerpt: e.target.value })}
+                  placeholder="Deskripsi singkat yang tampil pada kartu artikel..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Isi Konten Lengkap (Format Markdown) <span className="text-rose-500">*</span></label>
+                <textarea
+                  rows={10}
+                  required
+                  value={editingArticle.content || ''}
+                  onChange={(e) => setEditingArticle({ ...editingArticle, content: e.target.value })}
+                  placeholder="Gunakan tanda ## untuk Heading, - untuk daftar poin, dsb."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono leading-relaxed resize-y"
+                />
+              </div>
+
+              <div className="px-6 py-4 -mx-6 -mb-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setIsArticleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold"
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black shadow-md"
+                >
+                  Simpan & Terbitkan
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================================
+          MODAL 2: FORM TAMBAH / SUNTING DOKUMEN SUMBER BELAJAR
+      ======================================================================= */}
+      {isResourceModalOpen && editingResource && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+            
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                {editingResource.id ? 'Sunting Berkas Sumber Belajar' : 'Tambah Berkas Baru'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsResourceModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveResource} className="p-6 overflow-y-auto space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Judul Dokumen <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={editingResource.title || ''}
+                  onChange={(e) => setEditingResource({ ...editingResource, title: e.target.value })}
+                  placeholder="Matriks Kisi-Kisi SAS Bahasa Indonesia..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Kategori Dokumen</label>
+                  <select
+                    value={editingResource.category}
+                    onChange={(e) => setEditingResource({ ...editingResource, category: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+                  >
+                    <option>Matriks Kisi-Kisi</option>
+                    <option>Naskah Kartu Soal</option>
+                    <option>Instrumen Diagnostik Awal</option>
+                    <option>Modul Ajar</option>
+                    <option>LKPD</option>
+                    <option>Administrasi Guru</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Mata Pelajaran</label>
+                  <input
+                    type="text"
+                    value={editingResource.subject || ''}
+                    onChange={(e) => setEditingResource({ ...editingResource, subject: e.target.value })}
+                    placeholder="Bahasa Indonesia, IPAS, dll."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Fase</label>
+                  <select
+                    value={editingResource.phase || 'Fase B'}
+                    onChange={(e) => setEditingResource({ ...editingResource, phase: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+                  >
+                    <option>Fase A</option>
+                    <option>Fase B</option>
+                    <option>Fase C</option>
+                    <option>Umum</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Jenjang Kelas</label>
+                  <input
+                    type="text"
+                    value={editingResource.grade_level || ''}
+                    onChange={(e) => setEditingResource({ ...editingResource, grade_level: e.target.value })}
+                    placeholder="Kelas 4 / Semua Kelas"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Deskripsi Dokumen</label>
+                <textarea
+                  rows={2}
+                  value={editingResource.description || ''}
+                  onChange={(e) => setEditingResource({ ...editingResource, description: e.target.value })}
+                  placeholder="Rincian materi yang tercakup dalam berkas..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs resize-none"
+                />
+              </div>
+
+              {/* Upload Berkas ke Storage */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <label className="block font-bold text-slate-700">Unggah Berkas Fisik (PDF / DOCX / XLSX)</label>
+                <div className="flex items-center space-x-3">
+                  <label className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center space-x-1.5 cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{uploadingFile ? 'Mengunggah...' : 'Pilih Berkas Komputer'}</span>
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      accept=".pdf,.docx,.xlsx,.doc,.xls"
+                    />
+                  </label>
+                  <span className="text-[11px] text-slate-400">Maks. 50MB</span>
+                </div>
+
+                {editingResource.file_url && (
+                  <div className="text-[11px] text-emerald-700 font-mono truncate pt-1">
+                    ✓ Berkas tersambung: {editingResource.file_url}
+                  </div>
+                )}
+              </div>
+
+              <div className="px-6 py-4 -mx-6 -mb-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setIsResourceModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold"
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md"
+                >
+                  Simpan Berkas
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================================
+          MODAL 3: REVIEW / KURASI KARYA GURU
+      ======================================================================= */}
+      {reviewingContribution && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+            
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                Tinjauan Kurasi Naskah Guru
+              </span>
+              <button
+                type="button"
+                onClick={() => setReviewingContribution(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 text-xs">
+              <div className="pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800">
+                    {reviewingContribution.content_type}
+                  </span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-600">Oleh: <strong>{reviewingContribution.teacher_name}</strong> ({reviewingContribution.teacher_school})</span>
+                </div>
+                <h3 className="text-base font-black text-slate-900">
+                  {reviewingContribution.title}
+                </h3>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto font-sans">
+                {reviewingContribution.body}
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Catatan Kurasi / Alasan Penolakan (Opsional)</label>
+                <textarea
+                  rows={3}
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  placeholder="Tuliskan catatan apresiasi atau perbaikan yang perlu diperbaiki oleh guru..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs resize-none"
+                />
+              </div>
+
+              <div className="px-6 py-4 -mx-6 -mb-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleProcessCuration('rejected')}
+                  className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200"
+                >
+                  Tolak / Minta Revisi
+                </button>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setReviewingContribution(null)}
+                    className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold"
+                  >
+                    Tutup
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleProcessCuration('published')}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md flex items-center space-x-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Setujui & Terbitkan Resmi</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================================
+          MODAL 4: PRATINJAU ARTIKEL LENGKAP
+      ======================================================================= */}
+      {previewArticle && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                Pratinjau Tampilan Artikel
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewArticle(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 text-xs">
+              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-sky-100 text-sky-800">
+                {previewArticle.category}
+              </span>
+              <h2 className="text-lg font-black text-slate-900">{previewArticle.title}</h2>
+              <div className="text-[11px] text-slate-400 pb-3 border-b border-slate-100">
+                Oleh {previewArticle.author_name} • {previewArticle.read_time} menit baca
+              </div>
+              <div className="text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">
+                {previewArticle.content}
+              </div>
+            </div>
+
+            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewArticle(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};

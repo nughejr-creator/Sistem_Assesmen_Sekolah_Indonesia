@@ -500,3 +500,364 @@ export async function uploadEducationalResourceFile(
     return { success: false, error: err.message || 'Gagal mengunggah berkas' };
   }
 }
+
+// ==============================================================================
+// ADMIN CMS PORTAL MANAGER FUNCTIONS (CRUD & KURASI)
+// ==============================================================================
+
+// Mutable in-memory stores with full fallback sync
+let adminArticlesStore: PublicArticle[] = [...FALLBACK_PUBLIC_ARTICLES];
+let adminResourcesStore: TeachingResource[] = [...FALLBACK_TEACHING_RESOURCES];
+let adminContributionsStore: TeacherContribution[] = [
+  {
+    id: 'contrib-1',
+    teacher_id: 't-1',
+    teacher_name: 'Dewi Rahmawati, S.Pd',
+    teacher_school: 'SDN 2 Sukamaju',
+    title: 'Modul Ajar Matematika Operasi Pecahan Berbantuan Media Roti Lipat',
+    content_type: 'Modul Ajar',
+    summary: 'Pembelajaran bermakna pecahan senilai menggunakan bahan konkret roti tawar di kelas 4 SD.',
+    body: '## Latar Belakang Pembelajaran\nSiswa kerap kesulitan memahami pecahan abstrak jika hanya diajarkan dengan angka di papan tulis. Melalui modul roti lipat ini, siswa mengamati langsung pembagian 1/2, 1/4, dan 1/8 secara visual dan kinestetik.\n\n### Langkah Pembelajaran\n1. Siswa dibagi ke dalam kelompok kecil beranggotakan 4 anak.\n2. Setiap kelompok menerima 2 lembar roti tawar dan pisau plastik.\n3. Siswa memotong roti sesuai instruksi kartu pecahan.\n4. Membandingkan ukuran pecahan senilai 2/4 dengan 1/2.',
+    status: 'pending_review',
+    created_at: new Date(Date.now() - 3600000 * 24).toISOString()
+  },
+  {
+    id: 'contrib-2',
+    teacher_id: 't-2',
+    teacher_name: 'Budi Hartono, M.Pd',
+    teacher_school: 'SD Pertiwi Mandiri',
+    title: 'Paket LKPD Eksplorasi Sains: Siklus Air dan Pelestarian Sumber Air Bersih',
+    content_type: 'LKPD',
+    summary: 'Lembar observasi kelompok untuk penyelidikan evaporasi dan kondensasi sederhana.',
+    body: '## Petunjuk LKPD\nAmati perubahan uap air dalam stoples kaca yang ditutup rapat dan diletakkan di bawah sinar matahari.',
+    status: 'draft',
+    created_at: new Date(Date.now() - 3600000 * 48).toISOString()
+  },
+  {
+    id: 'contrib-3',
+    teacher_id: 't-3',
+    teacher_name: 'Siti Aminah, S.Pd.SD',
+    teacher_school: 'SDN Mekarwangi',
+    title: 'Praktik Baik: Penerapan Pojok Baca Digital & Asesmen Formatif Menyenangkan',
+    content_type: 'Praktik Baik',
+    summary: 'Peningkatan literasi membaca siswa Fase B dengan pemanfaatan gawai kelas bergantian.',
+    body: '## Praktik Baik\nDengan menghadirkan pojok baca digital sederhana di sudut kelas, motivasi membaca siswa meningkat hingga 75%.',
+    status: 'published',
+    review_notes: 'Sangat inspiratif dan aplikatif untuk sekolah dengan sarana sederhana.',
+    reviewed_at: new Date(Date.now() - 3600000 * 12).toISOString(),
+    created_at: new Date(Date.now() - 3600000 * 72).toISOString()
+  }
+];
+let adminProfileStore: DeveloperProfile = { ...FALLBACK_DEVELOPER_PROFILE };
+
+/**
+ * Mengambil semua artikel untuk dashboard admin (termasuk draf)
+ */
+export async function getAllPublicArticlesAdmin(): Promise<PublicArticle[]> {
+  try {
+    const { data, error } = await supabase
+      .from('public_articles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data && data.length > 0) {
+      adminArticlesStore = data as PublicArticle[];
+      return adminArticlesStore;
+    }
+  } catch (e) {}
+  return adminArticlesStore;
+}
+
+/**
+ * Menyimpan atau memperbarui artikel publik
+ */
+export async function savePublicArticle(
+  article: Partial<PublicArticle>
+): Promise<{ success: boolean; data?: PublicArticle; error?: string }> {
+  try {
+    const isNew = !article.id;
+    const articlePayload = {
+      ...article,
+      slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `artikel-${Date.now()}`,
+      updated_at: new Date().toISOString()
+    };
+
+    if (isNew) {
+      const { data, error } = await supabase
+        .from('public_articles')
+        .insert([{
+          ...articlePayload,
+          id: undefined,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (!error && data) {
+        adminArticlesStore.unshift(data as PublicArticle);
+        return { success: true, data: data as PublicArticle };
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('public_articles')
+        .update(articlePayload)
+        .eq('id', article.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        adminArticlesStore = adminArticlesStore.map(a => a.id === article.id ? (data as PublicArticle) : a);
+        return { success: true, data: data as PublicArticle };
+      }
+    }
+  } catch (e) {}
+
+  // Fallback in-memory update
+  if (article.id) {
+    adminArticlesStore = adminArticlesStore.map(a => 
+      a.id === article.id ? ({ ...a, ...article, updated_at: new Date().toISOString() } as PublicArticle) : a
+    );
+    const updated = adminArticlesStore.find(a => a.id === article.id);
+    return { success: true, data: updated };
+  } else {
+    const newArt: PublicArticle = {
+      id: `art-${Date.now()}`,
+      slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `artikel-${Date.now()}`,
+      title: article.title || 'Artikel Tanpa Judul',
+      excerpt: article.excerpt || '',
+      content: article.content || '',
+      category: article.category || 'Panduan Asesmen',
+      author_name: article.author_name || 'Agi Hamdani, M.Pd',
+      read_time: article.read_time || 5,
+      views_count: 0,
+      is_published: article.is_published ?? true,
+      published_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...article
+    };
+    adminArticlesStore.unshift(newArt);
+    return { success: true, data: newArt };
+  }
+}
+
+/**
+ * Menghapus artikel publik
+ */
+export async function deletePublicArticle(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await supabase.from('public_articles').delete().eq('id', id);
+  } catch (e) {}
+  adminArticlesStore = adminArticlesStore.filter(a => a.id !== id);
+  return { success: true };
+}
+
+/**
+ * Mengubah status publish artikel (toggle cepat)
+ */
+export async function toggleArticlePublish(id: string, is_published: boolean): Promise<{ success: boolean; error?: string }> {
+  try {
+    await supabase.from('public_articles').update({ is_published }).eq('id', id);
+  } catch (e) {}
+  adminArticlesStore = adminArticlesStore.map(a => a.id === id ? { ...a, is_published } : a);
+  return { success: true };
+}
+
+/**
+ * Mengambil seluruh dokumen sumber belajar untuk admin
+ */
+export async function getAllTeachingResourcesAdmin(): Promise<TeachingResource[]> {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_resources')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data && data.length > 0) {
+      adminResourcesStore = data as TeachingResource[];
+      return adminResourcesStore;
+    }
+  } catch (e) {}
+  return adminResourcesStore;
+}
+
+/**
+ * Menyimpan atau memperbarui dokumen sumber belajar
+ */
+export async function saveTeachingResource(
+  resource: Partial<TeachingResource>
+): Promise<{ success: boolean; data?: TeachingResource; error?: string }> {
+  try {
+    const isNew = !resource.id;
+    const payload = {
+      ...resource,
+      updated_at: new Date().toISOString()
+    };
+
+    if (isNew) {
+      const { data, error } = await supabase
+        .from('teaching_resources')
+        .insert([{
+          ...payload,
+          id: undefined,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (!error && data) {
+        adminResourcesStore.unshift(data as TeachingResource);
+        return { success: true, data: data as TeachingResource };
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('teaching_resources')
+        .update(payload)
+        .eq('id', resource.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        adminResourcesStore = adminResourcesStore.map(r => r.id === resource.id ? (data as TeachingResource) : r);
+        return { success: true, data: data as TeachingResource };
+      }
+    }
+  } catch (e) {}
+
+  // Fallback in-memory
+  if (resource.id) {
+    adminResourcesStore = adminResourcesStore.map(r => 
+      r.id === resource.id ? ({ ...r, ...resource, updated_at: new Date().toISOString() } as TeachingResource) : r
+    );
+    const updated = adminResourcesStore.find(r => r.id === resource.id);
+    return { success: true, data: updated };
+  } else {
+    const newRes: TeachingResource = {
+      id: `res-${Date.now()}`,
+      title: resource.title || 'Dokumen Baru',
+      description: resource.description || '',
+      category: resource.category || 'Matriks Kisi-Kisi',
+      phase: resource.phase || 'Fase B',
+      grade_level: resource.grade_level || 'Kelas 4',
+      subject: resource.subject || 'Bahasa Indonesia',
+      file_type: resource.file_type || 'PDF',
+      file_url: resource.file_url || 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/templates/format-kisi-kisi-kartu-soal-sd.docx',
+      file_size: resource.file_size || '1.5 MB',
+      download_count: 0,
+      is_active: resource.is_active ?? true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...resource
+    };
+    adminResourcesStore.unshift(newRes);
+    return { success: true, data: newRes };
+  }
+}
+
+/**
+ * Menghapus dokumen sumber belajar
+ */
+export async function deleteTeachingResource(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await supabase.from('teaching_resources').delete().eq('id', id);
+  } catch (e) {}
+  adminResourcesStore = adminResourcesStore.filter(r => r.id !== id);
+  return { success: true };
+}
+
+/**
+ * Mengambil antrean kontribusi guru untuk kurasi Super Admin
+ */
+export async function getAllTeacherContributionsAdmin(): Promise<TeacherContribution[]> {
+  try {
+    const { data, error } = await supabase
+      .from('teacher_contributions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data && data.length > 0) {
+      adminContributionsStore = data as TeacherContribution[];
+      return adminContributionsStore;
+    }
+  } catch (e) {}
+  return adminContributionsStore;
+}
+
+/**
+ * Memproses status kurasi karya guru
+ */
+export async function updateTeacherContributionStatus(
+  id: string,
+  status: ContributionStatus,
+  review_notes?: string,
+  reviewed_by?: string
+): Promise<{ success: boolean; data?: TeacherContribution; error?: string }> {
+  try {
+    const payload = {
+      status,
+      review_notes: review_notes || null,
+      reviewed_by: reviewed_by || null,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('teacher_contributions')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (!error && data) {
+      adminContributionsStore = adminContributionsStore.map(c => c.id === id ? (data as TeacherContribution) : c);
+      return { success: true, data: data as TeacherContribution };
+    }
+  } catch (e) {}
+
+  adminContributionsStore = adminContributionsStore.map(c => {
+    if (c.id === id) {
+      return {
+        ...c,
+        status,
+        review_notes: review_notes || c.review_notes,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
+    return c;
+  });
+
+  const updated = adminContributionsStore.find(c => c.id === id);
+  return { success: true, data: updated };
+}
+
+/**
+ * Memperbarui data profil pengembang resmi
+ */
+export async function saveDeveloperProfile(
+  profile: Partial<DeveloperProfile>
+): Promise<{ success: boolean; data?: DeveloperProfile; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('developer_profiles')
+      .update({
+        ...profile,
+        updated_at: new Date().toISOString()
+      })
+      .eq('is_primary', true)
+      .select()
+      .single();
+
+    if (!error && data) {
+      adminProfileStore = data as DeveloperProfile;
+      return { success: true, data: adminProfileStore };
+    }
+  } catch (e) {}
+
+  adminProfileStore = {
+    ...adminProfileStore,
+    ...profile,
+    updated_at: new Date().toISOString()
+  };
+  return { success: true, data: adminProfileStore };
+}

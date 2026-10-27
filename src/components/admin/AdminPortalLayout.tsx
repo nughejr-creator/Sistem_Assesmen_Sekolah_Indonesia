@@ -9,6 +9,7 @@ import { BlueprintMatrix } from '../kisi-kisi/BlueprintMatrix';
 import { ExamAssembly } from '../exam/ExamAssembly';
 import { WriterAssignmentManager } from '../assignment/WriterAssignmentManager';
 import { DatabaseClusterManager } from './DatabaseClusterManager';
+import { AdminPortalManager } from './portal/AdminPortalManager';
 import { RoleSwitcher } from '../common/RoleSwitcher';
 import {
   LayoutDashboard,
@@ -30,7 +31,8 @@ import {
   CheckCircle2,
   Database,
   UserCheck,
-  ChevronDown
+  ChevronDown,
+  Globe
 } from 'lucide-react';
 
 interface AdminPortalLayoutProps {
@@ -48,7 +50,8 @@ export type AdminTab =
   | 'writer-assignments'
   | 'kisi-kisi'
   | 'exam-assembly'
-  | 'database-clusters';
+  | 'database-clusters'
+  | 'portal-manager';
 
 export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
   currentUser,
@@ -158,6 +161,18 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
       ]
     },
     ...(currentUser.role === 'super_admin' ? [
+      {
+        groupTitle: 'KONTEN & ZONA PUBLIK',
+        items: [
+          {
+            id: 'portal-manager' as AdminTab,
+            label: 'Manajer Portal Publik (CMS)',
+            icon: Globe,
+            badge: 'CMS Publik',
+            badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+          }
+        ]
+      },
       {
         groupTitle: 'INFRASTRUKTUR & SERVER',
         items: [
@@ -525,6 +540,11 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
             {/* 7. Manajemen Kluster Multi-Database (Super Admin) */}
             {activeTab === 'database-clusters' && isSuperAdmin && (
               <DatabaseClusterManager currentUser={currentUser} />
+            )}
+
+            {/* 8. Manajer Portal Publik CMS (Super Admin) */}
+            {activeTab === 'portal-manager' && isSuperAdmin && (
+              <AdminPortalManager currentUser={currentUser} />
             )}
 
           </div>
