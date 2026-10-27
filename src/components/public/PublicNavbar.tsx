@@ -214,19 +214,19 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
         <nav className="hidden lg:flex items-center space-x-2.5 xl:space-x-3">
           
           {/* -----------------------------------------------------------------
-              Pill 1: Soal & Asesmen (Crisp Blue Accent)
+              Pill 1: Soal & Asesmen (Vibrant Ocean / Sky Gradient)
           ----------------------------------------------------------------- */}
           <div className="relative group">
             <button
               type="button"
               onClick={() => handleRouteClick('wawasan-asesmen')}
-              className={`bg-white border border-slate-200/90 text-slate-700 hover:text-slate-900 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs transition-all duration-200 flex items-center gap-2.5 hover:shadow-sm cursor-pointer hover:border-blue-400 hover:bg-blue-50/60 hover:text-blue-700 ${
-                currentRoute === 'wawasan-asesmen' ? 'border-blue-500 bg-blue-50/70 text-blue-700 ring-2 ring-blue-500/20 font-bold' : ''
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-blue-100/90 via-sky-100 to-blue-50 hover:from-blue-200/90 hover:via-sky-200 hover:to-blue-100 text-blue-950 border border-blue-300/90 hover:border-blue-400 ${
+                currentRoute === 'wawasan-asesmen' ? 'ring-2 ring-blue-500/40 border-blue-500 from-blue-200 via-sky-200 to-blue-100 shadow-sm' : ''
               }`}
             >
-              <BookOpen className="w-4 h-4 text-blue-600 transition-colors" />
+              <BookOpen className="w-4 h-4 text-blue-700 transition-transform group-hover:scale-110" />
               <span>Soal & Asesmen</span>
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-blue-600/80 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown */}
@@ -249,19 +249,19 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           </div>
 
           {/* -----------------------------------------------------------------
-              Pill 2: Kisi-Kisi & Bank Soal (Crisp Indigo Accent)
+              Pill 2: Kisi-Kisi & Bank Soal (Vibrant Royal Indigo / Violet Gradient)
           ----------------------------------------------------------------- */}
           <div className="relative group">
             <button
               type="button"
               onClick={() => handleRouteClick('bank-soal')}
-              className={`bg-white border border-slate-200/90 text-slate-700 hover:text-slate-900 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs transition-all duration-200 flex items-center gap-2.5 hover:shadow-sm cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/60 hover:text-indigo-700 ${
-                currentRoute === 'bank-soal' ? 'border-indigo-500 bg-indigo-50/70 text-indigo-700 ring-2 ring-indigo-500/20 font-bold' : ''
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-indigo-100/90 via-violet-100 to-purple-50 hover:from-indigo-200/90 hover:via-violet-200 hover:to-purple-100 text-indigo-950 border border-indigo-300/90 hover:border-indigo-400 ${
+                currentRoute === 'bank-soal' ? 'ring-2 ring-indigo-500/40 border-indigo-500 from-indigo-200 via-violet-200 to-purple-100 shadow-sm' : ''
               }`}
             >
-              <Layers className="w-4 h-4 text-indigo-600 transition-colors" />
+              <Layers className="w-4 h-4 text-indigo-700 transition-transform group-hover:scale-110" />
               <span>Kisi-Kisi & Bank Soal</span>
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-indigo-600/80 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown */}
@@ -284,22 +284,22 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           </div>
 
           {/* -----------------------------------------------------------------
-              Pill 3: Ruang Kreativitas Guru (Crisp Amber Accent + Vibrant AI Badge)
+              Pill 3: Ruang Kreativitas Guru (Vibrant Sunset Amber / Peach Gradient)
           ----------------------------------------------------------------- */}
           <div className="relative group">
             <button
               type="button"
               onClick={() => handleRouteClick('ruang-kreativitas')}
-              className={`bg-white border border-slate-200/90 text-slate-700 hover:text-slate-900 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs transition-all duration-200 flex items-center gap-2.5 hover:shadow-sm cursor-pointer hover:border-amber-400 hover:bg-amber-50/60 hover:text-amber-800 ${
-                currentRoute === 'ruang-kreativitas' ? 'border-amber-500 bg-amber-50/70 text-amber-800 ring-2 ring-amber-500/20 font-bold' : ''
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-amber-100/90 via-orange-100 to-amber-50 hover:from-amber-200/90 hover:via-orange-200 hover:to-amber-100 text-amber-950 border border-amber-300/90 hover:border-amber-400 ${
+                currentRoute === 'ruang-kreativitas' ? 'ring-2 ring-amber-500/40 border-amber-500 from-amber-200 via-orange-200 to-amber-100 shadow-sm' : ''
               }`}
             >
-              <Sparkles className="w-4 h-4 text-amber-500 transition-colors" />
+              <Sparkles className="w-4 h-4 text-amber-700 transition-transform group-hover:scale-110" />
               <span>Ruang Kreativitas Guru</span>
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-xs">
+              <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-black text-[10px] px-1.5 py-0.5 rounded-md shadow-xs tracking-wider">
                 AI
               </span>
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-amber-700/80 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (2 Kategori: AI & Sumber Belajar) */}
@@ -419,21 +419,21 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             </button>
 
             {/* Akordeon 1: Soal & Asesmen */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+            <div className="border border-blue-200/90 rounded-xl overflow-hidden bg-gradient-to-r from-blue-100/70 via-sky-50 to-blue-50 shadow-2xs">
               <button
                 type="button"
                 onClick={() => toggleMobileAccordion('wawasan')}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-blue-950 hover:bg-blue-100/50 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  <BookOpen className="w-4 h-4 text-blue-700" />
                   <span>Soal & Asesmen</span>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${mobileAccordion === 'wawasan' ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-blue-700 transition-transform ${mobileAccordion === 'wawasan' ? 'rotate-180' : ''}`} />
               </button>
 
               {mobileAccordion === 'wawasan' && (
-                <div className="p-2 bg-white space-y-1 border-t border-slate-200">
+                <div className="p-2 bg-white space-y-1 border-t border-blue-200/80">
                   {wawasanItems.map((item) => (
                     <div
                       key={item.label}
@@ -449,21 +449,21 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             </div>
 
             {/* Akordeon 2: Kisi-Kisi & Bank Soal */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+            <div className="border border-indigo-200/90 rounded-xl overflow-hidden bg-gradient-to-r from-indigo-100/70 via-violet-50 to-purple-50 shadow-2xs">
               <button
                 type="button"
                 onClick={() => toggleMobileAccordion('bank')}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-indigo-950 hover:bg-indigo-100/50 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <Layers className="w-4 h-4 text-indigo-700" />
                   <span>Kisi-Kisi & Bank Soal</span>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${mobileAccordion === 'bank' ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-indigo-700 transition-transform ${mobileAccordion === 'bank' ? 'rotate-180' : ''}`} />
               </button>
 
               {mobileAccordion === 'bank' && (
-                <div className="p-2 bg-white space-y-1 border-t border-slate-200">
+                <div className="p-2 bg-white space-y-1 border-t border-indigo-200/80">
                   {bankSoalItems.map((item) => (
                     <div
                       key={item.label}
@@ -479,20 +479,20 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             </div>
 
             {/* Akordeon 3: Ruang Kreativitas Guru */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+            <div className="border border-amber-200/90 rounded-xl overflow-hidden bg-gradient-to-r from-amber-100/70 via-orange-50 to-amber-50 shadow-2xs">
               <button
                 type="button"
                 onClick={() => toggleMobileAccordion('kreativitas')}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-800 hover:bg-slate-100 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-amber-950 hover:bg-amber-100/50 transition-colors"
               >
                 <div className="flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <Sparkles className="w-4 h-4 text-amber-700" />
                   <span>Ruang Kreativitas Guru</span>
-                  <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-1.5 py-0.5 rounded text-[9px]">
+                  <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-black px-1.5 py-0.5 rounded text-[9px] tracking-wider">
                     AI
                   </span>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${mobileAccordion === 'kreativitas' ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-amber-700 transition-transform ${mobileAccordion === 'kreativitas' ? 'rotate-180' : ''}`} />
               </button>
 
               {mobileAccordion === 'kreativitas' && (
