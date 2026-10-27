@@ -6,16 +6,16 @@ export const PrivacyPolicyPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       
       {/* Header */}
-      <section className="bg-slate-900 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-4xl mx-auto space-y-3">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-400/30">
+      <section className="bg-slate-900 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-4xl mx-auto space-y-2">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[11px] font-bold border border-rose-400/30">
             <Lock className="w-3.5 h-3.5" />
             <span>Kepatuhan Hukum & Privasi Pengguna</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
             Kebijakan Privasi (Privacy Policy)
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <p className="text-xs text-slate-300">
             Terakhir diperbarui: 27 Oktober 2026 • Berlaku untuk seluruh ekosistem sasipedia.my.id
           </p>
         </div>

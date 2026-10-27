@@ -86,23 +86,23 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
       {/* =======================================================================
           1. HEADER BANNER
       ======================================================================= */}
-      <section className="bg-gradient-to-b from-sky-950 via-slate-900 to-slate-950 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-5xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 text-xs font-bold border border-sky-400/30">
+      <section className="bg-gradient-to-b from-sky-950 via-slate-900 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-5xl mx-auto text-center space-y-2">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[11px] font-bold border border-sky-400/30">
             <BookOpen className="w-3.5 h-3.5" />
             <span>Pusat Literasi & Evaluasi Pembelajaran</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
             Wawasan Soal & Asesmen Sekolah
           </h1>
 
-          <p className="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
+          <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
             Kumpulan panduan penulisan soal bermutu, bedah stimulus Asesmen Kompetensi Minimum (AKM), analisis daya beda butir, serta pedoman rubrik penilaian bagi pendidik di Indonesia.
           </p>
 
           {/* Quick Search Bar */}
-          <div className="max-w-xl mx-auto pt-4">
+          <div className="max-w-xl mx-auto pt-2">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
@@ -110,7 +110,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari topik panduan soal, stimulus AKM, atau rubrik penskoran..."
-                className="w-full pl-11 pr-4 py-3 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-sky-400 backdrop-blur-xs transition-all shadow-inner"
+                className="w-full pl-11 pr-4 py-2.5 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-sky-400 backdrop-blur-xs transition-all shadow-inner"
               />
             </div>
           </div>

@@ -36,36 +36,36 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       
       {/* Banner Profil */}
-      <section className="bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8">
+      <section className="bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white py-8 sm:py-10 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6">
           
           {/* Avatar / Foto */}
-          <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-tr from-sky-500 to-emerald-400 p-1 shadow-xl shrink-0">
-            <div className="w-full h-full rounded-[22px] bg-slate-900 flex items-center justify-center overflow-hidden">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-sky-500 to-emerald-400 p-0.5 shadow-lg shrink-0">
+            <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center overflow-hidden">
               <img 
                 src={profile.avatar_url || '/sasipedia-icon.png'} 
                 alt={profile.full_name}
-                className="w-20 sm:w-24 h-auto object-contain"
+                className="w-14 sm:w-16 h-auto object-contain"
               />
             </div>
           </div>
 
           {/* Bio Singkat */}
-          <div className="space-y-3 text-center md:text-left">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-400/30">
+          <div className="space-y-1.5 text-center md:text-left">
+            <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/30">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Standar E-E-A-T: Pengembang & Inisiator Resmi</span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
               {profile.full_name}
             </h1>
 
-            <p className="text-sm font-bold text-sky-400">
+            <p className="text-xs sm:text-sm font-bold text-sky-400">
               {profile.title}
             </p>
 
-            <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+            <p className="text-xs text-slate-300 leading-normal max-w-xl">
               {profile.role_description}
             </p>
           </div>

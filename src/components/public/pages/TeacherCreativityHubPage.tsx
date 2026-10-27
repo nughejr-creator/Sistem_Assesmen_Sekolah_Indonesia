@@ -56,18 +56,18 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
       {/* =======================================================================
           1. HEADER BANNER
       ======================================================================= */}
-      <section className="bg-gradient-to-b from-amber-950 via-slate-900 to-slate-950 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-5xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-400/30">
+      <section className="bg-gradient-to-b from-amber-950 via-slate-900 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-5xl mx-auto text-center space-y-2">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-400/30">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Pusat Produktivitas & Kreativitas Pendidik Indonesia</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
             Ruang Kreativitas Guru
           </h1>
 
-          <p className="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
+          <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
             One-Stop Educator Hub: Asisten Prompt AI cerdas 6 alur mengajar, ruang publikasi karya guru, repositori perangkat ajar Kurikulum Merdeka, serta unduhan administrasi kelas gratis.
           </p>
         </div>

@@ -190,7 +190,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 shadow-xs transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-6 md:px-10 h-20 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 flex items-center justify-between gap-3">
         
         {/* =====================================================================
             1. BRAND LOGO (Klik -> Kembali ke Beranda, Jelas & Proporsional)
@@ -198,20 +198,20 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
         <button
           type="button"
           onClick={() => handleRouteClick('beranda')}
-          className="flex items-center space-x-3 group focus:outline-hidden"
+          className="flex items-center space-x-2.5 group focus:outline-hidden"
           title="Kembali ke Beranda SASIPEDIA"
         >
           <img 
             src="/sasipedia-logo.png" 
             alt="SASIPEDIA - Sistem Asesmen Sekolah Indonesia" 
-            className="h-9 sm:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
           />
         </button>
 
         {/* =====================================================================
             2. DESKTOP NAVIGATION (Modern Crisp Pill Buttons + Clean Dropdown)
         ===================================================================== */}
-        <nav className="hidden lg:flex items-center space-x-2.5 xl:space-x-3">
+        <nav className="hidden lg:flex items-center space-x-2 xl:space-x-2.5">
           
           {/* -----------------------------------------------------------------
               Pill 1: Soal & Asesmen (Vibrant Ocean / Sky Gradient)
@@ -220,13 +220,13 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <button
               type="button"
               onClick={() => handleRouteClick('wawasan-asesmen')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-blue-100/90 via-sky-100 to-blue-50 hover:from-blue-200/90 hover:via-sky-200 hover:to-blue-100 text-blue-950 border-2 border-blue-400 hover:border-blue-600 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer bg-gradient-to-r from-blue-100/90 via-sky-100 to-blue-50 hover:from-blue-200/90 hover:via-sky-200 hover:to-blue-100 text-blue-950 border-2 border-blue-400 hover:border-blue-600 ${
                 currentRoute === 'wawasan-asesmen' ? 'ring-2 ring-blue-500/40 border-blue-600 from-blue-200 via-sky-200 to-blue-100 shadow-sm' : ''
               }`}
             >
-              <BookOpen className="w-4 h-4 text-blue-700 transition-transform group-hover:scale-110" />
+              <BookOpen className="w-3.5 h-3.5 text-blue-700 transition-transform group-hover:scale-110" />
               <span>Soal & Asesmen</span>
-              <ChevronDown className="w-4 h-4 text-blue-600 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
@@ -255,13 +255,13 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <button
               type="button"
               onClick={() => handleRouteClick('bank-soal')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-indigo-100/90 via-violet-100 to-purple-50 hover:from-indigo-200/90 hover:via-violet-200 hover:to-purple-100 text-indigo-950 border-2 border-indigo-400 hover:border-indigo-600 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer bg-gradient-to-r from-indigo-100/90 via-violet-100 to-purple-50 hover:from-indigo-200/90 hover:via-violet-200 hover:to-purple-100 text-indigo-950 border-2 border-indigo-400 hover:border-indigo-600 ${
                 currentRoute === 'bank-soal' ? 'ring-2 ring-indigo-500/40 border-indigo-600 from-indigo-200 via-violet-200 to-purple-100 shadow-sm' : ''
               }`}
             >
-              <Layers className="w-4 h-4 text-indigo-700 transition-transform group-hover:scale-110" />
+              <Layers className="w-3.5 h-3.5 text-indigo-700 transition-transform group-hover:scale-110" />
               <span>Kisi-Kisi & Bank Soal</span>
-              <ChevronDown className="w-4 h-4 text-indigo-600 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-3.5 h-3.5 text-indigo-600 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
@@ -290,16 +290,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <button
               type="button"
               onClick={() => handleRouteClick('ruang-kreativitas')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-amber-100/90 via-orange-100 to-amber-50 hover:from-amber-200/90 hover:via-orange-200 hover:to-amber-100 text-amber-950 border-2 border-amber-400 hover:border-amber-600 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer bg-gradient-to-r from-amber-100/90 via-orange-100 to-amber-50 hover:from-amber-200/90 hover:via-orange-200 hover:to-amber-100 text-amber-950 border-2 border-amber-400 hover:border-amber-600 ${
                 currentRoute === 'ruang-kreativitas' ? 'ring-2 ring-amber-500/40 border-amber-600 from-amber-200 via-orange-200 to-amber-100 shadow-sm' : ''
               }`}
             >
-              <Sparkles className="w-4 h-4 text-amber-700 transition-transform group-hover:scale-110" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-700 transition-transform group-hover:scale-110" />
               <span>Ruang Kreativitas Guru</span>
-              <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-black text-[10px] px-1.5 py-0.5 rounded-md shadow-xs tracking-wider">
+              <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-md shadow-xs tracking-wider">
                 AI
               </span>
-              <ChevronDown className="w-4 h-4 text-amber-700 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-3.5 h-3.5 text-amber-700 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
@@ -352,21 +352,21 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
         {/* =====================================================================
             3. TOMBOL AKSI KANAN (CTA): ASESMEN CBT & PORTAL PETUGAS
         ===================================================================== */}
-        <div className="hidden lg:flex items-center space-x-3">
+        <div className="hidden lg:flex items-center space-x-2.5">
           <button
             type="button"
             onClick={handleCbtClick}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:via-teal-700 hover:to-sky-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30 flex items-center space-x-2 transition-all transform active:scale-95 group"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:via-teal-700 hover:to-sky-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30 flex items-center space-x-1.5 transition-all transform active:scale-95 group"
           >
-            <GraduationCap className="w-4 h-4 text-emerald-100 transition-transform group-hover:rotate-12" />
+            <GraduationCap className="w-3.5 h-3.5 text-emerald-100 transition-transform group-hover:rotate-12" />
             <span className="tracking-wide">Asesmen CBT</span>
-            <ArrowRight className="w-3.5 h-3.5 text-white/80 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="w-3 h-3 text-white/80 transition-transform group-hover:translate-x-0.5" />
           </button>
 
           <button
             type="button"
             onClick={() => onOpenLogin('officer')}
-            className="bg-[#070d1e] hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold shadow-xs text-xs flex items-center space-x-2 transition-all"
+            className="bg-[#070d1e] hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl font-semibold shadow-xs text-xs flex items-center space-x-1.5 transition-all"
             title="Portal Guru, Proktor, & Administrator"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />

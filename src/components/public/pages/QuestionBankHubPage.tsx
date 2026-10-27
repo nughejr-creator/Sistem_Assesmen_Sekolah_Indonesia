@@ -90,23 +90,23 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
       {/* =======================================================================
           1. HEADER BANNER
       ======================================================================= */}
-      <section className="bg-gradient-to-b from-slate-900 via-sky-950 to-slate-950 text-white py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-5xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-400/30">
+      <section className="bg-gradient-to-b from-slate-900 via-sky-950 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-5xl mx-auto text-center space-y-2">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/30">
             <Layers className="w-3.5 h-3.5" />
             <span>Katalog Instrumen & Repositori Soal Terstandar</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
             Kisi-Kisi & Bank Soal Asesmen Nasional
           </h1>
 
-          <p className="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
+          <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
             Daftar matriks kisi-kisi Kurikulum Merdeka (Fase A, B, dan C), paket naskah kartu soal terstandar, serta instrumen asesmen diagnostik siap unduh untuk jenjang Sekolah Dasar.
           </p>
 
           {/* Quick Search */}
-          <div className="max-w-xl mx-auto pt-3">
+          <div className="max-w-xl mx-auto pt-2">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
@@ -114,7 +114,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari materi pokok, tema kisi-kisi, atau kartu soal..."
-                className="w-full pl-11 pr-4 py-3 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-emerald-400 backdrop-blur-xs transition-all shadow-inner"
+                className="w-full pl-11 pr-4 py-2.5 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-emerald-400 backdrop-blur-xs transition-all shadow-inner"
               />
             </div>
           </div>
