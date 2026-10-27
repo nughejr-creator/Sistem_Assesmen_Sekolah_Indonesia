@@ -47,6 +47,9 @@ import {
   uploadEducationalResourceFile
 } from '../../../lib/publicPortalService';
 import { UserProfile } from '../../../types/database';
+import { WordRibbonEditor } from './WordRibbonEditor';
+import { PublicArticlePreviewModal } from './PublicArticlePreviewModal';
+import { calculateReadTime } from '../../../lib/safeHtmlSanitizer';
 
 interface AdminPortalManagerProps {
   currentUser: UserProfile;
@@ -63,6 +66,7 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
   const [editingArticle, setEditingArticle] = useState<Partial<PublicArticle> | null>(null);
   const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   const [previewArticle, setPreviewArticle] = useState<PublicArticle | null>(null);
+  const [tagsInputValue, setTagsInputValue] = useState('');
 
   // ===========================================================================
   // TAB 2: RESOURCES STATE
@@ -113,15 +117,19 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       category: 'Panduan Asesmen',
       excerpt: '',
       content: '',
+      featured_image: '',
+      tags: [],
       read_time: 5,
       is_published: true,
       author_name: currentUser.full_name || 'Agi Hamdani, M.Pd'
     });
+    setTagsInputValue('');
     setIsArticleModalOpen(true);
   };
 
   const handleEditArticle = (art: PublicArticle) => {
     setEditingArticle({ ...art });
+    setTagsInputValue(art.tags ? art.tags.join(', ') : '');
     setIsArticleModalOpen(true);
   };
 
@@ -138,11 +146,27 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
     setArticles(prev => prev.map(a => a.id === art.id ? { ...a, is_published: newStatus } : a));
   };
 
-  const handleSaveArticle = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingArticle?.title?.trim()) return;
+  const handleSaveArticleWithStatus = async (isPublished: boolean) => {
+    if (!editingArticle?.title?.trim()) {
+      alert('Judul artikel wajib diisi!');
+      return;
+    }
 
-    const res = await savePublicArticle(editingArticle);
+    const tagsArray = tagsInputValue
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+
+    const calculatedTime = calculateReadTime(editingArticle.content || '');
+
+    const updatedArticle: Partial<PublicArticle> = {
+      ...editingArticle,
+      is_published: isPublished,
+      tags: tagsArray,
+      read_time: editingArticle.read_time && editingArticle.read_time > 0 ? editingArticle.read_time : calculatedTime
+    };
+
+    const res = await savePublicArticle(updatedArticle);
     if (res.success && res.data) {
       setArticles(prev => {
         const idx = prev.findIndex(a => a.id === res.data?.id);
@@ -156,6 +180,36 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       setIsArticleModalOpen(false);
       setEditingArticle(null);
     }
+  };
+
+  const handleOpenPreviewFromForm = () => {
+    if (!editingArticle) return;
+    const tagsArray = tagsInputValue
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+    const calculatedTime = calculateReadTime(editingArticle.content || '');
+
+    setPreviewArticle({
+      id: editingArticle.id || 'preview-temp',
+      slug: editingArticle.slug || 'pratinjau-artikel',
+      title: editingArticle.title || 'Tanpa Judul',
+      category: editingArticle.category || 'Panduan Asesmen',
+      excerpt: editingArticle.excerpt || '',
+      content: editingArticle.content || '',
+      author_name: editingArticle.author_name || currentUser.full_name || 'Agi Hamdani, M.Pd',
+      read_time: editingArticle.read_time && editingArticle.read_time > 0 ? editingArticle.read_time : calculatedTime,
+      views_count: editingArticle.views_count || 1,
+      is_published: editingArticle.is_published ?? true,
+      featured_image: editingArticle.featured_image || null,
+      tags: tagsArray,
+      published_at: editingArticle.published_at || new Date().toISOString()
+    });
+  };
+
+  const handleSaveArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSaveArticleWithStatus(editingArticle?.is_published ?? true);
   };
 
   // ===========================================================================
@@ -740,105 +794,258 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       )}
 
       {/* =======================================================================
-          MODAL 1: FORM TAMBAH / SUNTING ARTIKEL
+          MODAL 1: FORM TAMBAH / SUNTING ARTIKEL DENGAN WORD RIBBON WYSIWYG
       ======================================================================= */}
       {isArticleModalOpen && editingArticle && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[96vh] overflow-hidden flex flex-col shadow-2xl border-2 border-slate-300">
             
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-                {editingArticle.id ? 'Sunting Artikel Publik' : 'Tulis Artikel Wawasan Baru'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsArticleModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveArticle} className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Judul Artikel <span className="text-rose-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={editingArticle.title || ''}
-                  onChange={(e) => setEditingArticle({ ...editingArticle, title: e.target.value })}
-                  placeholder="Kaidah Baku Penulisan Soal..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Kategori</label>
-                  <select
-                    value={editingArticle.category}
-                    onChange={(e) => setEditingArticle({ ...editingArticle, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
-                  >
-                    <option>Panduan Asesmen</option>
-                    <option>Bedah AKM</option>
-                    <option>Analisis Butir</option>
-                    <option>Rubrik & Penskoran</option>
-                    <option>Wawasan Kurikulum</option>
-                  </select>
+            {/* Top Header & Integrated Action Bar */}
+            <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center font-bold text-white shadow-xs">
+                  <BookOpen className="w-4 h-4" />
                 </div>
-
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Estimasi Waktu Baca (Menit)</label>
-                  <input
-                    type="number"
-                    value={editingArticle.read_time || 5}
-                    onChange={(e) => setEditingArticle({ ...editingArticle, read_time: parseInt(e.target.value) || 5 })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-100">
+                      {editingArticle.id ? 'Sunting Artikel Publik' : 'Tulis Artikel Wawasan Baru'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      editingArticle.is_published 
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}>
+                      {editingArticle.is_published ? 'Publik' : 'Draf'}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    Sistem Asesmen Sekolah Indonesia • WYSIWYG Ribbon Content Editor
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Ringkasan Singkat (Excerpt)</label>
-                <textarea
-                  rows={2}
-                  value={editingArticle.excerpt || ''}
-                  onChange={(e) => setEditingArticle({ ...editingArticle, excerpt: e.target.value })}
-                  placeholder="Deskripsi singkat yang tampil pada kartu artikel..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs resize-none"
-                />
-              </div>
+              {/* Action Bar Atas: Preview, Simpan Draf, Terbitkan */}
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleOpenPreviewFromForm}
+                  className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-black transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
+                  title="Lihat simulasi visual artikel seperti tampilan pembaca publik"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Preview Tampilan Publik</span>
+                </button>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Isi Konten Lengkap (Format Markdown) <span className="text-rose-500">*</span></label>
-                <textarea
-                  rows={10}
-                  required
-                  value={editingArticle.content || ''}
-                  onChange={(e) => setEditingArticle({ ...editingArticle, content: e.target.value })}
-                  placeholder="Gunakan tanda ## untuk Heading, - untuk daftar poin, dsb."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono leading-relaxed resize-y"
-                />
-              </div>
+                <button
+                  type="button"
+                  onClick={() => handleSaveArticleWithStatus(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center space-x-1.5 border border-slate-700 active:scale-95"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Simpan Draf</span>
+                </button>
 
-              <div className="px-6 py-4 -mx-6 -mb-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleSaveArticleWithStatus(true)}
+                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all flex items-center space-x-1.5 shadow-sm active:scale-95"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{editingArticle.id ? 'Simpan Perubahan' : 'Terbitkan Sekarang'}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsArticleModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold"
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 >
-                  Batal
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+            </div>
+
+            {/* Form Fields & Rich Editor Body */}
+            <div className="p-5 overflow-y-auto space-y-4 text-xs bg-slate-50/50 flex-1">
+              
+              {/* Card Pengaturan Metadata Artikel */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                
+                {/* Judul Artikel */}
+                <div>
+                  <label className="block font-black text-slate-800 mb-1">
+                    Judul Utama Artikel <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingArticle.title || ''}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, title: e.target.value })}
+                    placeholder="Contoh: Kaidah Baku Perumusan Stimulus Soal AKM Literasi SD..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-bold text-slate-900 focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
+                  />
+                </div>
+
+                {/* Grid Baris 1: Kategori, Waktu Baca, Status, Penulis */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Kategori / Rubrik</label>
+                    <select
+                      value={editingArticle.category}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, category: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    >
+                      <option>Panduan Asesmen</option>
+                      <option>Bedah AKM</option>
+                      <option>Analisis Butir</option>
+                      <option>Rubrik & Penskoran</option>
+                      <option>Wawasan Kurikulum</option>
+                      <option>Berita & Pengumuman</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Waktu Baca (Menit)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={editingArticle.read_time || 5}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, read_time: parseInt(e.target.value) || 5 })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Status Publikasi</label>
+                    <select
+                      value={editingArticle.is_published ? 'publish' : 'draft'}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, is_published: e.target.value === 'publish' })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    >
+                      <option value="publish">Publik (Dapat Dibaca Semua Guru)</option>
+                      <option value="draft">Draf (Hanya Admin)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Nama Penulis / Asesor</label>
+                    <input
+                      type="text"
+                      value={editingArticle.author_name || ''}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, author_name: e.target.value })}
+                      placeholder="Agi Hamdani, M.Pd"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Grid Baris 2: Tag & URL Thumbnail */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Tag / Kata Kunci <span className="text-slate-400 font-normal">(Pisahkan dengan koma)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={tagsInputValue}
+                      onChange={(e) => setTagsInputValue(e.target.value)}
+                      placeholder="AKM, Literasi, SD, Kurikulum Merdeka"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">URL Gambar Sampul (Thumbnail)</label>
+                    <input
+                      type="url"
+                      value={editingArticle.featured_image || ''}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, featured_image: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Ringkasan Singkat (Excerpt) */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Ringkasan Singkat (Excerpt / Cuplikan Kartu)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editingArticle.excerpt || ''}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, excerpt: e.target.value })}
+                    placeholder="Tulis ringkasan singkat artikel dalam 1-2 kalimat untuk ditampilkan pada kartu beranda..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs resize-none"
+                  />
+                </div>
+
+              </div>
+
+              {/* Editor Konten Utama (WYSIWYG Ribbon Ala Microsoft Word) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-black text-slate-800 text-xs flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Isi Konten & Naskah Lengkap (Word Ribbon Rich Text Editor)</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[11px] text-slate-500">
+                    Mendukung font Word, tabel, KaTeX equation, gambar, & simbol khusus
+                  </span>
+                </div>
+
+                <WordRibbonEditor
+                  value={editingArticle.content || ''}
+                  onChange={(html) => setEditingArticle(prev => prev ? { ...prev, content: html } : prev)}
+                  placeholder="Ketik naskah artikel wawasan asesmen di sini..."
+                  minHeight="360px"
+                />
+              </div>
+
+            </div>
+
+            {/* Bottom Footer Action Bar */}
+            <div className="px-5 py-3 bg-white border-t border-slate-200 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setIsArticleModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50"
+              >
+                Batal & Tutup
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleOpenPreviewFromForm}
+                  className="px-4 py-2 rounded-xl bg-sky-50 border border-sky-300 text-sky-800 hover:bg-sky-100 text-xs font-black transition-all flex items-center space-x-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Preview Tampilan Publik</span>
                 </button>
 
                 <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black shadow-md"
+                  type="button"
+                  onClick={() => handleSaveArticleWithStatus(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-bold"
                 >
-                  Simpan & Terbitkan
+                  Simpan Draf
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSaveArticleWithStatus(true)}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md flex items-center space-x-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{editingArticle.id ? 'Simpan Perubahan' : 'Terbitkan Sekarang'}</span>
                 </button>
               </div>
-            </form>
+            </div>
 
           </div>
         </div>
@@ -1074,48 +1281,14 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       )}
 
       {/* =======================================================================
-          MODAL 4: PRATINJAU ARTIKEL LENGKAP
+          MODAL 4: PRATINJAU PUBLIK RESMI (RESPONSIVE VIEWPORT & FULL RENDER)
       ======================================================================= */}
       {previewArticle && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-                Pratinjau Tampilan Artikel
-              </span>
-              <button
-                type="button"
-                onClick={() => setPreviewArticle(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-sky-100 text-sky-800">
-                {previewArticle.category}
-              </span>
-              <h2 className="text-lg font-black text-slate-900">{previewArticle.title}</h2>
-              <div className="text-[11px] text-slate-400 pb-3 border-b border-slate-100">
-                Oleh {previewArticle.author_name} • {previewArticle.read_time} menit baca
-              </div>
-              <div className="text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">
-                {previewArticle.content}
-              </div>
-            </div>
-
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setPreviewArticle(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
+        <PublicArticlePreviewModal
+          isOpen={!!previewArticle}
+          onClose={() => setPreviewArticle(null)}
+          article={previewArticle}
+        />
       )}
 
     </div>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PublicArticle } from '../../../types/publicPortal';
 import { getPublicArticles } from '../../../lib/publicPortalService';
+import { formatArticleContent } from '../../../lib/safeHtmlSanitizer';
 
 interface AssessmentInsightsPageProps {
   onOpenLogin: (tab: 'student' | 'officer') => void;
@@ -221,9 +222,10 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
               </div>
 
               {/* Article Content */}
-              <div className="text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4 pt-2 whitespace-pre-line border-t-2 border-slate-100 font-sans text-justify">
-                {selectedArticle.content}
-              </div>
+              <div 
+                className="text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4 pt-2 border-t-2 border-slate-100 font-sans text-justify article-rendered-body"
+                dangerouslySetInnerHTML={{ __html: formatArticleContent(selectedArticle.content) }}
+              />
 
               {/* Call to Action Box */}
               <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-sky-50 to-teal-50 border-2 border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-4">

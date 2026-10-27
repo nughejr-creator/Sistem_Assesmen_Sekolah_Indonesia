@@ -16,6 +16,7 @@ export interface PublicArticle {
   author_name: string;
   author_id?: string | null;
   featured_image?: string | null;
+  tags?: string[] | null;
   read_time: number;
   views_count: number;
   is_published: boolean;
