@@ -3,7 +3,8 @@ import {
   PublicArticle, 
   TeachingResource, 
   TeacherContribution, 
-  DeveloperProfile 
+  DeveloperProfile,
+  BlueprintMatrixRow 
 } from '../types/publicPortal';
 
 // ==============================================================================
@@ -47,21 +48,28 @@ export const FALLBACK_PUBLIC_ARTICLES: PublicArticle[] = [
     content: `## Pendahuluan
 Penulisan butir soal yang bermutu merupakan prasyarat utama dalam memperoleh data capaian kompetensi peserta didik yang valid dan reliabel. Pada jenjang Sekolah Dasar, butir soal harus memperhatikan perkembangan kognitif anak serta menggunakan bahasa yang lugas dan tidak menimbulkan penafsiran ganda.
 
-### 1. Kaidah Materi
-- Soal harus sesuai dengan indikator pencapaian kompetensi dalam kisi-kisi.
-- Pilihan jawaban harus homogen dan logis ditinjau dari segi materi.
-- Setiap butir soal harus mempunyai satu jawaban yang benar atau paling tepat.
+---
 
-### 2. Kaidah Konstruksi
-- Pokok soal harus dirumuskan secara jelas dan tegas.
-- Pokok soal tidak boleh memberi petunjuk ke arah jawaban yang benar.
-- Pokok soal tidak boleh mengandung pernyataan yang bersifat negatif ganda.
-- Pilihan jawaban tidak mengandung pernyataan "Semua pilihan jawaban di atas salah" atau sejenisnya.
+### 1. Kaidah Materi (Content Validity)
+- **Kesesuaian Indikator:** Butir soal harus mengukur indikator pencapaian kompetensi yang telah dirumuskan dalam kisi-kisi.
+- **Homogenitas Opsi:** Pilihan jawaban (distractor) harus homogen dan logis ditinjau dari materi yang diujikan.
+- **Ketunggalan Jawaban:** Setiap butir soal pilihan ganda hanya memiliki satu kunci jawaban yang benar atau paling tepat.
+- **Bebas Bias Budaya & SARA:** Pokok soal tidak boleh merugikan kelompok suku, agama, ras, atau gender tertentu.
 
-### 3. Kaidah Bahasa
-- Menggunakan bahasa yang sesuai dengan kaidah Bahasa Indonesia baku.
-- Menggunakan bahasa yang komunikatif dan sesuai jenjang usia peserta didik.
-- Pilihan jawaban tidak mengulang kata atau frase yang bukan merupakan satu kesatuan pengertian.`,
+---
+
+### 2. Kaidah Konstruksi (Structural Rules)
+- **Ketegasan Pokok Soal:** Pokok soal (stem) dirumuskan dengan jelas, ringkas, dan tidak mengandung kalimat pengantar yang tidak perlu.
+- **Bebas Petunjuk Kunci:** Pokok soal tidak boleh secara terselubung memberi petunjuk (*clue*) ke arah jawaban yang benar.
+- **Hindari Negatif Ganda:** Hindari penggunaan kata seperti *"tidak"*, *"bukan"*, atau *"kecuali"* jika memungkinkan. Jika terpaksa digunakan, kata tersebut wajib dicetak tebal (*bold*) atau diberi garis bawah.
+- **Larangan Opsi Absolut:** Pilihan jawaban tidak boleh berbunyi *"Semua jawaban di atas benar"* atau *"Semua pilihan salah"* karena mengaburkan daya ukur butir soal.
+
+---
+
+### 3. Kaidah Bahasa & Komunikasi
+- **Bahasa Baku & Ramah Anak:** Menggunakan kaidah Bahasa Indonesia yang baik dan benar dengan tingkat keterbacaan yang sesuai usia siswa SD.
+- **Efisiensi Kata:** Pilihan jawaban tidak mengulang kata atau frase yang sama jika dapat ditarik ke dalam pokok soal.
+- **Panjang Opsi Seimbang:** Panjang pilihan jawaban diupayakan relatif sama agar tidak memicu siswa menebak opsi terpanjang.`,
     category: 'Panduan Asesmen',
     author_name: 'Agi Hamdani, M.Pd',
     read_time: 6,
@@ -73,16 +81,27 @@ Penulisan butir soal yang bermutu merupakan prasyarat utama dalam memperoleh dat
     id: 'art-2',
     slug: 'bedah-instrumen-akm-literasi-numerasi-fase-c',
     title: 'Bedah Tuntas Karakteristik Stimulus AKM Literasi dan Numerasi Fase C (Kelas 5-6 SD)',
-    excerpt: 'Memahami anatomi stimulus teks informasi, teks sastra, serta konteks saintifik-sosial budaya dalam Asesmen Kompetensi Minimum.',
-    content: `## Memahami Stimulus AKM
-Berbeda dengan ujian konvensional yang kerap menguji hafalan rumus atau definisi semata, Asesmen Kompetensi Minimum (AKM) menakar daya nalar peserta didik dalam memproses informasi dan memecahkan persoalan dunia nyata.
+    excerpt: 'Memahami anatomi stimulus teks informasi, teks fiksi, serta konteks saintifik-sosial budaya dalam Asesmen Kompetensi Minimum.',
+    content: `## Memahami Anatomi Stimulus AKM
+Asesmen Kompetensi Minimum (AKM) menakar daya nalar peserta didik dalam memproses informasi dan memecahkan persoalan dunia nyata. Keberhasilan butir AKM 80% ditentukan oleh kualitas stimulus yang disajikan.
+
+---
 
 ### Karakteristik Stimulus Literasi Membaca
-1. **Teks Informasi:** Menyajikan fakta, data grafis, atau infografik yang menuntut peserta didik menemukan informasi eksplisit, membuat inferensi, serta mengevaluasi kredibilitas teks.
-2. **Teks Fiksi / Sastra:** Menggali refleksi emosional, amanat cerita, dan keterkaitan nilai-nilai karakter dengan kehidupan sehari-hari.
+1. **Teks Informasi (Expository):** 
+   - Menyajikan fakta, tabel perbandingan, diagram alur, atau infografik ilmiah sederhana.
+   - Menguji 3 level kognitif: Menemukan informasi (*Retrieve & Access*), Memahami dan menginterpretasi (*Interpret & Integrate*), serta Merefleksi & mengevaluasi pesan teks (*Evaluate & Reflect*).
+2. **Teks Sastra / Fiksi:** 
+   - Mengangkat narasi cerita rakyat, fabel bermakna budi pekerti, atau kisah inspiratif persahabatan anak.
+   - Menggali pemahaman amanat implisit, karakter tokoh, dan sudut pandang pencerita.
+
+---
 
 ### Karakteristik Stimulus Numerasi
-Numerasi berfokus pada penerapan konsep matematika (Bilangan, Aljabar, Geometri, Data & Ketidakpastian) dalam tiga domain konteks: Personal, Sosial Budaya, dan Saintifik.`,
+Numerasi bukan sekadar berhitung cepat, melainkan bernalar matematis dalam tiga domain konteks:
+- **Konteks Personal:** Berkaitan langsung dengan aktivitas harian anak (jadwal bermain, tabungan jajan, resep kue keluarga).
+- **Konteks Sosial Budaya:** Tradisi pasar tradisional, kerajinan daerah, atau statistik kegiatan gotong royong warga desa.
+- **Konteks Saintifik:** Pengukuran suhu cuaca, daur hidup serangga, atau kecepatan sepeda.`,
     category: 'Bedah AKM',
     author_name: 'Agi Hamdani, M.Pd',
     read_time: 8,
@@ -96,73 +115,198 @@ Numerasi berfokus pada penerapan konsep matematika (Bilangan, Aljabar, Geometri,
     title: 'Teknik Analisis Kualitas Butir Soal: Menghitung Indeks Kesukaran dan Daya Beda',
     excerpt: 'Langkah praktis bagi guru dalam mengukur efektivitas butir soal sumatif guna membedakan siswa kelompok tinggi dan kelompok rendah.',
     content: `## Mengapa Analisis Butir Soal Diperlukan?
-Setelah instrumen ujian diujikan kepada peserta didik, guru perlu mengevaluasi apakah butir soal yang dibuat berfungsi dengan baik atau perlu direvisi.
+Setelah pelaksanaan asesmen sumatif (SAS atau SAT), guru perlu menganalisis instrumen ujian untuk mengetahui butir soal mana yang layak disimpan di bank soal, mana yang perlu direvisi redaksinya, dan mana yang harus digugurkan.
 
-### 1. Tingkat Kesukaran (P)
-Indeks kesukaran mengukur proporsi siswa yang menjawab benar:
-- **0.00 - 0.30**: Kategori Sukar
-- **0.31 - 0.70**: Kategori Sedang (Ideal)
-- **0.71 - 1.00**: Kategori Mudah
+---
 
-### 2. Daya Beda (D)
-Daya beda menunjukkan kemampuan butir soal membedakan siswa yang menguasai materi dengan yang belum menguasai:
-- **D >= 0.40**: Sangat Baik
-- **0.30 - 0.39**: Baik (Dapat digunakan tanpa revisi)
-- **0.20 - 0.29**: Cukup (Perlu perbaikan redaksional)
-- **D < 0.20**: Jelek (Harus diganti atau dibuang)`,
+### 1. Tingkat Kesukaran (Facility Value - P)
+Indeks kesukaran mengukur proporsi siswa yang menjawab benar terhadap total peserta:
+- Rumus: P = B / N (B: Jumlah siswa menjawab benar, N: Total peserta).
+- **0.00 s.d. 0.30**: Kategori Sukar (Periksa apakah materi belum diajarkan atau soal terlalu rumit).
+- **0.31 s.d. 0.70**: Kategori Sedang (Ideal untuk bank soal ujian sekolah).
+- **0.71 s.d. 1.00**: Kategori Mudah (Cocok untuk pertanyaan pemantik atau apersepsi).
+
+---
+
+### 2. Daya Pembeda (Discrimination Index - D)
+Daya beda menunjukkan kemampuan butir soal membedakan siswa kelompok atas (pandai) dengan kelompok bawah:
+- **D >= 0.40**: Sangat Baik (Butir soal sangat efektif).
+- **0.30 s.d. 0.39**: Baik (Dapat langsung digunakan).
+- **0.20 s.d. 0.29**: Cukup (Perlu perbaikan opsi pengecoh atau kejelasan kalimat).
+- **D < 0.20**: Jelek / Negatif (Harus dibuang karena siswa pintar justru terkecoh).
+
+---
+
+### 3. Efektivitas Pengecoh (Distractor Function)
+Pengecoh berfungsi baik jika dipilih oleh minimal **5%** peserta tes dari kelompok bawah dan lebih sedikit dipilih oleh kelompok atas.`,
     category: 'Analisis Butir',
     author_name: 'Agi Hamdani, M.Pd',
     read_time: 7,
     views_count: 1150,
     is_published: true,
     published_at: '2026-10-27T10:15:00Z'
+  },
+  {
+    id: 'art-4',
+    slug: 'pedoman-rubrik-penskoran-esai-hots',
+    title: 'Pedoman Penyusunan Rubrik Penskoran Soal Uraian / Esai Penalaran Tinggi (HOTS)',
+    excerpt: 'Menghindari subjektivitas penilaian guru dengan rubrik analitik berbobot jelas untuk soal-soal penalaran terbuka jenjang SD.',
+    content: `## Menghadirkan Keadilan dalam Menilai Soal Uraian
+Kelemahan terbesar bentuk soal uraian/esai adalah potensi bias subjektif pemeriksa. Tanpa rubrik yang terukur, dua guru yang memeriksa jawaban siswa yang sama dapat memberikan skor yang terpaut jauh.
+
+---
+
+### Rubrik Holistik vs Rubrik Analitik
+- **Rubrik Holistik:** Memberikan skor tunggal berdasarkan kesan keseluruhan mutu jawaban. Cocok untuk penilaian esai sastra bebas.
+- **Rubrik Analitik (Direkomendasikan untuk Ujian Sekolah):** Membagi penilaian ke dalam beberapa kriteria spesifik (misal: Ketepatan Konsep, Langkah Penyelesaian, dan Alasan Logis).
+
+---
+
+### Contoh Skala Penskoran Soal Penalaran Matematika (Bobot 4 Poin):
+1. **Skor 4 (Sempurna):** Konsep tepat, rumus benar, perhitungan akurat, dan disertai kesimpulan operasional.
+2. **Skor 3:** Konsep dan alur benar, namun terdapat kesalahan kecil komputasi angka akhir.
+3. **Skor 2:** Mengetahui rumus yang digunakan, namun langkah penerapan belum tuntas.
+4. **Skor 1:** Hanya menuliskan informasi yang diketahui pada pokok soal tanpa mampu merangkai solusi.
+5. **Skor 0:** Tidak menjawab atau jawaban tidak memiliki relevansi konsep sama sekali.`,
+    category: 'Rubrik & Penskoran',
+    author_name: 'Agi Hamdani, M.Pd',
+    read_time: 5,
+    views_count: 890,
+    is_published: true,
+    published_at: '2026-10-27T12:00:00Z'
+  },
+  {
+    id: 'art-5',
+    slug: 'asesmen-diagnostik-awal-kurikulum-merdeka',
+    title: 'Strategi Melaksanakan Asesmen Diagnostik Kognitif dan Non-Kognitif di Awal Tahun Ajaran',
+    excerpt: 'Langkah memetakan kesiapan belajar, gaya belajar, dan kondisi sosio-emosional murid sebelum memulai pembelajaran berdiferensiasi.',
+    content: `## Mengapa Asesmen Awal Krusial?
+Dalam paradigma Kurikulum Merdeka, guru dilarang berasumsi bahwa semua murid berangkat dari garis awal yang sama. Pembelajaran berdiferensiasi hanya dapat berjalan efektif jika didahului oleh asesmen diagnostik yang tepat.
+
+---
+
+### 1. Asesmen Diagnostik Non-Kognitif
+Bertujuan menggali profil kesejahteraan psikologis dan latar belakang murid:
+- **Kondisi Emosional:** Apa yang kamu rasakan hari ini? Hal apa yang paling membuatmu bersemangat ke sekolah?
+- **Lingkungan Belajar di Rumah:** Siapa yang menemanimu belajar di rumah? Apakah ada meja belajar yang tenang?
+- **Gaya Belajar:** Apakah murid lebih cepat memahami lewat gambar/warna (Visual), cerita/lagu (Auditori), atau praktik gerak (Kinestetik).
+
+---
+
+### 2. Asesmen Diagnostik Kognitif
+Bertujuan mendeteksi ketercapaian kompetensi prasyarat:
+- Berikan 10 butir soal sederhana yang mencakup:
+  * 2 soal dari materi prasyarat 2 tingkat kelas di bawahnya.
+  * 6 soal dari materi kelas sebelumnya.
+  * 2 soal materi pengantar yang akan dipelajari.
+- Kelompokkan hasil asesmen ke dalam 3 level: Paham Utuh, Paham Sebagian, dan Belum Paham.`,
+    category: 'Panduan Asesmen',
+    author_name: 'Agi Hamdani, M.Pd',
+    read_time: 6,
+    views_count: 1310,
+    is_published: true,
+    published_at: '2026-10-27T14:20:00Z'
   }
 ];
 
 export const FALLBACK_TEACHING_RESOURCES: TeachingResource[] = [
   {
     id: 'res-1',
-    title: 'Format Baku Kisi-Kisi & Kartu Soal Sumatif Akhir Semester (SAS) SD',
-    description: 'Template matriks kisi-kisi lengkap dengan sebaran indikator, level kognitif (L1-L3), dan format kartu soal siap cetak.',
-    category: 'Kisi-Kisi & Kartu Soal',
-    phase: 'Umum',
-    grade_level: 'Semua Kelas',
-    subject: 'Umum',
+    title: 'Matriks Kisi-Kisi & Kartu Soal Sumatif Akhir Semester (SAS) Bahasa Indonesia Fase C',
+    description: 'Dokumen kisi-kisi terstandar lengkap dengan capaian pembelajaran membaca teks narasi, menulis laporan, sebaran level kognitif L1-L3, dan 30 butir kartu soal.',
+    category: 'Matriks Kisi-Kisi',
+    phase: 'Fase C',
+    grade_level: 'Kelas 5 & 6',
+    subject: 'Bahasa Indonesia',
     file_type: 'DOCX',
     file_url: 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/templates/format-kisi-kisi-kartu-soal-sd.docx',
-    file_size: '1.2 MB',
-    download_count: 840,
-    is_active: true
+    file_size: '1.4 MB',
+    download_count: 940,
+    is_active: true,
+    matrix_preview: [
+      { no: 1, cp: 'Menganalisis ide pokok dan ide pendukung pada teks informasi', indicator: 'Disajikan kutipan teks eksposisi, siswa dapat menentukan ide pokok paragraf', question_type: 'Pilihan Ganda', cognitive_level: 'L1', points: 2 },
+      { no: 2, cp: 'Menganalisis makna tersurat dan tersirat dalam teks narasi', indicator: 'Disajikan fabel, siswa dapat menyimpulkan amanat moral yang terkandung di dalamnya', question_type: 'Pilihan Ganda Kompleks', cognitive_level: 'L2', points: 3 },
+      { no: 3, cp: 'Mengevaluasi akurasi data dalam infografis lingkungan', indicator: 'Disajikan infografik daur ulang, siswa membandingkan dua data persentase sampah', question_type: 'Menjodohkan', cognitive_level: 'L2', points: 3 },
+      { no: 4, cp: 'Menulis teks eksplanasi sederhana fenomena alam', indicator: 'Siswa menuliskan 3 urutan sebab-akibat terjadinya banjir secara runtut dan logis', question_type: 'Uraian', cognitive_level: 'L3', points: 5 }
+    ]
   },
   {
     id: 'res-2',
-    title: 'Rekap Administrasi Guru: Buku Nilai & Jurnal Harian Mengajar Otomatis',
-    description: 'Spreadsheet XLSX terintegrasi dengan rumus rekap rata-rata formatif, sumatif lingkup materi, dan deskripsi rapor IKTP otomatis.',
-    category: 'Administrasi Guru',
-    phase: 'Umum',
-    grade_level: 'Semua Kelas',
-    subject: 'Umum',
-    file_type: 'XLSX',
-    file_url: 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/templates/buku-nilai-jurnal-guru-otomatis.xlsx',
-    file_size: '2.5 MB',
-    download_count: 1250,
-    is_active: true
+    title: 'Matriks Kisi-Kisi & Kartu Soal Asesmen Diagnostik Numerasi Fase B',
+    description: 'Instrumen asesmen awal operasi hitung perkalian, pembagian, dan penalaran pecahan kontekstual untuk memetakan kesiapan murid kelas 4 SD.',
+    category: 'Instrumen Diagnostik Awal',
+    phase: 'Fase B',
+    grade_level: 'Kelas 4',
+    subject: 'Matematika',
+    file_type: 'PDF',
+    file_url: 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/lkpd/paket-lkpd-ipas-fase-b-kelas4.pdf',
+    file_size: '2.1 MB',
+    download_count: 1420,
+    is_active: true,
+    matrix_preview: [
+      { no: 1, cp: 'Memahami nilai tempat bilangan cacah hingga 10.000', indicator: 'Siswa menentukan nilai tempat ratusan dan puluhan pada harga barang pasar', question_type: 'Pilihan Ganda', cognitive_level: 'L1', points: 2 },
+      { no: 2, cp: 'Menerapkan operasi hitung perkalian susun', indicator: 'Disajikan masalah pembagian bibit tanaman, siswa menghitung sisa bibit yang belum tertanam', question_type: 'Isian Singkat', cognitive_level: 'L2', points: 3 },
+      { no: 3, cp: 'Memecahkan masalah pecahan senilai dalam kehidupan sehari-hari', indicator: 'Siswa membuktikan kesetaraan potongan kue cokelat menggunakan gambar pecahan', question_type: 'Uraian', cognitive_level: 'L3', points: 5 }
+    ]
   },
   {
     id: 'res-3',
-    title: 'Paket LKPD Eksplorasi Sains IPAS Fase B (Kelas 4 SD)',
-    description: 'Kumpulan 12 lembar aktivitas berbasis penemuan terbimbing (Guided Inquiry) materi wujud zat dan perubahan wujud energi.',
-    category: 'LKPD',
+    title: 'Paket Kartu Soal IPAS Fase B - Hubungan Antar Mahluk Hidup & Rantai Makanan',
+    description: 'Kumpulan 25 kartu soal pilihan ganda kompleks dan uraian saintifik dengan stimulus visual rantai makanan ekosistem sawah dan hutan tropis.',
+    category: 'Naskah Kartu Soal',
     phase: 'Fase B',
     grade_level: 'Kelas 4',
     subject: 'IPAS',
+    file_type: 'DOCX',
+    file_url: 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/templates/format-kisi-kisi-kartu-soal-sd.docx',
+    file_size: '1.8 MB',
+    download_count: 810,
+    is_active: true,
+    matrix_preview: [
+      { no: 1, cp: 'Mengidentifikasi peran organisme dalam rantai makanan', indicator: 'Disajikan diagram jaring-jaring makanan, siswa membedakan produsen dan konsumen tersier', question_type: 'Pilihan Ganda', cognitive_level: 'L1', points: 2 },
+      { no: 2, cp: 'Menganalisis dampak kepunahan suatu spesies pada ekosistem', indicator: 'Siswa memprediksi ledakan populasi hama tikus jika burung hantu diburu', question_type: 'Uraian', cognitive_level: 'L3', points: 5 }
+    ]
+  },
+  {
+    id: 'res-4',
+    title: 'Instrumen Tes Kemampuan Awal (TKA) Membaca Permulaan & Fonik Fase A',
+    description: 'Instrumen asesmen diagnostik individu untuk siswa kelas 1 SD mencakup pengenalan huruf vokal-konsonan, suku kata terbuka, dan membaca kalimat sederhana.',
+    category: 'Instrumen Diagnostik Awal',
+    phase: 'Fase A',
+    grade_level: 'Kelas 1',
+    subject: 'Bahasa Indonesia',
     file_type: 'PDF',
     file_url: 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/lkpd/paket-lkpd-ipas-fase-b-kelas4.pdf',
-    file_size: '3.8 MB',
-    download_count: 670,
-    is_active: true
+    file_size: '3.2 MB',
+    download_count: 1750,
+    is_active: true,
+    matrix_preview: [
+      { no: 1, cp: 'Mengenal fonem dan pola bunyi huruf', indicator: 'Siswa melafalkan bunyi huruf awal pada benda yang ditunjukkan', question_type: 'Observasi Lisan', cognitive_level: 'L1', points: 2 },
+      { no: 2, cp: 'Merangkai suku kata terbuka pola KV-KV', indicator: 'Siswa membaca lancar 5 kata bersuku kata dua (bola, meja, buku, mata, sapi)', question_type: 'Membaca Nyaring', cognitive_level: 'L1', points: 3 }
+    ]
+  },
+  {
+    id: 'res-5',
+    title: 'Kisi-Kisi & Rubrik Sumatif Pendidikan Pancasila Fase C - Norma, Hak, & Kewajiban',
+    description: 'Matriks evaluasi ketaatan norma di rumah, sekolah, dan masyarakat, dilengkapi skenario studi kasus dilema etika siswa sekolah dasar.',
+    category: 'Matriks Kisi-Kisi',
+    phase: 'Fase C',
+    grade_level: 'Kelas 5',
+    subject: 'Pendidikan Pancasila',
+    file_type: 'DOCX',
+    file_url: 'https://lmlflfkdukcdhkdjssmm.supabase.co/storage/v1/object/public/educational-resources/templates/format-kisi-kisi-kartu-soal-sd.docx',
+    file_size: '1.1 MB',
+    download_count: 620,
+    is_active: true,
+    matrix_preview: [
+      { no: 1, cp: 'Mengidentifikasi norma hukum, agama, dan kesopanan', indicator: 'Disajikan 4 situasi pergaulan, siswa mengklasifikasikan jenis norma yang berlaku', question_type: 'Pilihan Ganda Kompleks', cognitive_level: 'L2', points: 3 },
+      { no: 2, cp: 'Menjelaskan hak dan kewajiban warga sekolah secara berimbang', indicator: 'Siswa memberikan 2 solusi musyawarah kelas saat menghadapi perbedaan pendapat piket', question_type: 'Uraian', cognitive_level: 'L3', points: 5 }
+    ]
   }
 ];
+
+// In-memory download counter store for local interactive preview
+const localDownloadCounts: Record<string, number> = {};
 
 // ==============================================================================
 // PUBLIC PORTAL DATA ACCESS FUNCTIONS
@@ -179,19 +323,22 @@ export async function getPublicArticles(category?: string): Promise<PublicArticl
       .eq('is_published', true)
       .order('published_at', { ascending: false });
 
-    if (category && category !== 'Semua Kategori') {
+    if (category && category !== 'Semua Topik') {
       query = query.eq('category', category);
     }
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
-      if (category && category !== 'Semua Kategori') {
+      if (category && category !== 'Semua Topik') {
         return FALLBACK_PUBLIC_ARTICLES.filter(a => a.category === category);
       }
       return FALLBACK_PUBLIC_ARTICLES;
     }
     return data as PublicArticle[];
   } catch (err) {
+    if (category && category !== 'Semua Topik') {
+      return FALLBACK_PUBLIC_ARTICLES.filter(a => a.category === category);
+    }
     return FALLBACK_PUBLIC_ARTICLES;
   }
 }
@@ -226,6 +373,7 @@ export async function getTeachingResources(filter?: {
   category?: string;
   phase?: string;
   grade?: string;
+  subject?: string;
 }): Promise<TeachingResource[]> {
   try {
     let query = supabase
@@ -234,21 +382,31 @@ export async function getTeachingResources(filter?: {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (filter?.category && filter.category !== 'Semua Kategori') {
+    if (filter?.category && filter.category !== 'Semua') {
       query = query.eq('category', filter.category);
     }
     if (filter?.phase && filter.phase !== 'Semua Fase') {
       query = query.eq('phase', filter.phase);
     }
+    if (filter?.subject && filter.subject !== 'Semua') {
+      query = query.eq('subject', filter.subject);
+    }
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
-      let filtered = [...FALLBACK_TEACHING_RESOURCES];
-      if (filter?.category && filter.category !== 'Semua Kategori') {
+      let filtered = FALLBACK_TEACHING_RESOURCES.map(r => ({
+        ...r,
+        download_count: r.download_count + (localDownloadCounts[r.id] || 0)
+      }));
+
+      if (filter?.category && filter.category !== 'Semua') {
         filtered = filtered.filter(r => r.category === filter.category);
       }
       if (filter?.phase && filter.phase !== 'Semua Fase') {
         filtered = filtered.filter(r => r.phase === filter.phase || r.phase === 'Umum');
+      }
+      if (filter?.subject && filter.subject !== 'Semua') {
+        filtered = filtered.filter(r => r.subject === filter.subject || r.subject === 'Umum');
       }
       return filtered;
     }
@@ -256,6 +414,18 @@ export async function getTeachingResources(filter?: {
   } catch (err) {
     return FALLBACK_TEACHING_RESOURCES;
   }
+}
+
+/**
+ * Menyimulasikan dan mencatat penambahan jumlah unduhan
+ */
+export async function trackResourceDownload(resourceId: string): Promise<number> {
+  localDownloadCounts[resourceId] = (localDownloadCounts[resourceId] || 0) + 1;
+  try {
+    await supabase.rpc('increment_resource_download', { resource_id: resourceId });
+  } catch (e) {}
+  const res = FALLBACK_TEACHING_RESOURCES.find(r => r.id === resourceId);
+  return (res?.download_count || 0) + localDownloadCounts[resourceId];
 }
 
 /**

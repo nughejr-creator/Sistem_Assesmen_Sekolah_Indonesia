@@ -33,6 +33,15 @@ export type ResourceCategory =
 
 export type ResourceFileType = 'PDF' | 'DOCX' | 'XLSX' | 'ZIP' | 'PNG';
 
+export interface BlueprintMatrixRow {
+  no: number;
+  cp: string;
+  indicator: string;
+  question_type: string;
+  cognitive_level: 'L1' | 'L2' | 'L3';
+  points: number;
+}
+
 export interface TeachingResource {
   id: string;
   title: string;
@@ -46,6 +55,7 @@ export interface TeachingResource {
   file_size?: string | null;
   download_count: number;
   is_active: boolean;
+  matrix_preview?: BlueprintMatrixRow[];
   created_by?: string | null;
   created_at?: string;
   updated_at?: string;
