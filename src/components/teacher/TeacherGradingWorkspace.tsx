@@ -690,44 +690,42 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-20 sm:pb-24">
       
       {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Award className="w-5 h-5" />
-            </span>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-black text-slate-900">
-                  Meja Koreksi & Pemeriksaan Jawaban Siswa
-                </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-                  Mode Cepat Butir per Butir
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center space-x-3">
+          <span className="p-2 sm:p-2.5 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+            <Award className="w-5 h-5" />
+          </span>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                Meja Koreksi &amp; Pemeriksaan Jawaban Siswa
+              </h2>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                Mode Cepat Butir per Butir
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-1.5">
+              <span>Pendidik: <strong className="text-slate-800">{teacher.full_name}</strong></span>
+              <span>•</span>
+              {checkIsGuruKelas(teacher) ? (
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-extrabold text-[11px]">
+                  <span>Guru Kelas &amp; Wali {teacher.grade_class || 'Kelas 2'}</span>
+                  <span className="text-[10px] text-emerald-600 font-medium">(Kecuali PJOK &amp; PAI)</span>
                 </span>
-              </div>
-              <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-1.5">
-                <span>Pendidik: <strong className="text-slate-800">{teacher.full_name}</strong></span>
-                <span>•</span>
-                {checkIsGuruKelas(teacher) ? (
-                  <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-extrabold text-[11px]">
-                    <span>Guru Kelas & Wali {teacher.grade_class || 'Kelas 2'}</span>
-                    <span className="text-[10px] text-emerald-600 font-medium">(Kecuali PJOK & PAI)</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-extrabold text-[11px]">
-                    <span>Guru Mapel Khusus: {teacher.assigned_subject_name || 'PJOK'}</span>
-                  </span>
-                )}
-              </div>
+              ) : (
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-extrabold text-[11px]">
+                  <span>Guru Mapel Khusus: {teacher.assigned_subject_name || 'PJOK'}</span>
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Filter Sesi Ujian */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 w-full md:w-auto shrink-0 justify-end">
           <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Sesi Ujian:</label>
           <select
             value={selectedSessionId}
@@ -737,7 +735,7 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
               setSelectedSessionId(id);
               try { localStorage.setItem('sasi_teacher_session', id); } catch (err) {}
             }}
-            className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
+            className="w-full md:w-auto px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
           >
             {effectiveSessions.length === 0 ? (
               <option value="">Belum Ada Sesi untuk {teacher.grade_class || 'Kelas Ini'}</option>
@@ -775,81 +773,51 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
       ) : (
         <>
       {/* Info Card Hybrid */}
-      <div className="bg-gradient-to-r from-amber-50 via-emerald-50 to-indigo-50 border border-amber-200/80 rounded-2xl p-4.5 text-xs text-slate-700 flex items-start space-x-3 shadow-2xs">
-        <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
-        <div className="space-y-1">
-          <p className="font-extrabold text-slate-900 flex items-center space-x-2">
+      <div className="bg-gradient-to-r from-amber-50 via-emerald-50 to-indigo-50 border border-amber-200/80 rounded-2xl p-3 sm:p-3.5 text-xs text-slate-700 flex items-start space-x-2.5 shadow-2xs">
+        <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+        <div className="space-y-0.5">
+          <p className="font-extrabold text-slate-900 flex flex-wrap items-center gap-1.5">
             <span>Kemudahan Pemeriksaan Mandiri Guru:</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+            <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
               Auto-Accepted by Default
             </span>
           </p>
-          <p className="leading-relaxed">
-            Sistem telah memberikan rekomendasi skor otomatis (toleransi typo isian ≥ 80% & analisis konsep uraian). 
+          <p className="leading-relaxed text-[11px] sm:text-xs">
+            Sistem telah memberikan rekomendasi skor otomatis (toleransi typo isian ≥ 80% &amp; analisis konsep uraian). 
             Guru dapat mengoreksi <strong>seluruh siswa sekaligus untuk satu nomor soal</strong> di bawah ini. Anda dapat menyetujui rekomendasi nilai AI secara massal atau mengubah nilai siswa tertentu sesuai kebijakan Anda.
           </p>
         </div>
       </div>
 
-      {/* Filter Tipe Soal & Navigator Soal */}
-      <div className="bg-white rounded-2xl p-4.5 border border-slate-200 shadow-xs space-y-4">
+      {/* 1. Toolbar Navigasi Soal Terpadu (1 Baris Efisien) */}
+      <div className="bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
         
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Tampilkan Kategori Soal:
-            </span>
-            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => { setTypeFilter('subjective'); setSelectedQuestionIndex(0); }}
-                className={`px-3 py-1 rounded-lg transition-all ${
-                  typeFilter === 'subjective' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Isian & Uraian (Fokus Guru)
-              </button>
-              <button
-                type="button"
-                onClick={() => { setTypeFilter('all'); setSelectedQuestionIndex(0); }}
-                className={`px-3 py-1 rounded-lg transition-all ${
-                  typeFilter === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Semua Nomor Soal
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
+        {/* Sisi Kiri: Filter Toggle Kategori Soal */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="inline-flex rounded-xl bg-slate-100 p-0.5 border border-slate-200 text-xs font-bold">
             <button
               type="button"
-              disabled={!currentQuestion || selectedQuestionIndex === 0}
-              onClick={() => setSelectedQuestionIndex(prev => prev - 1)}
-              className="p-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs font-bold flex items-center space-x-1 disabled:cursor-not-allowed"
+              onClick={() => { setTypeFilter('subjective'); setSelectedQuestionIndex(0); }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                typeFilter === 'subjective' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Sebelumnya</span>
+              Isian &amp; Uraian (Fokus Guru)
             </button>
-
-            <span className="text-xs font-bold text-slate-700 px-2 font-mono">
-              Soal {filteredQuestions.length > 0 ? selectedQuestionIndex + 1 : 0} dari {filteredQuestions.length}
-            </span>
-
             <button
               type="button"
-              disabled={!currentQuestion || selectedQuestionIndex >= filteredQuestions.length - 1}
-              onClick={() => setSelectedQuestionIndex(prev => prev + 1)}
-              className="p-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs font-bold flex items-center space-x-1 disabled:cursor-not-allowed"
+              onClick={() => { setTypeFilter('all'); setSelectedQuestionIndex(0); }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                typeFilter === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <span>Berikutnya</span>
-              <ChevronRight className="w-4 h-4" />
+              Semua Nomor Soal
             </button>
           </div>
         </div>
 
-        {/* Question Number Pills */}
-        <div className="flex flex-wrap gap-2">
+        {/* Sisi Tengah: Daftar Badge Nomor Soal Horizontal (Scrollable jika banyak) */}
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto py-0.5 px-0.5 scrollbar-thin scrollbar-thumb-slate-200">
           {filteredQuestions.length > 0 ? (
             filteredQuestions.map((q, idx) => {
               const isCurrent = idx === selectedQuestionIndex;
@@ -858,14 +826,14 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
                   key={q.id}
                   type="button"
                   onClick={() => setSelectedQuestionIndex(idx)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center space-x-1.5 ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 shrink-0 ${
                     isCurrent
-                      ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-2 ring-amber-500/20'
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-xs ring-2 ring-amber-500/20'
                       : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                   }`}
                 >
                   <span>No. {idx + 1}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-md ${
                     isCurrent ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-700'
                   }`}>
                     {q.question_type === 'Isian Singkat' ? 'Isian' : q.question_type === 'Uraian' ? 'Uraian' : 'PG'}
@@ -874,48 +842,79 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
               );
             })
           ) : (
-            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl font-medium">
-              Tidak ada butir soal bertipe <strong>{typeFilter === 'subjective' ? 'Isian & Uraian' : 'Objektif'}</strong> pada paket asesmen ini.
+            <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap">
+              Tidak ada soal bertipe <strong>{typeFilter === 'subjective' ? 'Isian & Uraian' : 'Objektif'}</strong> pada paket ini.
             </p>
           )}
         </div>
 
+        {/* Sisi Kanan: Kontrol Navigasi Ringkas [ < ] [ Soal X dari Y ] [ > ] */}
+        <div className="flex items-center gap-1 shrink-0 bg-slate-50 border border-slate-200 p-0.5 rounded-xl self-end md:self-auto">
+          <button
+            type="button"
+            disabled={!currentQuestion || selectedQuestionIndex === 0}
+            onClick={() => setSelectedQuestionIndex(prev => prev - 1)}
+            className="p-1 hover:bg-white text-slate-700 disabled:opacity-30 rounded-lg text-xs font-bold transition-colors disabled:cursor-not-allowed"
+            title="Soal Sebelumnya"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <span className="text-xs font-bold text-slate-700 px-2 font-mono whitespace-nowrap">
+            Soal {filteredQuestions.length > 0 ? selectedQuestionIndex + 1 : 0} dari {filteredQuestions.length}
+          </span>
+
+          <button
+            type="button"
+            disabled={!currentQuestion || selectedQuestionIndex >= filteredQuestions.length - 1}
+            onClick={() => setSelectedQuestionIndex(prev => prev + 1)}
+            className="p-1 hover:bg-white text-slate-700 disabled:opacity-30 rounded-lg text-xs font-bold transition-colors disabled:cursor-not-allowed"
+            title="Soal Berikutnya"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
       </div>
 
-      {/* Lembar Soal Aktif & Kunci Rubrik Guru */}
+      {/* 2. Lembar Soal Aktif & Kunci Rubrik Guru (Header & Konten Padat) */}
       {currentQuestion ? (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-1 rounded-xl bg-slate-900 text-white font-mono font-bold text-xs">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-xs space-y-2.5 sm:space-y-3">
+          
+          {/* Header Soal: Detail Kiri & Aksi Nilai Kanan */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+            {/* Sisi Kiri: Badge Grup [Nomor] [Tipe] [Bobot] */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 text-white font-mono font-bold text-xs shadow-2xs">
                 Nomor {selectedQuestionIndex + 1}
               </span>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300">
                 Tipe: {currentQuestion.question_type}
               </span>
-              <span className="text-xs font-semibold text-slate-500">
-                Bobot Maksimal: <strong>{currentQuestion.weight || 10} Poin</strong>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+                Bobot: <strong>{currentQuestion.weight || 10} Poin</strong>
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Sisi Kanan: Tombol Aksi Kompak */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {currentQuestion.question_type === 'Uraian' && (
                 <button
                   type="button"
                   onClick={handleRunGeminiEssayGrading}
                   disabled={isGradingWithAI}
-                  className="px-3 py-1.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-purple-600/20 transition-all disabled:opacity-50"
+                  className="px-2.5 py-1.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs shadow-purple-600/20 transition-all disabled:opacity-50"
                   title="Nilai seluruh jawaban uraian siswa untuk soal ini menggunakan model Google Gemini AI"
                 >
                   <Bot className={`w-3.5 h-3.5 ${isGradingWithAI ? 'animate-spin' : 'text-amber-300'}`} />
-                  <span>{isGradingWithAI ? (aiGradingProgress || 'Menganalisis...') : 'Koreksi dengan Gemini AI'}</span>
+                  <span>{isGradingWithAI ? (aiGradingProgress || 'Menganalisis...') : 'Koreksi Gemini AI'}</span>
                 </button>
               )}
 
               <button
                 type="button"
                 onClick={handleApproveAllAI}
-                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-2xs"
+                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs"
                 title="Terapkan seluruh nilai rekomendasi AI untuk semua siswa pada soal ini"
               >
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
@@ -925,7 +924,7 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
               <button
                 type="button"
                 onClick={() => setIsAiSettingsOpen(true)}
-                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors border border-slate-200"
+                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors border border-slate-200"
                 title="Pengaturan Kunci API Gemini AI"
               >
                 <Settings className="w-3.5 h-3.5 text-purple-600" />
@@ -935,7 +934,7 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
                 type="button"
                 onClick={handleSaveAllGrades}
                 disabled={isSaving}
-                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-md shadow-amber-500/25 transition-all disabled:opacity-50"
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-amber-500/25 transition-all disabled:opacity-50"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>{isSaving ? 'Menyimpan...' : 'Simpan Nilai'}</span>
@@ -943,14 +942,14 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
             </div>
           </div>
 
-          {/* Pertanyaan */}
-          <div className="text-sm text-slate-900 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Pokok Pertanyaan:</span>
+          {/* 3. Pokok Pertanyaan (Padding Proporsional p-3 sm:p-3.5) */}
+          <div className="text-xs sm:text-sm text-slate-900 leading-relaxed bg-slate-50/90 p-3 sm:p-3.5 rounded-xl border border-slate-200/80">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Pokok Pertanyaan:</span>
             <RichMathText content={currentQuestion.question_text} />
           </div>
 
-          {/* Kunci / Rubrik Pedoman Penskoran */}
-          <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+          {/* 3. Kunci / Rubrik Pedoman Penskoran (Padding Proporsional p-3 sm:p-3.5) */}
+          <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-0.5">
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 block">
               Kunci Jawaban Ideal / Pedoman Penskoran Guru:
             </span>
@@ -960,23 +959,23 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-xs space-y-2.5 sm:space-y-3">
+          <div className="flex items-center space-x-2 pb-2.5 border-b border-slate-100">
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
               Kategori: {typeFilter === 'subjective' ? 'Isian & Uraian' : 'Objektif'}
             </span>
           </div>
 
           {/* Pokok Pertanyaan saat tidak ada isian/uraian */}
-          <div className="text-sm text-slate-900 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Pokok Pertanyaan:</span>
+          <div className="text-xs sm:text-sm text-slate-900 leading-relaxed bg-slate-50/90 p-3 sm:p-3.5 rounded-xl border border-slate-200/80">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Pokok Pertanyaan:</span>
             <p className="font-semibold text-slate-700">
               Tes ini tidak menyertakan jenis soal isian dan uraian.
             </p>
           </div>
 
           {/* Kunci Jawaban Ideal saat tidak ada isian/uraian */}
-          <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+          <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-0.5">
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 block">
               Kunci Jawaban Ideal / Pedoman Penskoran Guru:
             </span>
@@ -1004,7 +1003,7 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
       {/* Tabel Lembar Jawaban Seluruh Siswa untuk Soal Ini */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="p-3 sm:p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <div className="flex items-center space-x-2">
             <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
               Daftar Jawaban Siswa ({studentRows.length} Siswa Terdata)
