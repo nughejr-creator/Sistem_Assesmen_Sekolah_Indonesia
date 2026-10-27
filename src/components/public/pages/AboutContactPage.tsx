@@ -55,10 +55,10 @@ export const AboutContactPage: React.FC = () => {
               <h2 className="text-base sm:text-lg font-black text-slate-900">
                 Tentang Platform SASIPEDIA
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-justify">
                 <strong>SASIPEDIA (Sistem Asesmen Sekolah Indonesia)</strong> dirancang dari ruang kelas nyata oleh pendidik dasar untuk menjawab tantangan evaluasi Kurikulum Merdeka. Kami percaya bahwa asesmen berkualitas tidak harus rumit, mahal, atau membebani guru dengan tumpukan kertas koreksi manual.
               </p>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-justify">
                 Platform ini menggabungkan mesin CBT terdesentralisasi (sharding multi-node) yang stabil saat diakses serentak oleh ratusan siswa, dengan portal publik yang menyediakan perangkat ajar dan asisten AI gratis bagi pendidik.
               </p>
             </div>

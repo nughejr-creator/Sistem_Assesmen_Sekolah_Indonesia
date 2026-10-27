@@ -24,7 +24,7 @@ export const TermsOfServicePage: React.FC = () => {
       {/* Konten */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 space-y-8">
         
-        <div className="bg-white p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-sm space-y-6 text-xs sm:text-sm text-slate-700 leading-relaxed">
+        <div className="bg-white p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-sm space-y-6 text-xs sm:text-sm text-slate-700 leading-relaxed text-justify">
           
           <section className="space-y-3">
             <h2 className="text-base font-black text-slate-900">1. Penerimaan Ketentuan</h2>

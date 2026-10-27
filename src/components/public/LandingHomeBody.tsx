@@ -283,7 +283,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-sky-600 transition-colors">
                   Wawasan Soal & Asesmen
                 </h3>
-                <p className="text-xs text-slate-600 leading-normal">
+                <p className="text-xs text-slate-600 leading-normal text-justify">
                   Panduan baku penulisan soal bermutu, bedah karakteristik stimulus AKM (Literasi & Numerasi), serta teknik analisis butir (daya beda & tingkat kesukaran).
                 </p>
               </div>
@@ -304,7 +304,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-600 transition-colors">
                   Kisi-Kisi & Bank Soal SD
                 </h3>
-                <p className="text-xs text-slate-600 leading-normal">
+                <p className="text-xs text-slate-600 leading-normal text-justify">
                   Matriks kisi-kisi dan kartu soal siap cetak untuk Fase A, B, dan C. Dilengkapi sebaran level kognitif (L1-L3) dan instrumen asesmen diagnostik.
                 </p>
               </div>
@@ -325,7 +325,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-amber-700 transition-colors">
                   Ruang Kreativitas Guru
                 </h3>
-                <p className="text-xs text-slate-600 leading-normal">
+                <p className="text-xs text-slate-600 leading-normal text-justify">
                   Asisten Prompt AI 6 alur mengajar (Modul Ajar, LKPD, Soal, IKTP Rapor, Kokurikuler, Refleksi) serta repositori administrasi guru gratis (DOCX/XLSX).
                 </p>
               </div>
@@ -363,7 +363,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 01
               </div>
               <h3 className="font-bold text-sm text-white mb-1">Penyiapan Bank Soal</h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-400 leading-normal text-justify">
                 Guru mengunggah naskah soal lengkap dengan kunci dan rubrik uraian melalui portal Meja Koreksi Guru.
               </p>
             </div>
@@ -373,7 +373,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 02
               </div>
               <h3 className="font-bold text-sm text-white mb-1">Aktivasi Sesi & Token</h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-400 leading-normal text-justify">
                 Proktor mengaktifkan sesi ujian dan merilis token 6 digit di layar proyektor ruangan ujian.
               </p>
             </div>
@@ -383,7 +383,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 03
               </div>
               <h3 className="font-bold text-sm text-white mb-1">Pengerjaan Siswa</h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-400 leading-normal text-justify">
                 Siswa login dengan NISN + Token. Jawaban otomatis tersimpan setiap kali tombol opsi diklik.
               </p>
             </div>
@@ -393,7 +393,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                 04
               </div>
               <h3 className="font-bold text-sm text-white mb-1">Penilaian & Rekap</h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-400 leading-normal text-justify">
                 Nilai PG langsung keluar seketika. Guru memeriksa jawaban esai secara terpadu dan mengunduh rekap nilai Excel.
               </p>
             </div>
@@ -448,7 +448,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                   </span>
                 </button>
                 {activeFaq === idx && (
-                  <div className="px-3.5 pb-3.5 text-xs text-slate-600 leading-relaxed border-t-2 border-slate-100 pt-2">
+                  <div className="px-3.5 pb-3.5 text-xs text-slate-600 leading-relaxed border-t-2 border-slate-100 pt-2 text-justify">
                     {item.a}
                   </div>
                 )}

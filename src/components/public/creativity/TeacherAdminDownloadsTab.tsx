@@ -87,7 +87,7 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
                 {item.title}
               </h4>
 
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xs text-slate-500 leading-relaxed text-justify">
                 {item.description}
               </p>
 

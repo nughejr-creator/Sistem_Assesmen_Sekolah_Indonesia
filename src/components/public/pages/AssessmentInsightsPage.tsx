@@ -221,7 +221,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
               </div>
 
               {/* Article Content */}
-              <div className="text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4 pt-2 whitespace-pre-line border-t-2 border-slate-100 font-sans">
+              <div className="text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4 pt-2 whitespace-pre-line border-t-2 border-slate-100 font-sans text-justify">
                 {selectedArticle.content}
               </div>
 
@@ -270,7 +270,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                         <h4 className="text-xs font-bold text-slate-900 line-clamp-2 hover:text-sky-600 transition-colors">
                           {rel.title}
                         </h4>
-                        <p className="text-[11px] text-slate-500 line-clamp-2">
+                        <p className="text-[11px] text-slate-500 line-clamp-2 text-justify">
                           {rel.excerpt}
                         </p>
                       </div>
@@ -341,7 +341,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                         {art.title}
                       </h3>
 
-                      <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
+                      <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 text-justify">
                         {art.excerpt}
                       </p>
                     </div>

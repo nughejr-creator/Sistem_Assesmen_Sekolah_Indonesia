@@ -65,7 +65,7 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
               {profile.title}
             </p>
 
-            <p className="text-xs text-slate-300 leading-normal max-w-xl">
+            <p className="text-xs text-slate-300 leading-normal max-w-xl text-justify">
               {profile.role_description}
             </p>
           </div>
@@ -82,7 +82,7 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
             <BookOpen className="w-5 h-5 text-sky-600" />
             <span>Visi Pembaharuan Evaluasi Pendidikan</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed text-justify">
             {profile.bio}
           </p>
         </div>

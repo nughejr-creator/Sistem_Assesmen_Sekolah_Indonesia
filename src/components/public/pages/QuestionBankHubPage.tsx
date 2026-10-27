@@ -250,7 +250,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                       {res.title}
                     </h3>
 
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 text-justify">
                       {res.description}
                     </p>
 
@@ -356,7 +356,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                   <h3 className="text-base font-black text-slate-900 leading-snug">
                     {previewResource.title}
                   </h3>
-                  <p className="text-slate-500 mt-1 leading-relaxed">
+                  <p className="text-slate-500 mt-1 leading-relaxed text-justify">
                     {previewResource.description}
                   </p>
                 </div>

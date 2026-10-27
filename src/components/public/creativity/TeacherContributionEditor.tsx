@@ -362,7 +362,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
               className="w-full font-mono text-xs text-slate-800 leading-relaxed focus:outline-hidden resize-y min-h-[350px] p-2 bg-transparent"
             />
           ) : (
-            <div className="min-h-[350px] p-4 bg-slate-50 rounded-2xl border-2 border-slate-300 text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">
+            <div className="min-h-[350px] p-4 bg-slate-50 rounded-2xl border-2 border-slate-300 text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans text-justify">
               <h2 className="text-xl font-black text-slate-900 mb-2">{title || 'Judul Belum Diisi'}</h2>
               <div className="text-[11px] text-slate-500 mb-4 pb-3 border-b-2 border-slate-200">
                 Ditulis oleh: <strong>{authorName}</strong> ({authorSchool}) • Kategori: <strong>{contentType}</strong>
