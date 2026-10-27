@@ -229,9 +229,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-blue-600/80 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
-            {/* Clean Flyout Dropdown (Modern Soft Pastel Gradient Cards) */}
+            {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
             <div className="absolute left-0 top-full pt-2 w-76 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-76 bg-white/98 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
+              <div className="w-76 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
                 {wawasanItems.map((item) => (
                   <div
                     key={item.label}
@@ -264,9 +264,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-indigo-600/80 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
-            {/* Clean Flyout Dropdown (Modern Soft Pastel Gradient Cards) */}
+            {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
             <div className="absolute left-0 top-full pt-2 w-76 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-76 bg-white/98 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
+              <div className="w-76 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
                 {bankSoalItems.map((item) => (
                   <div
                     key={item.label}
@@ -302,9 +302,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <ChevronDown className="w-4 h-4 text-amber-700/80 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
-            {/* Clean Flyout Dropdown (2 Kategori dengan Kartu Gradasi Berwarna) */}
+            {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
             <div className="absolute right-0 top-full pt-2 w-84 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-84 bg-white/98 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl p-2.5 max-h-[480px] overflow-y-auto space-y-2">
+              <div className="w-84 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 max-h-[480px] overflow-y-auto space-y-2">
                 
                 {/* Header 1: Asisten Guru AI */}
                 <div className="text-[10px] font-extrabold text-amber-800/80 px-3 py-0.5 tracking-wider uppercase">
