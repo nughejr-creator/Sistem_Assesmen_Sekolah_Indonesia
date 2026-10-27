@@ -6,8 +6,12 @@ import {
   DeveloperProfile,
   BlueprintMatrixRow,
   SidebarWidgetConfig,
-  PortalQuickLink
+  PortalQuickLink,
+  QuickLinkItem,
+  PortalWidgetSettings,
+  PublicSidebarAggregatePayload
 } from '../types/publicPortal';
+import { sanitizeHtml } from './safeHtmlSanitizer';
 
 // ==============================================================================
 // SEED FALLBACK DATA (Untuk Preview Lokal & Kesiapan Offline)
@@ -638,11 +642,25 @@ export async function savePublicArticle(
 ): Promise<{ success: boolean; data?: PublicArticle; error?: string }> {
   try {
     const isNew = !article.id;
-    const articlePayload = {
+    // Sanitasi HTML menyeluruh untuk mencegah celah XSS sambil mempertahankan tag kaya
+    const sanitizedContent = article.content ? sanitizeHtml(article.content) : '';
+    const pinExpiry = article.pin_expires_at || article.pinned_until || null;
+    const viewCount = article.view_count !== undefined ? article.view_count : (article.views_count || 0);
+
+    const articlePayload: Partial<PublicArticle> = {
       ...article,
+      content: sanitizedContent,
+      is_pinned: !!article.is_pinned,
+      pin_expires_at: pinExpiry,
+      pinned_until: pinExpiry,
+      is_featured: !!article.is_featured,
+      view_count: viewCount,
+      views_count: viewCount,
       slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `artikel-${Date.now()}`,
       updated_at: new Date().toISOString()
     };
+
+    sidebarAggregateCache = null; // Invalidate aggregate cache
 
     if (isNew) {
       const { data, error } = await supabase
@@ -675,9 +693,24 @@ export async function savePublicArticle(
   } catch (e) {}
 
   // Fallback in-memory update
+  sidebarAggregateCache = null;
+  const pinExpiry = article.pin_expires_at || article.pinned_until || null;
+  const viewCount = article.view_count !== undefined ? article.view_count : (article.views_count || 0);
+
   if (article.id) {
     adminArticlesStore = adminArticlesStore.map(a => 
-      a.id === article.id ? ({ ...a, ...article, updated_at: new Date().toISOString() } as PublicArticle) : a
+      a.id === article.id ? ({ 
+        ...a, 
+        ...article, 
+        content: article.content ? sanitizeHtml(article.content) : a.content,
+        is_pinned: article.is_pinned !== undefined ? !!article.is_pinned : a.is_pinned,
+        pin_expires_at: pinExpiry !== undefined ? pinExpiry : a.pin_expires_at,
+        pinned_until: pinExpiry !== undefined ? pinExpiry : a.pinned_until,
+        is_featured: article.is_featured !== undefined ? !!article.is_featured : a.is_featured,
+        view_count: viewCount,
+        views_count: viewCount,
+        updated_at: new Date().toISOString() 
+      } as PublicArticle) : a
     );
     const updated = adminArticlesStore.find(a => a.id === article.id);
     return { success: true, data: updated };
@@ -687,11 +720,16 @@ export async function savePublicArticle(
       slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `artikel-${Date.now()}`,
       title: article.title || 'Artikel Tanpa Judul',
       excerpt: article.excerpt || '',
-      content: article.content || '',
+      content: article.content ? sanitizeHtml(article.content) : '',
       category: article.category || 'Panduan Asesmen',
       author_name: article.author_name || 'Agi Hamdani, M.Pd',
       read_time: article.read_time || 5,
-      views_count: 0,
+      view_count: viewCount,
+      views_count: viewCount,
+      is_pinned: !!article.is_pinned,
+      pin_expires_at: pinExpiry,
+      pinned_until: pinExpiry,
+      is_featured: !!article.is_featured,
       is_published: article.is_published ?? true,
       published_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
@@ -930,11 +968,29 @@ export async function saveDeveloperProfile(
 
 let adminSidebarConfigStore: SidebarWidgetConfig = { ...FALLBACK_SIDEBAR_CONFIG };
 let adminQuickLinksStore: PortalQuickLink[] = [...FALLBACK_QUICK_LINKS];
+let sidebarAggregateCache: { data: PublicSidebarAggregatePayload; timestamp: number } | null = null;
+const CACHE_TTL_MS = 30000; // 30 detik untuk efisiensi data fetching & anti-CLS
 
 /**
- * Mengambil konfigurasi visibilitas widget sidebar
+ * Mengambil konfigurasi visibilitas widget sidebar dari Supabase atau fallback
  */
 export async function getSidebarWidgetConfig(): Promise<SidebarWidgetConfig> {
+  try {
+    const { data, error } = await supabase
+      .from('portal_widget_settings')
+      .select('*')
+      .eq('id', 'default')
+      .single();
+
+    if (!error && data) {
+      adminSidebarConfigStore = data as SidebarWidgetConfig;
+      try {
+        localStorage.setItem('sasi_sidebar_config', JSON.stringify(adminSidebarConfigStore));
+      } catch (e) {}
+      return adminSidebarConfigStore;
+    }
+  } catch (e) {}
+
   try {
     const local = localStorage.getItem('sasi_sidebar_config');
     if (local) {
@@ -951,13 +1007,35 @@ export async function getSidebarWidgetConfig(): Promise<SidebarWidgetConfig> {
 export async function saveSidebarWidgetConfig(
   config: SidebarWidgetConfig
 ): Promise<{ success: boolean; data?: SidebarWidgetConfig }> {
+  sidebarAggregateCache = null; // Invalidate cache
+  adminSidebarConfigStore = { ...config, updated_at: new Date().toISOString() };
+
   try {
-    adminSidebarConfigStore = { ...config };
     localStorage.setItem('sasi_sidebar_config', JSON.stringify(adminSidebarConfigStore));
-    return { success: true, data: adminSidebarConfigStore };
-  } catch (err: any) {
-    return { success: true, data: config };
-  }
+  } catch (e) {}
+
+  try {
+    const { data, error } = await supabase
+      .from('portal_widget_settings')
+      .upsert({
+        id: 'default',
+        show_search: config.show_search,
+        show_pinned: config.show_pinned,
+        show_popular_tabs: config.show_popular_tabs,
+        show_categories: config.show_categories,
+        show_quick_links: config.show_quick_links,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      adminSidebarConfigStore = data as SidebarWidgetConfig;
+      return { success: true, data: adminSidebarConfigStore };
+    }
+  } catch (err: any) {}
+
+  return { success: true, data: adminSidebarConfigStore };
 }
 
 /**
@@ -965,13 +1043,44 @@ export async function saveSidebarWidgetConfig(
  */
 export async function getPortalQuickLinks(): Promise<PortalQuickLink[]> {
   try {
+    const { data, error } = await supabase
+      .from('quick_links')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      adminQuickLinksStore = data.map((d: any) => ({
+        id: d.id,
+        label: d.label,
+        title: d.label,
+        url: d.url,
+        icon_name: d.icon_name || 'ExternalLink',
+        icon: d.icon_name || 'ExternalLink',
+        description: d.description || '',
+        target_blank: d.target_blank ?? true,
+        is_new_tab: d.target_blank ?? true,
+        sort_order: d.sort_order || 1,
+        order_index: d.sort_order || 1,
+        is_active: d.is_active ?? true,
+        created_at: d.created_at,
+        updated_at: d.updated_at
+      }));
+      try {
+        localStorage.setItem('sasi_quick_links', JSON.stringify(adminQuickLinksStore));
+      } catch (e) {}
+      return adminQuickLinksStore;
+    }
+  } catch (e) {}
+
+  try {
     const local = localStorage.getItem('sasi_quick_links');
     if (local) {
       adminQuickLinksStore = JSON.parse(local);
-      return adminQuickLinksStore.sort((a, b) => a.order_index - b.order_index);
+      return adminQuickLinksStore.sort((a, b) => (a.sort_order || a.order_index || 1) - (b.sort_order || b.order_index || 1));
     }
   } catch (e) {}
-  return adminQuickLinksStore.sort((a, b) => a.order_index - b.order_index);
+
+  return adminQuickLinksStore.sort((a, b) => (a.sort_order || a.order_index || 1) - (b.sort_order || b.order_index || 1));
 }
 
 /**
@@ -980,51 +1089,229 @@ export async function getPortalQuickLinks(): Promise<PortalQuickLink[]> {
 export async function savePortalQuickLink(
   link: Partial<PortalQuickLink>
 ): Promise<{ success: boolean; data?: PortalQuickLink }> {
+  sidebarAggregateCache = null; // Invalidate cache
+  const normalizedLabel = link.label || link.title || 'Tautan Cepat';
+  const normalizedIcon = link.icon_name || link.icon || 'ExternalLink';
+  const normalizedTargetBlank = link.target_blank !== undefined ? link.target_blank : (link.is_new_tab ?? true);
+  const normalizedSortOrder = link.sort_order !== undefined ? link.sort_order : (link.order_index || adminQuickLinksStore.length + 1);
+
+  const payload = {
+    label: normalizedLabel,
+    url: link.url || '#',
+    icon_name: normalizedIcon,
+    description: link.description || '',
+    target_blank: normalizedTargetBlank,
+    sort_order: normalizedSortOrder,
+    is_active: link.is_active ?? true,
+    updated_at: new Date().toISOString()
+  };
+
   try {
-    if (link.id) {
-      const idx = adminQuickLinksStore.findIndex(q => q.id === link.id);
-      if (idx >= 0) {
-        adminQuickLinksStore[idx] = {
-          ...adminQuickLinksStore[idx],
-          ...link
-        } as PortalQuickLink;
+    if (link.id && !link.id.startsWith('ql-')) {
+      const { data, error } = await supabase
+        .from('quick_links')
+        .update(payload)
+        .eq('id', link.id)
+        .select()
+        .single();
+
+      if (!error && data) {
+        const item: PortalQuickLink = {
+          id: data.id,
+          label: data.label,
+          title: data.label,
+          url: data.url,
+          icon_name: data.icon_name,
+          icon: data.icon_name,
+          description: data.description,
+          target_blank: data.target_blank,
+          is_new_tab: data.target_blank,
+          sort_order: data.sort_order,
+          order_index: data.sort_order,
+          is_active: data.is_active,
+          updated_at: data.updated_at
+        };
+        adminQuickLinksStore = adminQuickLinksStore.map(q => q.id === item.id ? item : q);
+        return { success: true, data: item };
       }
     } else {
-      const newLink: PortalQuickLink = {
-        id: `ql-${Date.now()}`,
-        title: link.title || 'Tautan Cepat Baru',
-        url: link.url || '#',
-        icon: link.icon || 'ExternalLink',
-        description: link.description || '',
-        is_new_tab: link.is_new_tab ?? false,
-        is_active: link.is_active ?? true,
-        order_index: link.order_index || (adminQuickLinksStore.length + 1)
-      };
-      adminQuickLinksStore.push(newLink);
+      const { data, error } = await supabase
+        .from('quick_links')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (!error && data) {
+        const item: PortalQuickLink = {
+          id: data.id,
+          label: data.label,
+          title: data.label,
+          url: data.url,
+          icon_name: data.icon_name,
+          icon: data.icon_name,
+          description: data.description,
+          target_blank: data.target_blank,
+          is_new_tab: data.target_blank,
+          sort_order: data.sort_order,
+          order_index: data.sort_order,
+          is_active: data.is_active,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+        adminQuickLinksStore.push(item);
+        return { success: true, data: item };
+      }
     }
+  } catch (err: any) {}
 
-    try {
-      localStorage.setItem('sasi_quick_links', JSON.stringify(adminQuickLinksStore));
-    } catch (e) {}
-
-    const item = link.id 
-      ? adminQuickLinksStore.find(q => q.id === link.id) 
-      : adminQuickLinksStore[adminQuickLinksStore.length - 1];
-
-    return { success: true, data: item };
-  } catch (err: any) {
-    return { success: false };
+  // Fallback in-memory
+  if (link.id) {
+    const idx = adminQuickLinksStore.findIndex(q => q.id === link.id);
+    if (idx >= 0) {
+      adminQuickLinksStore[idx] = {
+        ...adminQuickLinksStore[idx],
+        ...link,
+        label: normalizedLabel,
+        title: normalizedLabel,
+        icon_name: normalizedIcon,
+        icon: normalizedIcon,
+        target_blank: normalizedTargetBlank,
+        is_new_tab: normalizedTargetBlank,
+        sort_order: normalizedSortOrder,
+        order_index: normalizedSortOrder,
+        updated_at: new Date().toISOString()
+      };
+    }
+  } else {
+    const newLink: PortalQuickLink = {
+      id: `ql-${Date.now()}`,
+      label: normalizedLabel,
+      title: normalizedLabel,
+      url: link.url || '#',
+      icon_name: normalizedIcon,
+      icon: normalizedIcon,
+      description: link.description || '',
+      target_blank: normalizedTargetBlank,
+      is_new_tab: normalizedTargetBlank,
+      sort_order: normalizedSortOrder,
+      order_index: normalizedSortOrder,
+      is_active: link.is_active ?? true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    adminQuickLinksStore.push(newLink);
   }
+
+  try {
+    localStorage.setItem('sasi_quick_links', JSON.stringify(adminQuickLinksStore));
+  } catch (e) {}
+
+  const item = link.id 
+    ? adminQuickLinksStore.find(q => q.id === link.id) 
+    : adminQuickLinksStore[adminQuickLinksStore.length - 1];
+
+  return { success: true, data: item };
 }
 
 /**
  * Menghapus tautan cepat
  */
 export async function deletePortalQuickLink(id: string): Promise<{ success: boolean }> {
+  sidebarAggregateCache = null; // Invalidate cache
+  try {
+    if (!id.startsWith('ql-')) {
+      await supabase.from('quick_links').delete().eq('id', id);
+    }
+  } catch (e) {}
+
   adminQuickLinksStore = adminQuickLinksStore.filter(q => q.id !== id);
   try {
     localStorage.setItem('sasi_quick_links', JSON.stringify(adminQuickLinksStore));
   } catch (e) {}
   return { success: true };
 }
+
+/**
+ * RUTE API AGREGAT PUBLIK (Public Aggregate Endpoint)
+ * Mengembalikan payload JSON agregat ringkas untuk panel samping secara efisien dan anti-CLS:
+ * - pinned_posts (pos tersemat aktif & belum kedaluwarsa)
+ * - popular_posts (5 artikel paling banyak dibaca)
+ * - latest_posts (5 artikel teranyar)
+ * - category_counts (jumlah artikel per kategori)
+ * - quick_links (tautan cepat aktif)
+ * - widget_settings (visibilitas widget)
+ */
+export async function getPublicSidebarAggregateData(
+  forceRefresh = false
+): Promise<PublicSidebarAggregatePayload> {
+  const now = Date.now();
+  if (!forceRefresh && sidebarAggregateCache && (now - sidebarAggregateCache.timestamp < CACHE_TTL_MS)) {
+    return sidebarAggregateCache.data;
+  }
+
+  // Ambil data artikel, tautan cepat, dan pengaturan widget secara paralel
+  const [articles, allLinks, config] = await Promise.all([
+    getPublicArticles(),
+    getPortalQuickLinks(),
+    getSidebarWidgetConfig()
+  ]);
+
+  const nowDate = new Date();
+
+  // 1. Pinned Posts
+  const pinnedPosts = articles.filter(a => {
+    if (!a.is_pinned) return false;
+    const expiry = a.pin_expires_at || a.pinned_until;
+    if (expiry) {
+      return new Date(expiry) > nowDate;
+    }
+    return true;
+  });
+
+  // 2. Popular Posts (top 5 by view_count / views_count)
+  const popularPosts = [...articles]
+    .sort((a, b) => {
+      const vA = a.view_count !== undefined ? a.view_count : (a.views_count || 0);
+      const vB = b.view_count !== undefined ? b.view_count : (b.views_count || 0);
+      return vB - vA;
+    })
+    .slice(0, 5);
+
+  // 3. Latest Posts (top 5 by published_at / created_at)
+  const latestPosts = [...articles]
+    .sort((a, b) => {
+      const tA = new Date(a.published_at || a.created_at || 0).getTime();
+      const tB = new Date(b.published_at || b.created_at || 0).getTime();
+      return tB - tA;
+    })
+    .slice(0, 5);
+
+  // 4. Category Counts
+  const categoryCounts: Record<string, number> = {};
+  articles.forEach(a => {
+    categoryCounts[a.category] = (categoryCounts[a.category] || 0) + 1;
+  });
+
+  // 5. Active Quick Links
+  const activeQuickLinks = allLinks
+    .filter(l => l.is_active)
+    .sort((a, b) => (a.sort_order || a.order_index || 1) - (b.sort_order || b.order_index || 1));
+
+  const aggregateResult: PublicSidebarAggregatePayload = {
+    pinned_posts: pinnedPosts,
+    popular_posts: popularPosts,
+    latest_posts: latestPosts,
+    category_counts: categoryCounts,
+    quick_links: activeQuickLinks,
+    widget_settings: config
+  };
+
+  sidebarAggregateCache = {
+    data: aggregateResult,
+    timestamp: now
+  };
+
+  return aggregateResult;
+}
+
 

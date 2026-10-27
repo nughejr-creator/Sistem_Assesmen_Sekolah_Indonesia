@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BookOpen, Layers, Sparkles } from 'lucide-react';
 import { PublicNavbar, PublicNavRoute } from './PublicNavbar';
 import { PublicFooter } from './PublicFooter';
 import { LandingHomeBody } from './LandingHomeBody';
@@ -9,6 +10,9 @@ import { DeveloperProfilePage } from './pages/DeveloperProfilePage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { AboutContactPage } from './pages/AboutContactPage';
+import { PublicSidebarWidgets } from './PublicSidebarWidgets';
+import { PublicArticle, PublicSidebarAggregatePayload } from '../../types/publicPortal';
+import { getPublicSidebarAggregateData } from '../../lib/publicPortalService';
 
 interface PublicLayoutProps {
   initialRoute?: PublicNavRoute;
@@ -50,6 +54,37 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     generatorIndex?: number;
   }>({});
 
+  // Layout-level Sidebar Aggregate Cache State
+  const [sidebarAggregate, setSidebarAggregate] = useState<PublicSidebarAggregatePayload | null>(null);
+  const [isLoadingSidebar, setIsLoadingSidebar] = useState<boolean>(true);
+
+  // Article Reader State (synchronized across sidebar and page)
+  const [selectedArticle, setSelectedArticle] = useState<PublicArticle | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('Semua Topik');
+
+  // Load aggregate sidebar data once on mount (cached with TTL)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAggregate = async () => {
+      try {
+        const data = await getPublicSidebarAggregateData();
+        if (isMounted) {
+          setSidebarAggregate(data);
+          setIsLoadingSidebar(false);
+        }
+      } catch (err) {
+        console.error('Failed to load public sidebar aggregate data:', err);
+        if (isMounted) {
+          setIsLoadingSidebar(false);
+        }
+      }
+    };
+    fetchAggregate();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     const handleHashChange = () => {
       setCurrentRoute(getRouteFromHash());
@@ -69,6 +104,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     setCurrentRoute(route);
     if (options) {
       setNavOptions(options);
+      if (options.category) {
+        setSelectedCategory(options.category);
+      }
     } else {
       setNavOptions({});
     }
@@ -77,6 +115,28 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Cross-Navigation handlers from Sidebar
+  const handleSidebarSelectArticle = (article: PublicArticle) => {
+    setSelectedArticle(article);
+    setCurrentRoute('wawasan-asesmen');
+    try {
+      window.location.hash = '#/wawasan-asesmen';
+    } catch (e) {}
+    window.scrollTo({ top: 250, behavior: 'smooth' });
+  };
+
+  const handleSidebarSelectCategory = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedArticle(null);
+    setCurrentRoute('wawasan-asesmen');
+    try {
+      window.location.hash = '#/wawasan-asesmen';
+    } catch (e) {}
+    window.scrollTo({ top: 250, behavior: 'smooth' });
+  };
+
+  const isHubRoute = ['wawasan-asesmen', 'bank-soal', 'ruang-kreativitas'].includes(currentRoute);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
@@ -88,58 +148,151 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         onOpenLogin={onOpenLogin}
       />
 
-      {/* 2. MAIN CONTENT OUTLET (Isolasi Modular per Halaman) */}
-      <main className="flex-1">
-        {currentRoute === 'beranda' && (
-          <LandingHomeBody 
-            onOpenLogin={onOpenLogin}
-            onNavigateInsights={() => handleNavigate('wawasan-asesmen')}
-            onNavigateQuestionBank={() => handleNavigate('bank-soal')}
-            onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
-          />
-        )}
+      {/* 2. MAIN CONTENT OUTLET */}
+      <main className="flex-1 flex flex-col">
+        {/* =======================================================================
+            SHARED HUB LAYOUT: Untuk 3 Halaman Publik Utama
+            (Wawasan Asesmen, Bank Soal, Ruang Kreativitas)
+        ======================================================================= */}
+        {isHubRoute ? (
+          <div className="flex-1 flex flex-col">
+            {/* Header Banner Dinamis Seragam (Zero CLS) */}
+            {currentRoute === 'wawasan-asesmen' && (
+              <section className="bg-gradient-to-b from-sky-950 via-slate-900 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+                <div className="max-w-5xl mx-auto text-center space-y-2">
+                  <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[11px] font-bold border border-sky-400/30">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Pusat Literasi & Evaluasi Pembelajaran</span>
+                  </div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                    Wawasan Soal & Asesmen Sekolah
+                  </h1>
+                  <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
+                    Kumpulan panduan penulisan soal bermutu, bedah stimulus Asesmen Kompetensi Minimum (AKM), analisis daya beda butir, serta pedoman rubrik penilaian bagi pendidik di Indonesia.
+                  </p>
+                </div>
+              </section>
+            )}
 
-        {currentRoute === 'wawasan-asesmen' && (
-          <AssessmentInsightsPage
-            onOpenLogin={onOpenLogin}
-            onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
-            initialCategory={navOptions.category}
-          />
-        )}
+            {currentRoute === 'bank-soal' && (
+              <section className="bg-gradient-to-b from-slate-900 via-sky-950 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+                <div className="max-w-5xl mx-auto text-center space-y-2">
+                  <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/30">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Katalog Instrumen & Repositori Soal Terstandar</span>
+                  </div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                    Kisi-Kisi & Bank Soal Asesmen Nasional
+                  </h1>
+                  <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
+                    Daftar matriks kisi-kisi Kurikulum Merdeka (Fase A, B, dan C), paket naskah kartu soal terstandar, serta instrumen asesmen diagnostik siap unduh untuk jenjang Sekolah Dasar.
+                  </p>
+                </div>
+              </section>
+            )}
 
-        {currentRoute === 'bank-soal' && (
-          <QuestionBankHubPage
-            onOpenLogin={onOpenLogin}
-            onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
-            initialCategory={navOptions.category}
-          />
-        )}
+            {currentRoute === 'ruang-kreativitas' && (
+              <section className="bg-gradient-to-b from-amber-950 via-slate-900 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+                <div className="max-w-5xl mx-auto text-center space-y-2">
+                  <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-400/30">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Pusat Produktivitas & Kreativitas Pendidik Indonesia</span>
+                  </div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                    Ruang Kreativitas Guru
+                  </h1>
+                  <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
+                    One-Stop Educator Hub: Asisten Prompt AI cerdas 6 alur mengajar, ruang publikasi karya guru, repositori perangkat ajar Kurikulum Merdeka, serta unduhan administrasi kelas gratis.
+                  </p>
+                </div>
+              </section>
+            )}
 
-        {currentRoute === 'ruang-kreativitas' && (
-          <TeacherCreativityHubPage
-            onOpenLogin={onOpenLogin}
-            initialTab={navOptions.tab}
-            initialGeneratorIndex={navOptions.generatorIndex}
-          />
-        )}
+            {/* Responsive 2-Column Grid (Main Content + Shared Sticky Sidebar) */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+              <div className="flex flex-col lg:flex-row gap-8 items-start">
+                
+                {/* 1. Dynamic Main Content Column */}
+                <div className="flex-1 min-w-0 w-full">
+                  {currentRoute === 'wawasan-asesmen' && (
+                    <AssessmentInsightsPage
+                      onOpenLogin={onOpenLogin}
+                      onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
+                      initialCategory={navOptions.category || selectedCategory}
+                      selectedCategory={selectedCategory}
+                      onSelectCategory={setSelectedCategory}
+                      selectedArticle={selectedArticle}
+                      onSelectArticle={setSelectedArticle}
+                      hideBanner={true}
+                    />
+                  )}
 
-        {currentRoute === 'profil-pengembang' && (
-          <DeveloperProfilePage
-            onOpenLogin={onOpenLogin}
-            onNavigateHome={() => handleNavigate('beranda')}
-          />
-        )}
+                  {currentRoute === 'bank-soal' && (
+                    <QuestionBankHubPage
+                      onOpenLogin={onOpenLogin}
+                      onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
+                      initialCategory={navOptions.category}
+                      hideBanner={true}
+                    />
+                  )}
 
-        {currentRoute === 'privacy-policy' && (
-          <PrivacyPolicyPage />
-        )}
+                  {currentRoute === 'ruang-kreativitas' && (
+                    <TeacherCreativityHubPage
+                      onOpenLogin={onOpenLogin}
+                      initialTab={navOptions.tab}
+                      initialGeneratorIndex={navOptions.generatorIndex}
+                      hideBanner={true}
+                    />
+                  )}
+                </div>
 
-        {currentRoute === 'terms' && (
-          <TermsOfServicePage />
-        )}
+                {/* 2. Shared Persistent Sidebar Column */}
+                <aside className="w-full lg:w-80 shrink-0 sticky top-20">
+                  <PublicSidebarWidgets
+                    aggregateData={sidebarAggregate}
+                    isLoading={isLoadingSidebar}
+                    selectedCategory={selectedCategory}
+                    onSelectCategory={handleSidebarSelectCategory}
+                    onSelectArticle={handleSidebarSelectArticle}
+                  />
+                </aside>
 
-        {currentRoute === 'about-contact' && (
-          <AboutContactPage />
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* =====================================================================
+              STANDALONE PAGES: Halaman Tanpa Sidebar (Beranda & Profil/Legal)
+          ===================================================================== */
+          <>
+            {currentRoute === 'beranda' && (
+              <LandingHomeBody 
+                onOpenLogin={onOpenLogin}
+                onNavigateInsights={() => handleNavigate('wawasan-asesmen')}
+                onNavigateQuestionBank={() => handleNavigate('bank-soal')}
+                onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
+              />
+            )}
+
+            {currentRoute === 'profil-pengembang' && (
+              <DeveloperProfilePage
+                onOpenLogin={onOpenLogin}
+                onNavigateHome={() => handleNavigate('beranda')}
+              />
+            )}
+
+            {currentRoute === 'privacy-policy' && (
+              <PrivacyPolicyPage />
+            )}
+
+            {currentRoute === 'terms' && (
+              <TermsOfServicePage />
+            )}
+
+            {currentRoute === 'about-contact' && (
+              <AboutContactPage />
+            )}
+          </>
         )}
       </main>
 

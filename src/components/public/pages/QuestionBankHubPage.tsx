@@ -23,12 +23,14 @@ interface QuestionBankHubPageProps {
   onOpenLogin: (tab: 'student' | 'officer') => void;
   onNavigateCreativity: () => void;
   initialCategory?: string;
+  hideBanner?: boolean;
 }
 
 export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
   onOpenLogin,
   onNavigateCreativity,
-  initialCategory
+  initialCategory,
+  hideBanner = false
 }) => {
   const [resources, setResources] = useState<TeachingResource[]>([]);
   const [selectedPhase, setSelectedPhase] = useState<string>('Semua Fase');
@@ -85,46 +87,48 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className={hideBanner ? "space-y-6" : "min-h-screen bg-slate-50 text-slate-900 pb-20"}>
       
       {/* =======================================================================
           1. HEADER BANNER
       ======================================================================= */}
-      <section className="bg-gradient-to-b from-slate-900 via-sky-950 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-5xl mx-auto text-center space-y-2">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/30">
-            <Layers className="w-3.5 h-3.5" />
-            <span>Katalog Instrumen & Repositori Soal Terstandar</span>
-          </div>
+      {!hideBanner && (
+        <section className="bg-gradient-to-b from-slate-900 via-sky-950 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+          <div className="max-w-5xl mx-auto text-center space-y-2">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/30">
+              <Layers className="w-3.5 h-3.5" />
+              <span>Katalog Instrumen & Repositori Soal Terstandar</span>
+            </div>
 
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-            Kisi-Kisi & Bank Soal Asesmen Nasional
-          </h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+              Kisi-Kisi & Bank Soal Asesmen Nasional
+            </h1>
 
-          <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
-            Daftar matriks kisi-kisi Kurikulum Merdeka (Fase A, B, dan C), paket naskah kartu soal terstandar, serta instrumen asesmen diagnostik siap unduh untuk jenjang Sekolah Dasar.
-          </p>
+            <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
+              Daftar matriks kisi-kisi Kurikulum Merdeka (Fase A, B, dan C), paket naskah kartu soal terstandar, serta instrumen asesmen diagnostik siap unduh untuk jenjang Sekolah Dasar.
+            </p>
 
-          {/* Quick Search */}
-          <div className="max-w-xl mx-auto pt-2">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari materi pokok, tema kisi-kisi, atau kartu soal..."
-                className="w-full pl-11 pr-4 py-2.5 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-emerald-400 backdrop-blur-xs transition-all shadow-inner"
-              />
+            {/* Quick Search */}
+            <div className="max-w-xl mx-auto pt-2">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari materi pokok, tema kisi-kisi, atau kartu soal..."
+                  className="w-full pl-11 pr-4 py-2.5 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-emerald-400 backdrop-blur-xs transition-all shadow-inner"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* =======================================================================
           2. FILTER GANDA AREA
       ======================================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+      <div className={hideBanner ? "space-y-6" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8"}>
         
         {/* Filter Controls Card */}
         <div className="bg-white p-5 rounded-2xl border-2 border-slate-300 shadow-sm space-y-4">

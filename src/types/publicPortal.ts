@@ -18,8 +18,10 @@ export interface PublicArticle {
   featured_image?: string | null;
   tags?: string[] | null;
   is_pinned?: boolean;
+  pin_expires_at?: string | null;
   pinned_until?: string | null;
   is_featured?: boolean;
+  view_count?: number;
   read_time: number;
   views_count: number;
   is_published: boolean;
@@ -108,21 +110,43 @@ export interface DeveloperProfile {
 }
 
 export interface SidebarWidgetConfig {
+  id?: string;
   show_search: boolean;
   show_pinned: boolean;
   show_popular_tabs: boolean;
   show_categories: boolean;
   show_quick_links: boolean;
+  updated_at?: string;
 }
 
-export interface PortalQuickLink {
+export type PortalWidgetSettings = SidebarWidgetConfig;
+
+export interface QuickLinkItem {
   id: string;
-  title: string;
+  label: string;
+  title?: string;
   url: string;
-  icon: string;
+  icon_name: string;
+  icon?: string;
   description?: string;
-  is_new_tab: boolean;
+  target_blank: boolean;
+  is_new_tab?: boolean;
+  sort_order: number;
+  order_index?: number;
   is_active: boolean;
-  order_index: number;
+  created_at?: string;
+  updated_at?: string;
 }
+
+export type PortalQuickLink = QuickLinkItem;
+
+export interface PublicSidebarAggregatePayload {
+  pinned_posts: PublicArticle[];
+  popular_posts: PublicArticle[];
+  latest_posts: PublicArticle[];
+  category_counts: Record<string, number>;
+  quick_links: QuickLinkItem[];
+  widget_settings: SidebarWidgetConfig;
+}
+
 

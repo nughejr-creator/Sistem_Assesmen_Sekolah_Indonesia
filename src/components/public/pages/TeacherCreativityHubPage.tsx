@@ -18,12 +18,14 @@ interface TeacherCreativityHubPageProps {
   onOpenLogin: (tab: 'student' | 'officer') => void;
   initialTab?: 'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi';
   initialGeneratorIndex?: number;
+  hideBanner?: boolean;
 }
 
 export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> = ({
   onOpenLogin,
   initialTab = 'ai',
-  initialGeneratorIndex = 0
+  initialGeneratorIndex = 0,
+  hideBanner = false
 }) => {
   const [activeTab, setActiveTab] = useState<'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi'>(initialTab);
   const [activeGeneratorIndex, setActiveGeneratorIndex] = useState<number>(initialGeneratorIndex);
@@ -51,32 +53,34 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className={hideBanner ? "space-y-6" : "min-h-screen bg-slate-50 text-slate-900 pb-20"}>
       
       {/* =======================================================================
           1. HEADER BANNER
       ======================================================================= */}
-      <section className="bg-gradient-to-b from-amber-950 via-slate-900 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
-        <div className="max-w-5xl mx-auto text-center space-y-2">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-400/30">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Pusat Produktivitas & Kreativitas Pendidik Indonesia</span>
+      {!hideBanner && (
+        <section className="bg-gradient-to-b from-amber-950 via-slate-900 to-slate-950 text-white py-8 sm:py-9 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+          <div className="max-w-5xl mx-auto text-center space-y-2">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-400/30">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Pusat Produktivitas & Kreativitas Pendidik Indonesia</span>
+            </div>
+
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+              Ruang Kreativitas Guru
+            </h1>
+
+            <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
+              One-Stop Educator Hub: Asisten Prompt AI cerdas 6 alur mengajar, ruang publikasi karya guru, repositori perangkat ajar Kurikulum Merdeka, serta unduhan administrasi kelas gratis.
+            </p>
           </div>
-
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-            Ruang Kreativitas Guru
-          </h1>
-
-          <p className="text-slate-300 text-xs sm:text-xs max-w-xl mx-auto leading-normal">
-            One-Stop Educator Hub: Asisten Prompt AI cerdas 6 alur mengajar, ruang publikasi karya guru, repositori perangkat ajar Kurikulum Merdeka, serta unduhan administrasi kelas gratis.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* =======================================================================
           2. TAB NAVIGATION (5 PILAR MODULAR)
       ======================================================================= */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className={hideBanner ? "space-y-6" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8"}>
         
         <div className="flex overflow-x-auto space-x-2 pb-4 border-b-2 border-slate-200 scrollbar-thin">
           

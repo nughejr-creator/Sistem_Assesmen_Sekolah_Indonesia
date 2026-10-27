@@ -22,7 +22,8 @@ import {
 import { 
   PublicArticle, 
   SidebarWidgetConfig, 
-  PortalQuickLink 
+  PortalQuickLink,
+  PublicSidebarAggregatePayload 
 } from '../../types/publicPortal';
 import { 
   getSidebarWidgetConfig, 
@@ -30,7 +31,9 @@ import {
 } from '../../lib/publicPortalService';
 
 interface PublicSidebarWidgetsProps {
-  articles: PublicArticle[];
+  articles?: PublicArticle[];
+  aggregateData?: PublicSidebarAggregatePayload | null;
+  isLoading?: boolean;
   selectedCategory?: string;
   onSelectCategory?: (category: string) => void;
   onSelectArticle: (article: PublicArticle) => void;
@@ -50,19 +53,21 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
 };
 
 export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
-  articles,
+  articles = [],
+  aggregateData = null,
+  isLoading = false,
   selectedCategory = 'Semua Topik',
   onSelectCategory,
   onSelectArticle
 }) => {
-  const [config, setConfig] = useState<SidebarWidgetConfig>({
+  const [fallbackConfig, setFallbackConfig] = useState<SidebarWidgetConfig>({
     show_search: true,
     show_pinned: true,
     show_popular_tabs: true,
     show_categories: true,
     show_quick_links: true
   });
-  const [quickLinks, setQuickLinks] = useState<PortalQuickLink[]>([]);
+  const [fallbackQuickLinks, setFallbackQuickLinks] = useState<PortalQuickLink[]>([]);
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,16 +77,18 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
   // Tab state (Populer vs Terbaru)
   const [activeTab, setActiveTab] = useState<'popular' | 'latest'>('popular');
 
-  // Load config & quick links on mount
+  // Load fallback config & quick links if aggregateData not provided
   useEffect(() => {
-    const loadSidebarData = async () => {
-      const cfg = await getSidebarWidgetConfig();
-      setConfig(cfg);
-      const links = await getPortalQuickLinks();
-      setQuickLinks(links.filter(l => l.is_active));
-    };
-    loadSidebarData();
-  }, []);
+    if (!aggregateData) {
+      const loadSidebarData = async () => {
+        const cfg = await getSidebarWidgetConfig();
+        setFallbackConfig(cfg);
+        const links = await getPortalQuickLinks();
+        setFallbackQuickLinks(links.filter(l => l.is_active));
+      };
+      loadSidebarData();
+    }
+  }, [aggregateData]);
 
   // Shortcut key listener (Ctrl+K or Cmd+K)
   useEffect(() => {
@@ -92,60 +99,130 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Total articles count calculation
+  const totalArticlesCount = useMemo(() => {
+    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+    return Math.max(fromCategories, searchableArticles.length);
+  }, [categoryCounts, searchableArticles]);
+
+  if (isLoading && !aggregateData) {
+    return (
+      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
+      </aside>
+    );
+  }
+
+  return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Effective Config
+  const config = useMemo(() => {
+    return aggregateData?.widget_settings || fallbackConfig;
+  }, [aggregateData, fallbackConfig]);
+
+  // Effective Quick Links
+  const quickLinks = useMemo(() => {
+    if (aggregateData?.quick_links) {
+      return aggregateData.quick_links.filter(l => l.is_active);
+    }
+    return fallbackQuickLinks;
+  }, [aggregateData, fallbackQuickLinks]);
+
+  // Master articles pool for instant search
+  const searchableArticles = useMemo(() => {
+    const map = new Map<string, PublicArticle>();
+    articles.forEach(a => map.set(a.id, a));
+    if (aggregateData) {
+      aggregateData.pinned_posts?.forEach(a => map.set(a.id, a));
+      aggregateData.popular_posts?.forEach(a => map.set(a.id, a));
+      aggregateData.latest_posts?.forEach(a => map.set(a.id, a));
+    }
+    return Array.from(map.values());
+  }, [articles, aggregateData]);
 
   // Instant Search Results
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
-    return articles
+    return searchableArticles
       .filter(a => 
         a.title.toLowerCase().includes(q) || 
         (a.excerpt && a.excerpt.toLowerCase().includes(q)) ||
         (a.tags && a.tags.some(t => t.toLowerCase().includes(q)))
       )
       .slice(0, 5);
-  }, [articles, searchQuery]);
+  }, [searchableArticles, searchQuery]);
 
   // Pinned Articles (valid & not expired)
   const pinnedArticles = useMemo(() => {
+    if (aggregateData?.pinned_posts && aggregateData.pinned_posts.length > 0) {
+      return aggregateData.pinned_posts;
+    }
     const now = new Date();
-    return articles.filter(a => {
+    return searchableArticles.filter(a => {
       if (!a.is_pinned) return false;
-      if (a.pinned_until) {
-        return new Date(a.pinned_until) > now;
+      if (a.pinned_until || a.pin_expires_at) {
+        const expiry = new Date(a.pinned_until || a.pin_expires_at || '');
+        return expiry > now;
       }
       return true;
     });
-  }, [articles]);
+  }, [aggregateData, searchableArticles]);
 
-  // Popular Articles (ranked by views_count)
+  // Popular Articles
   const popularArticles = useMemo(() => {
-    return [...articles]
-      .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+    if (aggregateData?.popular_posts && aggregateData.popular_posts.length > 0) {
+      return aggregateData.popular_posts;
+    }
+    return [...searchableArticles]
+      .sort((a, b) => (b.views_count || b.view_count || 0) - (a.views_count || a.view_count || 0))
       .slice(0, 5);
-  }, [articles]);
+  }, [aggregateData, searchableArticles]);
 
-  // Latest Articles (ranked by published_at / created_at)
+  // Latest Articles
   const latestArticles = useMemo(() => {
-    return [...articles]
+    if (aggregateData?.latest_posts && aggregateData.latest_posts.length > 0) {
+      return aggregateData.latest_posts;
+    }
+    return [...searchableArticles]
       .sort((a, b) => {
         const dateA = new Date(a.published_at || a.created_at || 0).getTime();
         const dateB = new Date(b.published_at || b.created_at || 0).getTime();
         return dateB - dateA;
       })
       .slice(0, 5);
-  }, [articles]);
+  }, [aggregateData, searchableArticles]);
 
   // Categories with count
   const categoryCounts = useMemo(() => {
+    if (aggregateData?.category_counts && Object.keys(aggregateData.category_counts).length > 0) {
+      return aggregateData.category_counts;
+    }
     const counts: Record<string, number> = {};
-    articles.forEach(a => {
+    searchableArticles.forEach(a => {
       counts[a.category] = (counts[a.category] || 0) + 1;
     });
     return counts;
-  }, [articles]);
+  }, [aggregateData, searchableArticles]);
+
+  // Total articles count calculation
+  const totalArticlesCount = useMemo(() => {
+    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+    return Math.max(fromCategories, searchableArticles.length);
+  }, [categoryCounts, searchableArticles]);
+
+  if (isLoading && !aggregateData) {
+    return (
+      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
+      </aside>
+    );
+  }
 
   return (
     <aside className="w-full space-y-6 sticky top-20 text-slate-800">
@@ -316,7 +393,23 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
                   ? 'bg-amber-700 text-white' 
                   : 'bg-slate-100 text-slate-600';
 
-              return (
+              // Total articles count calculation
+  const totalArticlesCount = useMemo(() => {
+    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+    return Math.max(fromCategories, searchableArticles.length);
+  }, [categoryCounts, searchableArticles]);
+
+  if (isLoading && !aggregateData) {
+    return (
+      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
+      </aside>
+    );
+  }
+
+  return (
                 <div
                   key={art.id}
                   onClick={() => onSelectArticle(art)}
@@ -391,7 +484,7 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                 selectedCategory === 'Semua Topik' ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-600'
               }`}>
-                {articles.length}
+                {totalArticlesCount}
               </span>
             </button>
 
@@ -433,7 +526,23 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
           <div className="grid grid-cols-1 gap-2.5">
             {quickLinks.map(link => {
               const IconComp = ICON_MAP[link.icon] || ExternalLink;
-              return (
+              // Total articles count calculation
+  const totalArticlesCount = useMemo(() => {
+    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+    return Math.max(fromCategories, searchableArticles.length);
+  }, [categoryCounts, searchableArticles]);
+
+  if (isLoading && !aggregateData) {
+    return (
+      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
+        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
+      </aside>
+    );
+  }
+
+  return (
                 <a
                   key={link.id}
                   href={link.url}
