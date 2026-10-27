@@ -160,7 +160,7 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
         }
       ]
     },
-    ...(currentUser.role === 'super_admin' ? [
+    ...((currentUser.role === 'super_admin' || currentUser.role === 'admin') ? [
       {
         groupTitle: 'KONTEN & ZONA PUBLIK',
         items: [
@@ -172,7 +172,9 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
             badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
           }
         ]
-      },
+      }
+    ] : []),
+    ...(currentUser.role === 'super_admin' ? [
       {
         groupTitle: 'INFRASTRUKTUR & SERVER',
         items: [
@@ -542,8 +544,8 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
               <DatabaseClusterManager currentUser={currentUser} />
             )}
 
-            {/* 8. Manajer Portal Publik CMS (Super Admin) */}
-            {activeTab === 'portal-manager' && isSuperAdmin && (
+            {/* 8. Manajer Portal Publik CMS (Super Admin & Admin) */}
+            {activeTab === 'portal-manager' && (isSuperAdmin || currentUser.role === 'admin') && (
               <AdminPortalManager currentUser={currentUser} />
             )}
 

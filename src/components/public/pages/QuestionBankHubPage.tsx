@@ -22,17 +22,25 @@ import { getTeachingResources, trackResourceDownload } from '../../../lib/public
 interface QuestionBankHubPageProps {
   onOpenLogin: (tab: 'student' | 'officer') => void;
   onNavigateCreativity: () => void;
+  initialCategory?: string;
 }
 
 export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
   onOpenLogin,
-  onNavigateCreativity
+  onNavigateCreativity,
+  initialCategory
 }) => {
   const [resources, setResources] = useState<TeachingResource[]>([]);
   const [selectedPhase, setSelectedPhase] = useState<string>('Semua Fase');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'Semua');
   const [selectedSubject, setSelectedSubject] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
   
   // Quick Preview Modal State
   const [previewResource, setPreviewResource] = useState<TeachingResource | null>(null);

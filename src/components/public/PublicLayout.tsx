@@ -44,6 +44,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   };
 
   const [currentRoute, setCurrentRoute] = useState<PublicNavRoute>(getRouteFromHash);
+  const [navOptions, setNavOptions] = useState<{
+    category?: string;
+    tab?: 'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi';
+    generatorIndex?: number;
+  }>({});
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -53,8 +58,20 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const handleNavigate = (route: PublicNavRoute) => {
+  const handleNavigate = (
+    route: PublicNavRoute, 
+    options?: {
+      category?: string;
+      tab?: 'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi';
+      generatorIndex?: number;
+    }
+  ) => {
     setCurrentRoute(route);
+    if (options) {
+      setNavOptions(options);
+    } else {
+      setNavOptions({});
+    }
     try {
       window.location.hash = `#/${route}`;
     } catch (e) {}
@@ -86,6 +103,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           <AssessmentInsightsPage
             onOpenLogin={onOpenLogin}
             onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
+            initialCategory={navOptions.category}
           />
         )}
 
@@ -93,12 +111,15 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           <QuestionBankHubPage
             onOpenLogin={onOpenLogin}
             onNavigateCreativity={() => handleNavigate('ruang-kreativitas')}
+            initialCategory={navOptions.category}
           />
         )}
 
         {currentRoute === 'ruang-kreativitas' && (
           <TeacherCreativityHubPage
             onOpenLogin={onOpenLogin}
+            initialTab={navOptions.tab}
+            initialGeneratorIndex={navOptions.generatorIndex}
           />
         )}
 

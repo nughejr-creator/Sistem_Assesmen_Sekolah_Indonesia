@@ -16,13 +16,30 @@ import { TeacherAdminDownloadsTab } from '../creativity/TeacherAdminDownloadsTab
 
 interface TeacherCreativityHubPageProps {
   onOpenLogin: (tab: 'student' | 'officer') => void;
+  initialTab?: 'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi';
+  initialGeneratorIndex?: number;
 }
 
 export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> = ({
-  onOpenLogin
+  onOpenLogin,
+  initialTab = 'ai',
+  initialGeneratorIndex = 0
 }) => {
-  const [activeTab, setActiveTab] = useState<'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi'>(initialTab);
+  const [activeGeneratorIndex, setActiveGeneratorIndex] = useState<number>(initialGeneratorIndex);
   const [editorPrefill, setEditorPrefill] = useState<{ content: string; title: string }>({ content: '', title: '' });
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  React.useEffect(() => {
+    if (initialGeneratorIndex !== undefined) {
+      setActiveGeneratorIndex(initialGeneratorIndex);
+    }
+  }, [initialGeneratorIndex]);
 
   const handleTransferToEditor = (content: string, title?: string) => {
     setEditorPrefill({
@@ -147,6 +164,7 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
           {activeTab === 'ai' && (
             <AiPromptGenerators 
               onTransferToEditor={handleTransferToEditor}
+              initialGeneratorIndex={activeGeneratorIndex}
             />
           )}
 

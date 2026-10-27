@@ -23,18 +23,26 @@ interface AssessmentInsightsPageProps {
   onOpenLogin: (tab: 'student' | 'officer') => void;
   onNavigateCreativity: () => void;
   onNavigateHome?: () => void;
+  initialCategory?: string;
 }
 
 export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
   onOpenLogin,
   onNavigateCreativity,
-  onNavigateHome
+  onNavigateHome,
+  initialCategory
 }) => {
   const [articles, setArticles] = useState<PublicArticle[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('Semua Topik');
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'Semua Topik');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedArticle, setSelectedArticle] = useState<PublicArticle | null>(null);
   const [copiedShare, setCopiedShare] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
 
   useEffect(() => {
     getPublicArticles().then(data => setArticles(data));

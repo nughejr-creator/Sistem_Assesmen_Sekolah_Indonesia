@@ -19,13 +19,21 @@ import {
 
 interface AiPromptGeneratorsProps {
   onTransferToEditor: (content: string, title?: string) => void;
+  initialGeneratorIndex?: number;
 }
 
 export const AiPromptGenerators: React.FC<AiPromptGeneratorsProps> = ({
-  onTransferToEditor
+  onTransferToEditor,
+  initialGeneratorIndex = 0
 }) => {
-  const [selectedGenerator, setSelectedGenerator] = useState<number>(0);
+  const [selectedGenerator, setSelectedGenerator] = useState<number>(initialGeneratorIndex);
   const [copied, setCopied] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (initialGeneratorIndex !== undefined) {
+      setSelectedGenerator(initialGeneratorIndex);
+    }
+  }, [initialGeneratorIndex]);
 
   // ===========================================================================
   // STATE INPUT 6 GENERATOR
