@@ -62,7 +62,7 @@ export const CurriculumResourcesTab: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header Info */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-black text-slate-900">
             Pusat Perangkat Ajar Kurikulum Merdeka
@@ -81,8 +81,8 @@ export const CurriculumResourcesTab: React.FC = () => {
               onClick={() => setSelectedPhase(phase)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 selectedPhase === phase
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-slate-900 text-white border-2 border-slate-900 shadow-2xs'
+                  : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
               }`}
             >
               {phase}
@@ -96,14 +96,14 @@ export const CurriculumResourcesTab: React.FC = () => {
         {filteredDocs.map(doc => (
           <div 
             key={doc.id}
-            className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-sky-300 hover:shadow-md transition-all flex flex-col justify-between"
+            className="bg-white p-6 rounded-3xl border-2 border-slate-300 hover:border-sky-500 hover:shadow-lg transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-50 text-sky-800 border border-sky-100">
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-50 text-sky-800 border-2 border-sky-200">
                   {doc.type}
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 text-slate-700">
                   {doc.format} • {doc.size}
                 </span>
               </div>
@@ -121,7 +121,7 @@ export const CurriculumResourcesTab: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+            <div className="pt-4 mt-4 border-t-2 border-slate-100 flex items-center justify-between">
               <span className="text-[11px] text-emerald-600 font-semibold flex items-center space-x-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Terverifikasi Kurikulum</span>
@@ -130,7 +130,7 @@ export const CurriculumResourcesTab: React.FC = () => {
               <a
                 href={doc.url}
                 download
-                className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold border-2 border-sky-400/50 shadow-2xs flex items-center space-x-1.5 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Unduh ({doc.format})</span>

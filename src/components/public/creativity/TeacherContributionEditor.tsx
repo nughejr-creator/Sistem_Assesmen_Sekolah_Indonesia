@@ -126,9 +126,9 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
     <div className="space-y-6">
       
       {/* Header Info */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center md:text-left">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wider">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-800 text-[10px] font-black uppercase tracking-wider">
             <Award className="w-3.5 h-3.5 text-amber-600" />
             <span>Pilar 2: Ruang Publikasi & Kontribusi Edukatif Guru</span>
           </div>
@@ -144,7 +144,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
           <button
             type="button"
             onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center space-x-1.5 transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-bold flex items-center space-x-1.5 transition-colors"
           >
             {viewMode === 'edit' ? (
               <>
@@ -163,12 +163,12 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
 
       {/* Feedback Alert Toast */}
       {feedbackMessage && (
-        <div className={`p-4 rounded-2xl border text-xs flex items-start space-x-3 animate-in fade-in duration-150 ${
+        <div className={`p-4 rounded-2xl border-2 text-xs flex items-start space-x-3 animate-in fade-in duration-150 ${
           feedbackMessage.type === 'success' 
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
             : feedbackMessage.type === 'draft'
-            ? 'bg-sky-50 border-sky-200 text-sky-900'
-            : 'bg-rose-50 border-rose-200 text-rose-900'
+            ? 'bg-sky-50 border-sky-300 text-sky-900'
+            : 'bg-rose-50 border-rose-300 text-rose-900'
         }`}>
           {feedbackMessage.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -185,10 +185,10 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
       )}
 
       {/* Editor & Metadata Form */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border-2 border-slate-300 shadow-sm overflow-hidden">
         
         {/* Top Metadata Fields */}
-        <div className="p-6 border-b border-slate-100 space-y-4">
+        <div className="p-6 border-b-2 border-slate-100 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             <div className="md:col-span-2">
@@ -200,7 +200,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Contoh: Modul Ajar IPAS Berdiferensiasi Materi Siklus Air Fase B"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 text-xs font-bold focus:border-amber-500 focus:outline-hidden"
               />
             </div>
 
@@ -211,7 +211,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
               <select
                 value={contentType}
                 onChange={(e) => setContentType(e.target.value as ContributionContentType)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50 focus:bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-xs font-semibold bg-slate-50 focus:bg-white"
               >
                 <option value="Modul Ajar">Modul Ajar</option>
                 <option value="LKPD">Lembar Kerja Peserta Didik (LKPD)</option>
@@ -230,7 +230,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
                 type="text"
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+                className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 bg-slate-50 text-xs"
               />
             </div>
             <div>
@@ -239,7 +239,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
                 type="text"
                 value={authorSchool}
                 onChange={(e) => setAuthorSchool(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+                className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 bg-slate-50 text-xs"
               />
             </div>
             <div>
@@ -249,7 +249,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
                 value={attachmentUrl}
                 onChange={(e) => setAttachmentUrl(e.target.value)}
                 placeholder="https://... (Google Drive / PDF)"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
+                className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 bg-slate-50 text-xs"
               />
             </div>
           </div>
@@ -257,7 +257,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
 
         {/* WYSIWYG Formatting Toolbar */}
         {viewMode === 'edit' && (
-          <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-1.5 text-slate-700">
+          <div className="px-6 py-2.5 bg-slate-50 border-b-2 border-slate-200 flex flex-wrap items-center gap-1.5 text-slate-700">
             
             <button
               type="button"
@@ -362,9 +362,9 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
               className="w-full font-mono text-xs text-slate-800 leading-relaxed focus:outline-hidden resize-y min-h-[350px] p-2 bg-transparent"
             />
           ) : (
-            <div className="min-h-[350px] p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">
+            <div className="min-h-[350px] p-4 bg-slate-50 rounded-2xl border-2 border-slate-300 text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">
               <h2 className="text-xl font-black text-slate-900 mb-2">{title || 'Judul Belum Diisi'}</h2>
-              <div className="text-[11px] text-slate-500 mb-4 pb-3 border-b border-slate-200">
+              <div className="text-[11px] text-slate-500 mb-4 pb-3 border-b-2 border-slate-200">
                 Ditulis oleh: <strong>{authorName}</strong> ({authorSchool}) • Kategori: <strong>{contentType}</strong>
               </div>
               {body || <span className="italic text-slate-400">Belum ada konten yang ditulis.</span>}
@@ -373,7 +373,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
         </div>
 
         {/* Bottom Actions Bar */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="px-6 py-4 bg-slate-50 border-t-2 border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-[11px] text-slate-500">
             Alur kurasi: <strong>Draft</strong> $\rightarrow$ <strong>Review Tim SASI</strong> $\rightarrow$ <strong>Terbit Publik</strong>
           </div>
@@ -383,7 +383,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSave('draft')}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
+              className="px-4 py-2.5 rounded-xl border-2 border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
             >
               <Save className="w-4 h-4 text-slate-500" />
               <span>Simpan Draf</span>
@@ -393,7 +393,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSave('pending_review')}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black shadow-md flex items-center space-x-1.5 transition-all transform active:scale-95"
+              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black shadow-md border-2 border-amber-600/50 flex items-center space-x-1.5 transition-all transform active:scale-95"
             >
               <Send className="w-4 h-4" />
               <span>{isSubmitting ? 'Mengajukan...' : 'Ajukan Kurasi & Terbitkan'}</span>

@@ -114,7 +114,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari materi pokok, tema kisi-kisi, atau kartu soal..."
-                className="w-full pl-11 pr-4 py-3 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border border-white/20 focus:outline-hidden focus:bg-white/15 focus:border-emerald-400 backdrop-blur-xs transition-all shadow-inner"
+                className="w-full pl-11 pr-4 py-3 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-emerald-400 backdrop-blur-xs transition-all shadow-inner"
               />
             </div>
           </div>
@@ -127,7 +127,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         
         {/* Filter Controls Card */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div className="bg-white p-5 rounded-2xl border-2 border-slate-300 shadow-sm space-y-4">
           <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-slate-700">
             <Filter className="w-4 h-4 text-emerald-600" />
             <span>Filter Repositori Instrumen Evaluasi</span>
@@ -146,8 +146,8 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                     onClick={() => setSelectedPhase(p)}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                       selectedPhase === p
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-slate-900 text-white border-2 border-slate-900 shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
                     }`}
                   >
                     {p}
@@ -167,8 +167,8 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                     onClick={() => setSelectedCategory(c)}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                       selectedCategory === c
-                        ? 'bg-emerald-600 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-emerald-600 text-white border-2 border-emerald-600 shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
                     }`}
                   >
                     {c}
@@ -188,8 +188,8 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                     onClick={() => setSelectedSubject(s)}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                       selectedSubject === s
-                        ? 'bg-sky-600 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-sky-600 text-white border-2 border-sky-600 shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
                     }`}
                   >
                     {s}
@@ -213,7 +213,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
             <button
               type="button"
               onClick={onNavigateCreativity}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200 hover:bg-amber-100 transition-colors"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 text-xs font-bold border-2 border-amber-300 hover:border-amber-500 hover:bg-amber-100 transition-all"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
               <span>Rakit Kisi-Kisi Mandiri via AI</span>
@@ -221,7 +221,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
           </div>
 
           {filteredResources.length === 0 ? (
-            <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3">
+            <div className="bg-white p-12 rounded-3xl border-2 border-slate-300 text-center space-y-3">
               <Layers className="w-8 h-8 text-slate-300 mx-auto" />
               <h4 className="text-sm font-bold text-slate-800">Tidak ada instrumen yang sesuai filter</h4>
               <p className="text-xs text-slate-500">Coba atur ulang filter fase atau mata pelajaran di atas.</p>
@@ -231,16 +231,16 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
               {filteredResources.map(res => (
                 <div 
                   key={res.id}
-                  className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between hover:shadow-lg hover:border-emerald-300 transition-all group"
+                  className="bg-white rounded-3xl border-2 border-slate-300 p-6 flex flex-col justify-between hover:shadow-xl hover:border-emerald-500 transition-all group"
                 >
                   <div className="space-y-3">
                     {/* Top Tags */}
                     <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-100">
+                      <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border-2 border-emerald-200">
                         {res.category}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase ${
-                        res.file_type === 'DOCX' ? 'bg-sky-100 text-sky-800' : 'bg-rose-100 text-rose-800'
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase border ${
+                        res.file_type === 'DOCX' ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-rose-100 text-rose-800 border-rose-300'
                       }`}>
                         {res.file_type}
                       </span>
@@ -254,21 +254,21 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                       {res.description}
                     </p>
 
-                    <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-medium">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                    <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-600 font-medium">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
                         {res.phase || 'Umum'}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
                         {res.grade_level || 'Semua Kelas'}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
                         {res.subject || 'Umum'}
                       </span>
                     </div>
                   </div>
 
                   {/* Bottom Stats & Actions */}
-                  <div className="pt-5 mt-5 border-t border-slate-100 space-y-3">
+                  <div className="pt-5 mt-5 border-t-2 border-slate-100 space-y-3">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
                       <span>Ukuran: {res.file_size || '1.5 MB'}</span>
                       <span className="flex items-center space-x-1 text-slate-500 font-semibold">
@@ -282,7 +282,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                       <button
                         type="button"
                         onClick={() => setPreviewResource(res)}
-                        className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center space-x-1 transition-colors"
+                        className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-bold flex items-center justify-center space-x-1 transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Pratinjau</span>
@@ -292,7 +292,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDownload(res)}
-                        className={`py-2 rounded-xl text-white text-xs font-bold shadow-2xs flex items-center justify-center space-x-1 transition-all ${
+                        className={`py-2 rounded-xl text-white text-xs font-bold shadow-2xs border-2 border-emerald-500/60 flex items-center justify-center space-x-1 transition-all ${
                           downloadSuccessId === res.id 
                             ? 'bg-emerald-600' 
                             : 'bg-emerald-600 hover:bg-emerald-700'
@@ -323,10 +323,10 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
         ===================================================================== */}
         {previewResource && (
           <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border-2 border-slate-300 animate-in zoom-in-95 duration-200">
               
               {/* Modal Header */}
-              <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b-2 border-slate-800">
                 <div className="flex items-center space-x-2">
                   <Eye className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs font-black uppercase tracking-wider text-slate-200">
@@ -346,10 +346,10 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
               <div className="p-6 overflow-y-auto space-y-5 text-xs">
                 <div>
                   <div className="flex items-center space-x-2 mb-1.5">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-100">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border-2 border-emerald-200">
                       {previewResource.category}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 text-slate-700">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 border border-slate-200 text-slate-700">
                       {previewResource.phase} • {previewResource.grade_level} • {previewResource.subject}
                     </span>
                   </div>
@@ -368,9 +368,9 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                     <span>Struktur Matriks Kisi-Kisi Butir Soal:</span>
                   </h4>
 
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <div className="overflow-x-auto border-2 border-slate-300 rounded-xl">
                     <table className="w-full text-left text-[11px]">
-                      <thead className="bg-slate-100 text-slate-700 font-black uppercase text-[10px] border-b border-slate-200">
+                      <thead className="bg-slate-100 text-slate-700 font-black uppercase text-[10px] border-b-2 border-slate-300">
                         <tr>
                           <th className="py-2.5 px-3 w-12 text-center">No</th>
                           <th className="py-2.5 px-3">Capaian Pembelajaran (CP)</th>
@@ -412,18 +412,18 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
                   <span>Format: <strong>{previewResource.file_type}</strong> ({previewResource.file_size})</span>
                   <span>Diunduh sebanyak <strong>{previewResource.download_count} kali</strong> oleh guru.</span>
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div className="px-6 py-4 bg-slate-50 border-t-2 border-slate-200 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setPreviewResource(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold"
+                  className="px-4 py-2 rounded-xl border-2 border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold"
                 >
                   Tutup Pratinjau
                 </button>
@@ -434,7 +434,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
                     handleDownload(previewResource);
                     setPreviewResource(null);
                   }}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md flex items-center space-x-1.5 transition-all"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md border-2 border-emerald-400/50 flex items-center space-x-1.5 transition-all"
                 >
                   <Download className="w-4 h-4" />
                   <span>Unduh Dokumen ({previewResource.file_type})</span>

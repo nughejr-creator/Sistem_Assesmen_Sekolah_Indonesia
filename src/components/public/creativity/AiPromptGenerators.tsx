@@ -296,18 +296,18 @@ D. Variasi Format Catatan Guru:
               key={gen.id}
               type="button"
               onClick={() => setSelectedGenerator(idx)}
-              className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+              className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
                 isSelected 
                   ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-amber-400/40' 
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-xl ${isSelected ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2 rounded-xl ${isSelected ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                   <IconComp className="w-4 h-4" />
                 </div>
                 <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
-                  isSelected ? 'bg-white/10 text-amber-300' : 'bg-slate-100 text-slate-500'
+                  isSelected ? 'bg-white/10 text-amber-300' : 'bg-slate-100 text-slate-500 border border-slate-200'
                 }`}>
                   {gen.badge}
                 </span>
@@ -325,8 +325,8 @@ D. Variasi Format Catatan Guru:
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* KOLOM KIRI: FORMULIR PARAMETER (5 / 12) */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
+        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm space-y-4">
+          <div className="flex items-center space-x-2 pb-3 border-b-2 border-slate-100">
             <Sliders className="w-4 h-4 text-amber-600" />
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
               Parameter Spesifikasi Prompt
@@ -687,15 +687,15 @@ D. Variasi Format Catatan Guru:
             </div>
           )}
 
-          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 flex items-start space-x-2">
+          <div className="p-3 bg-amber-50 rounded-xl border-2 border-amber-300 text-[11px] text-amber-900 flex items-start space-x-2">
             <Zap className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <span>Prompt di sebelah kanan otomatis terbarukan secara instan setiap kali Anda mengubah parameter di atas.</span>
           </div>
         </div>
 
         {/* KOLOM KANAN: PREVIEW PROMPT HASIL RAKITAN & AKSI (7 / 12) */}
-        <div className="lg:col-span-7 bg-slate-900 text-white rounded-3xl p-6 shadow-xl border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="lg:col-span-7 bg-slate-900 text-white rounded-3xl p-6 shadow-xl border-2 border-slate-700 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-white/10">
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span className="text-xs font-black uppercase tracking-wider text-slate-200">
@@ -707,7 +707,7 @@ D. Variasi Format Catatan Guru:
               <button
                 type="button"
                 onClick={handleCopy}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black shadow-md flex items-center space-x-1.5 transition-all transform active:scale-95"
+                className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black shadow-md border-2 border-amber-500/50 flex items-center space-x-1.5 transition-all transform active:scale-95"
               >
                 {copied ? (
                   <>
@@ -725,7 +725,7 @@ D. Variasi Format Catatan Guru:
               <button
                 type="button"
                 onClick={handleOpenEditor}
-                className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border-2 border-white/20 shadow-2xs flex items-center space-x-1.5 transition-colors"
                 title="Buka teks prompt di editor tulisan guru"
               >
                 <span>Buka di Editor Tulisan</span>
@@ -735,7 +735,7 @@ D. Variasi Format Catatan Guru:
           </div>
 
           {/* Kotak Readonly Prompt */}
-          <div className="bg-slate-950 p-4 rounded-2xl border border-white/10 font-mono text-[11px] leading-relaxed text-slate-300 max-h-[460px] overflow-y-auto whitespace-pre-wrap selection:bg-amber-400 selection:text-slate-950">
+          <div className="bg-slate-950 p-4 rounded-2xl border-2 border-slate-800 font-mono text-[11px] leading-relaxed text-slate-300 max-h-[460px] overflow-y-auto whitespace-pre-wrap selection:bg-amber-400 selection:text-slate-950">
             {currentPromptText}
           </div>
 

@@ -77,7 +77,7 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 space-y-10">
         
         {/* Latar Belakang & Visi SASIPEDIA */}
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-sm space-y-4">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center space-x-2">
             <BookOpen className="w-5 h-5 text-sky-600" />
             <span>Visi Pembaharuan Evaluasi Pendidikan</span>
@@ -91,7 +91,7 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Kredensial Akademik & Sertifikasi */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-sm space-y-4">
             <h3 className="text-sm font-black text-slate-900 flex items-center space-x-2">
               <GraduationCap className="w-4 h-4 text-emerald-600" />
               <span>Kredensial & Kualifikasi</span>
@@ -107,7 +107,7 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
           </div>
 
           {/* Bidang Keahlian */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-sm space-y-4">
             <h3 className="text-sm font-black text-slate-900 flex items-center space-x-2">
               <Award className="w-4 h-4 text-amber-500" />
               <span>Keahlian Instrumen & Sistem</span>
@@ -125,14 +125,14 @@ export const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({
         </div>
 
         {/* Kontak Resmi */}
-        <div className="p-6 rounded-2xl bg-sky-50 border border-sky-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-6 rounded-2xl bg-sky-50 border-2 border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-left">
             <h4 className="text-xs font-black text-sky-950">Saluran Korespondensi Pengembang</h4>
             <p className="text-[11px] text-sky-700">Hubungi langsung untuk konsultasi evaluasi sekolah, aduan sistem, atau kolaborasi pendidikan.</p>
           </div>
           <a
             href={`mailto:${profile.email}`}
-            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5 shrink-0"
+            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold border-2 border-sky-400/50 shadow-xs flex items-center space-x-1.5 shrink-0"
           >
             <Mail className="w-3.5 h-3.5" />
             <span>{profile.email}</span>

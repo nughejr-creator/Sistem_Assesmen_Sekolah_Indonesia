@@ -30,18 +30,18 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({
   };
 
   return (
-    <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 text-xs selection:bg-sky-500 selection:text-white">
+    <footer className="bg-slate-950 text-slate-400 border-t-2 border-slate-800 text-xs selection:bg-sky-500 selection:text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
         
         {/* =====================================================================
             TOP ROW: BRAND & FOUR COLUMNS
         ===================================================================== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-12 border-b border-slate-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-12 border-b-2 border-slate-800/80">
           
           {/* Kolom 1 & 2: Identitas Platform & Pengembang E-E-A-T */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="bg-white/95 px-3 py-1.5 rounded-xl shadow-xs">
+              <div className="bg-white px-3 py-1.5 rounded-xl border-2 border-slate-700 shadow-xs">
                 <img 
                   src="/sasipedia-logo.png" 
                   alt="SASIPEDIA - Platform Asesmen Sekolah Indonesia" 

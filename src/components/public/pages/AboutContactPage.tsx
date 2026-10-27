@@ -51,7 +51,7 @@ export const AboutContactPage: React.FC = () => {
           
           {/* Kolom Kiri: Tentang Platform */}
           <div className="space-y-6">
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-sm space-y-4">
               <h2 className="text-base sm:text-lg font-black text-slate-900">
                 Tentang Platform SASIPEDIA
               </h2>
@@ -64,14 +64,14 @@ export const AboutContactPage: React.FC = () => {
             </div>
 
             {/* Informasi Kontak Pengembang */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-sm space-y-4">
               <h3 className="text-sm font-black text-slate-900">
                 Saluran Kontak & Alamat
               </h3>
 
               <div className="space-y-3 text-xs text-slate-600">
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg bg-sky-50 text-sky-600 shrink-0">
+                  <div className="p-2 rounded-lg bg-sky-50 border border-sky-200 text-sky-600 shrink-0">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
@@ -83,7 +83,7 @@ export const AboutContactPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">
+                  <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 shrink-0">
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
@@ -93,7 +93,7 @@ export const AboutContactPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg bg-amber-50 text-amber-600 shrink-0">
+                  <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-600 shrink-0">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div>
@@ -106,7 +106,7 @@ export const AboutContactPage: React.FC = () => {
           </div>
 
           {/* Kolom Kanan: Formulir Kirim Pesan / Aduan */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-slate-300 shadow-sm space-y-6">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Kirim Pesan / Konsultasi Asesmen
@@ -117,7 +117,7 @@ export const AboutContactPage: React.FC = () => {
             </div>
 
             {submitted ? (
-              <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+              <div className="p-6 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
@@ -151,7 +151,7 @@ export const AboutContactPage: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Budi Santoso, S.Pd"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-xs focus:border-sky-500 focus:outline-hidden"
                   />
                 </div>
 
@@ -166,7 +166,7 @@ export const AboutContactPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="nama@sekolah.sch.id"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
+                      className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-xs focus:border-sky-500 focus:outline-hidden"
                     />
                   </div>
 
@@ -179,7 +179,7 @@ export const AboutContactPage: React.FC = () => {
                       value={school}
                       onChange={(e) => setSchool(e.target.value)}
                       placeholder="Contoh: SDN Cinanggerang I"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
+                      className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-xs focus:border-sky-500 focus:outline-hidden"
                     />
                   </div>
                 </div>
@@ -194,13 +194,13 @@ export const AboutContactPage: React.FC = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Tuliskan pertanyaan, masukan modul, atau kendala sistem yang ingin Anda diskusikan..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-hidden resize-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 text-xs focus:border-sky-500 focus:outline-hidden resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-md flex items-center justify-center space-x-2 transition-all"
+                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black shadow-md border-2 border-slate-700 flex items-center justify-center space-x-2 transition-all"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Kirim Pesan Sekarang</span>

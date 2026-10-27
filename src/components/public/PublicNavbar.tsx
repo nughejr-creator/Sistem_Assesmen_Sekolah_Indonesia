@@ -189,7 +189,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all duration-300">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 shadow-xs transition-all duration-300">
       <div className="max-w-7xl mx-auto px-6 md:px-10 h-20 flex items-center justify-between gap-4">
         
         {/* =====================================================================
@@ -220,25 +220,25 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <button
               type="button"
               onClick={() => handleRouteClick('wawasan-asesmen')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-blue-100/90 via-sky-100 to-blue-50 hover:from-blue-200/90 hover:via-sky-200 hover:to-blue-100 text-blue-950 border border-blue-300/90 hover:border-blue-400 ${
-                currentRoute === 'wawasan-asesmen' ? 'ring-2 ring-blue-500/40 border-blue-500 from-blue-200 via-sky-200 to-blue-100 shadow-sm' : ''
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-blue-100/90 via-sky-100 to-blue-50 hover:from-blue-200/90 hover:via-sky-200 hover:to-blue-100 text-blue-950 border-2 border-blue-400 hover:border-blue-600 ${
+                currentRoute === 'wawasan-asesmen' ? 'ring-2 ring-blue-500/40 border-blue-600 from-blue-200 via-sky-200 to-blue-100 shadow-sm' : ''
               }`}
             >
               <BookOpen className="w-4 h-4 text-blue-700 transition-transform group-hover:scale-110" />
               <span>Soal & Asesmen</span>
-              <ChevronDown className="w-4 h-4 text-blue-600/80 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-blue-600 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
             <div className="absolute left-0 top-full pt-2 w-76 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-76 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
+              <div className="w-76 bg-white border-2 border-slate-300 shadow-2xl rounded-2xl p-2.5 space-y-2">
                 {wawasanItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-100/75 via-sky-50 to-blue-50/90 hover:from-blue-200/80 hover:via-sky-100 hover:to-blue-100 border border-blue-200/90 hover:border-blue-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-blue-950 hover:text-blue-900 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-blue-100/75 via-sky-50 to-blue-50/90 hover:from-blue-200/80 hover:via-sky-100 hover:to-blue-100 border-2 border-blue-300 hover:border-blue-500 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-blue-950 hover:text-blue-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-blue-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border-2 border-blue-200 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -255,25 +255,25 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <button
               type="button"
               onClick={() => handleRouteClick('bank-soal')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-indigo-100/90 via-violet-100 to-purple-50 hover:from-indigo-200/90 hover:via-violet-200 hover:to-purple-100 text-indigo-950 border border-indigo-300/90 hover:border-indigo-400 ${
-                currentRoute === 'bank-soal' ? 'ring-2 ring-indigo-500/40 border-indigo-500 from-indigo-200 via-violet-200 to-purple-100 shadow-sm' : ''
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-indigo-100/90 via-violet-100 to-purple-50 hover:from-indigo-200/90 hover:via-violet-200 hover:to-purple-100 text-indigo-950 border-2 border-indigo-400 hover:border-indigo-600 ${
+                currentRoute === 'bank-soal' ? 'ring-2 ring-indigo-500/40 border-indigo-600 from-indigo-200 via-violet-200 to-purple-100 shadow-sm' : ''
               }`}
             >
               <Layers className="w-4 h-4 text-indigo-700 transition-transform group-hover:scale-110" />
               <span>Kisi-Kisi & Bank Soal</span>
-              <ChevronDown className="w-4 h-4 text-indigo-600/80 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-indigo-600 group-hover:text-indigo-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
             <div className="absolute left-0 top-full pt-2 w-76 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-76 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-2">
+              <div className="w-76 bg-white border-2 border-slate-300 shadow-2xl rounded-2xl p-2.5 space-y-2">
                 {bankSoalItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-100/75 via-violet-50 to-purple-50/90 hover:from-indigo-200/80 hover:via-violet-100 hover:to-purple-100 border border-indigo-200/90 hover:border-indigo-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-indigo-950 hover:text-indigo-900 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-100/75 via-violet-50 to-purple-50/90 hover:from-indigo-200/80 hover:via-violet-100 hover:to-purple-100 border-2 border-indigo-300 hover:border-indigo-500 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-indigo-950 hover:text-indigo-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-indigo-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border-2 border-indigo-200 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -290,8 +290,8 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <button
               type="button"
               onClick={() => handleRouteClick('ruang-kreativitas')}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-amber-100/90 via-orange-100 to-amber-50 hover:from-amber-200/90 hover:via-orange-200 hover:to-amber-100 text-amber-950 border border-amber-300/90 hover:border-amber-400 ${
-                currentRoute === 'ruang-kreativitas' ? 'ring-2 ring-amber-500/40 border-amber-500 from-amber-200 via-orange-200 to-amber-100 shadow-sm' : ''
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer bg-gradient-to-r from-amber-100/90 via-orange-100 to-amber-50 hover:from-amber-200/90 hover:via-orange-200 hover:to-amber-100 text-amber-950 border-2 border-amber-400 hover:border-amber-600 ${
+                currentRoute === 'ruang-kreativitas' ? 'ring-2 ring-amber-500/40 border-amber-600 from-amber-200 via-orange-200 to-amber-100 shadow-sm' : ''
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-700 transition-transform group-hover:scale-110" />
@@ -299,24 +299,24 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-black text-[10px] px-1.5 py-0.5 rounded-md shadow-xs tracking-wider">
                 AI
               </span>
-              <ChevronDown className="w-4 h-4 text-amber-700/80 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
+              <ChevronDown className="w-4 h-4 text-amber-700 group-hover:text-amber-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
             {/* Clean Flyout Dropdown (Solid White Background, Zero Transparency) */}
             <div className="absolute right-0 top-full pt-2 w-84 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto">
-              <div className="w-84 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 max-h-[480px] overflow-y-auto space-y-2">
+              <div className="w-84 bg-white border-2 border-slate-300 shadow-2xl rounded-2xl p-2.5 max-h-[480px] overflow-y-auto space-y-2">
                 
                 {/* Header 1: Asisten Guru AI */}
-                <div className="text-[10px] font-extrabold text-amber-800/80 px-3 py-0.5 tracking-wider uppercase">
+                <div className="text-[10px] font-extrabold text-amber-800 px-3 py-0.5 tracking-wider uppercase">
                   ASISTEN GURU AI
                 </div>
                 {kreativitasAiItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-100/75 via-orange-50 to-amber-50/90 hover:from-amber-200/80 hover:via-orange-100 hover:to-amber-100 border border-amber-200/90 hover:border-amber-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-amber-950 hover:text-amber-900 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-100/75 via-orange-50 to-amber-50/90 hover:from-amber-200/80 hover:via-orange-100 hover:to-amber-100 border-2 border-amber-300 hover:border-amber-500 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-amber-950 hover:text-amber-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-amber-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border-2 border-amber-200 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>
@@ -324,19 +324,19 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 ))}
 
                 {/* Garis Pemisah */}
-                <div className="border-t border-slate-200/80 my-1" />
+                <div className="border-t-2 border-slate-200 my-1.5" />
 
                 {/* Header 2: Sumber Belajar */}
-                <div className="text-[10px] font-extrabold text-teal-800/80 px-3 py-0.5 tracking-wider uppercase">
+                <div className="text-[10px] font-extrabold text-teal-800 px-3 py-0.5 tracking-wider uppercase">
                   SUMBER BELAJAR
                 </div>
                 {kreativitasSumberItems.map((item) => (
                   <div
                     key={item.label}
                     onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-100/75 via-emerald-50 to-cyan-50/90 hover:from-teal-200/80 hover:via-emerald-100 hover:to-cyan-100 border border-teal-200/90 hover:border-teal-400 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-teal-950 hover:text-teal-900 cursor-pointer group/item"
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-teal-100/75 via-emerald-50 to-cyan-50/90 hover:from-teal-200/80 hover:via-emerald-100 hover:to-cyan-100 border-2 border-teal-300 hover:border-teal-500 shadow-xs hover:shadow-sm transition-all text-xs font-bold text-teal-950 hover:text-teal-900 cursor-pointer group/item"
                   >
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-teal-200/80 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border-2 border-teal-200 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
                     <span className="truncate">{item.label}</span>

@@ -107,7 +107,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenLogin('student', 'SASI26')}
-                className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-sm font-bold backdrop-blur-md transition-all flex items-center space-x-2 shadow-xs"
+                className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 text-sm font-bold backdrop-blur-md transition-all flex items-center space-x-2 shadow-xs"
               >
                 <PlayCircle className="w-4 h-4 text-sky-400" />
                 <span>Coba Demo Simulasi Siswa</span>
@@ -120,7 +120,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-14 max-w-4xl mx-auto">
             
             {/* KARTU 1: AKSES CEPAT SISWA (DENGAN BORDER TEGAS KONTRASTING) */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-sky-400/60 shadow-2xl shadow-black/60 relative overflow-hidden group text-slate-900 transition-all duration-300 hover:border-sky-300">
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-sky-400 shadow-2xl shadow-black/60 relative overflow-hidden group text-slate-900 transition-all duration-300 hover:border-sky-300">
               <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-full -mr-10 -mt-10 pointer-events-none" />
               
               <div className="flex items-center space-x-3 mb-3">
@@ -145,14 +145,14 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                       placeholder="CONTOH: SASI26"
                       value={quickTokenInput}
                       onChange={(e) => setQuickTokenInput(e.target.value.toUpperCase())}
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center font-mono font-black text-lg tracking-widest text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 uppercase transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-300 rounded-2xl text-center font-mono font-black text-lg tracking-widest text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 uppercase transition-all"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:via-teal-700 hover:to-sky-700 text-white text-xs font-black rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all transform active:scale-95"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:via-teal-700 hover:to-sky-700 text-white text-xs font-black rounded-xl shadow-md border-2 border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform active:scale-95"
                 >
                   <span>Buka Lembar Ujian & Konfirmasi Data</span>
                   <ChevronRight className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             </div>
 
             {/* KARTU 2: RINGKASAN STATUS ASESMEN & KEANDALAN CBT (KONTRASTING CARD & VISIBLE BORDER) */}
-            <div className="bg-gradient-to-br from-[#162952] via-[#112040] to-[#0d1830] rounded-3xl p-6 sm:p-7 border-2 border-sky-400/60 shadow-2xl shadow-black/60 relative overflow-hidden flex flex-col justify-between text-white backdrop-blur-md transition-all duration-300 hover:border-sky-300">
+            <div className="bg-gradient-to-br from-[#162952] via-[#112040] to-[#0d1830] rounded-3xl p-6 sm:p-7 border-2 border-sky-400 shadow-2xl shadow-black/60 relative overflow-hidden flex flex-col justify-between text-white backdrop-blur-md transition-all duration-300 hover:border-sky-300">
               
               <div>
                 <div className="flex items-center justify-between pb-3.5 border-b border-sky-500/25">
@@ -175,7 +175,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                       Sesi CBT Berjalan
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md bg-sky-500/15 text-sky-200 border border-sky-400/40 shadow-xs">
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md bg-sky-500/15 text-sky-200 border-2 border-sky-400/50 shadow-xs">
                     Live Server SASI
                   </span>
                 </div>
@@ -189,7 +189,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5 pt-1">
-                    <div className="bg-[#09152b]/90 border border-sky-500/30 rounded-xl p-2.5 shadow-inner">
+                    <div className="bg-[#09152b]/90 border-2 border-sky-500/40 rounded-xl p-2.5 shadow-inner">
                       <span className="text-[10px] text-slate-400 block font-medium">Daya Tahan Gangguan</span>
                       <span className="text-sm font-black text-emerald-400 flex items-center space-x-1 mt-0.5">
                         <CheckCircle2 className="w-3.5 h-3.5 inline text-emerald-400" />
@@ -197,7 +197,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                       </span>
                     </div>
 
-                    <div className="bg-[#09152b]/90 border border-sky-500/30 rounded-xl p-2.5 shadow-inner">
+                    <div className="bg-[#09152b]/90 border-2 border-sky-500/40 rounded-xl p-2.5 shadow-inner">
                       <span className="text-[10px] text-slate-400 block font-medium">Kesiapan Butir Soal</span>
                       <span className="text-sm font-black text-sky-300 mt-0.5 block">
                         Multi-Varian Paralel
@@ -224,26 +224,26 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
       {/* =========================================================================
           2. STATISTIK COUNTER BAR
       ========================================================================= */}
-      <section className="bg-white border-y border-slate-200 py-8">
+      <section className="bg-white border-y-2 border-slate-200 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
             
-            <div className="space-y-1">
+            <div className="space-y-1 p-4 rounded-2xl bg-slate-50/70 border-2 border-slate-200 shadow-xs">
               <div className="text-2xl sm:text-3xl font-black text-brand-600">Dual Penilaian</div>
               <p className="text-xs font-semibold text-slate-500">Skoring Otomatis + Modul Koreksi Guru</p>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 p-4 rounded-2xl bg-slate-50/70 border-2 border-slate-200 shadow-xs">
               <div className="text-2xl sm:text-3xl font-black text-emerald-600">Dual-Storage</div>
               <p className="text-xs font-semibold text-slate-500">Autosave Tahan Mati Lampu & Ganti Laptop</p>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 p-4 rounded-2xl bg-slate-50/70 border-2 border-slate-200 shadow-xs">
               <div className="text-2xl sm:text-3xl font-black text-sky-600">Multi-Varian</div>
               <p className="text-xs font-semibold text-slate-500">Parallel Item Banking per Kisi-Kisi</p>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 p-4 rounded-2xl bg-slate-50/70 border-2 border-slate-200 shadow-xs">
               <div className="text-2xl sm:text-3xl font-black text-purple-600">Live Control</div>
               <p className="text-xs font-semibold text-slate-500">3 Tombol Darurat Proktor Real-Time</p>
             </div>
@@ -255,7 +255,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
       {/* =========================================================================
           3. 4 PILAR PORTAL EDUKASI PUBLIK (PINTU MASUK KE MENU UTAMA)
       ========================================================================= */}
-      <section className="py-16 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200">
+      <section className="py-16 bg-gradient-to-b from-white to-slate-50 border-b-2 border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
             <span className="text-xs font-black uppercase tracking-wider text-sky-600">
@@ -274,10 +274,10 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             {/* Kartu 1: Wawasan Soal */}
             <div 
               onClick={onNavigateInsights}
-              className="bg-white p-7 rounded-3xl border border-slate-200 hover:border-sky-400 hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-7 rounded-3xl border-2 border-slate-300 hover:border-sky-500 shadow-xs hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-sky-50 border-2 border-sky-200 text-sky-600 flex items-center justify-center font-bold group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600 transition-all">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 <h3 className="font-extrabold text-base text-slate-900 group-hover:text-sky-600 transition-colors">
@@ -287,7 +287,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                   Panduan baku penulisan soal bermutu, bedah karakteristik stimulus AKM (Literasi & Numerasi), serta teknik analisis butir (daya beda & tingkat kesukaran).
                 </p>
               </div>
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center text-xs font-bold text-sky-600">
+              <div className="pt-4 mt-4 border-t-2 border-slate-100 flex items-center text-xs font-bold text-sky-600">
                 <span>Jelajahi Panduan →</span>
               </div>
             </div>
@@ -295,10 +295,10 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             {/* Kartu 2: Kisi-Kisi & Bank Soal */}
             <div 
               onClick={onNavigateQuestionBank}
-              className="bg-white p-7 rounded-3xl border border-slate-200 hover:border-emerald-400 hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-7 rounded-3xl border-2 border-slate-300 hover:border-emerald-500 shadow-xs hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border-2 border-emerald-200 text-emerald-600 flex items-center justify-center font-bold group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all">
                   <Layers className="w-6 h-6" />
                 </div>
                 <h3 className="font-extrabold text-base text-slate-900 group-hover:text-emerald-600 transition-colors">
@@ -308,7 +308,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                   Matriks kisi-kisi dan kartu soal siap cetak untuk Fase A, B, dan C. Dilengkapi sebaran level kognitif (L1-L3) dan instrumen asesmen diagnostik.
                 </p>
               </div>
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center text-xs font-bold text-emerald-600">
+              <div className="pt-4 mt-4 border-t-2 border-slate-100 flex items-center text-xs font-bold text-emerald-600">
                 <span>Lihat Katalog Soal →</span>
               </div>
             </div>
@@ -316,10 +316,10 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             {/* Kartu 3: Ruang Kreativitas Guru AI */}
             <div 
               onClick={onNavigateCreativity}
-              className="bg-white p-7 rounded-3xl border border-slate-200 hover:border-amber-400 hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-7 rounded-3xl border-2 border-slate-300 hover:border-amber-500 shadow-xs hover:shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 border-2 border-amber-200 text-amber-600 flex items-center justify-center font-bold group-hover:bg-amber-500 group-hover:text-slate-950 group-hover:border-amber-500 transition-all">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <h3 className="font-extrabold text-base text-slate-900 group-hover:text-amber-700 transition-colors">
@@ -329,7 +329,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                   Asisten Prompt AI 6 alur mengajar (Modul Ajar, LKPD, Soal, IKTP Rapor, Kokurikuler, Refleksi) serta repositori administrasi guru gratis (DOCX/XLSX).
                 </p>
               </div>
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center text-xs font-bold text-amber-700">
+              <div className="pt-4 mt-4 border-t-2 border-slate-100 flex items-center text-xs font-bold text-amber-700">
                 <span>Buka Ruang Kreativitas →</span>
               </div>
             </div>
@@ -358,8 +358,8 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
             
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 relative group hover:bg-white/10 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-brand-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4">
+            <div className="bg-white/5 border-2 border-slate-700/80 hover:border-brand-400 rounded-3xl p-6 relative group hover:bg-white/10 transition-all shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-brand-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4 shadow-sm">
                 01
               </div>
               <h3 className="font-bold text-base text-white mb-2">Penyiapan Bank Soal</h3>
@@ -368,8 +368,8 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               </p>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 relative group hover:bg-white/10 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-sky-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4">
+            <div className="bg-white/5 border-2 border-slate-700/80 hover:border-sky-400 rounded-3xl p-6 relative group hover:bg-white/10 transition-all shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-sky-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4 shadow-sm">
                 02
               </div>
               <h3 className="font-bold text-base text-white mb-2">Aktivasi Sesi & Token</h3>
@@ -378,8 +378,8 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               </p>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 relative group hover:bg-white/10 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4">
+            <div className="bg-white/5 border-2 border-slate-700/80 hover:border-emerald-400 rounded-3xl p-6 relative group hover:bg-white/10 transition-all shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4 shadow-sm">
                 03
               </div>
               <h3 className="font-bold text-base text-white mb-2">Pengerjaan Siswa</h3>
@@ -388,8 +388,8 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               </p>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 relative group hover:bg-white/10 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-purple-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4">
+            <div className="bg-white/5 border-2 border-slate-700/80 hover:border-purple-400 rounded-3xl p-6 relative group hover:bg-white/10 transition-all shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-purple-500 text-slate-950 flex items-center justify-center font-black text-sm mb-4 shadow-sm">
                 04
               </div>
               <h3 className="font-bold text-base text-white mb-2">Penilaian & Rekap</h3>
@@ -435,7 +435,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             ].map((item, idx) => (
               <div 
                 key={idx}
-                className="bg-white rounded-2xl border border-slate-200 overflow-hidden transition-all"
+                className="bg-white rounded-2xl border-2 border-slate-300 overflow-hidden shadow-xs hover:border-slate-400 transition-all"
               >
                 <button
                   type="button"
@@ -448,7 +448,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                   </span>
                 </button>
                 {activeFaq === idx && (
-                  <div className="px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                  <div className="px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t-2 border-slate-100 pt-3">
                     {item.a}
                   </div>
                 )}

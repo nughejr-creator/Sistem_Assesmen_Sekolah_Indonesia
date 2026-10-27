@@ -49,7 +49,7 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header Info */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-black text-slate-900">
             Pusat Template Administrasi Guru Sekolah Dasar
@@ -59,7 +59,7 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
           </p>
         </div>
 
-        <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+        <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border-2 border-emerald-300">
           100% Gratis & Bebas Modifikasi
         </span>
       </div>
@@ -69,15 +69,15 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
         {adminTemplates.map(item => (
           <div 
             key={item.id}
-            className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between"
+            className="bg-white p-6 rounded-3xl border-2 border-slate-300 hover:border-emerald-500 hover:shadow-lg transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-100">
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border-2 border-emerald-200">
                   {item.badge}
                 </span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                  item.format.includes('XLSX') ? 'bg-emerald-100 text-emerald-900' : 'bg-sky-100 text-sky-900'
+                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                  item.format.includes('XLSX') ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-sky-100 border-sky-300 text-sky-900'
                 }`}>
                   {item.format}
                 </span>
@@ -98,13 +98,13 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+            <div className="pt-4 mt-4 border-t-2 border-slate-100 flex items-center justify-between">
               <span className="text-[11px] text-slate-500 italic">Format Standar Nasional</span>
 
               <a
                 href={item.url}
                 download
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold border-2 border-slate-700 hover:border-slate-600 shadow-2xs flex items-center space-x-1.5 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Unduh Template</span>

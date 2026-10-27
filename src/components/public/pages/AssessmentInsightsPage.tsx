@@ -110,7 +110,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari topik panduan soal, stimulus AKM, atau rubrik penskoran..."
-                className="w-full pl-11 pr-4 py-3 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border border-white/20 focus:outline-hidden focus:bg-white/15 focus:border-sky-400 backdrop-blur-xs transition-all shadow-inner"
+                className="w-full pl-11 pr-4 py-3 bg-white/10 text-white placeholder-slate-400 text-xs rounded-xl border-2 border-white/30 focus:outline-hidden focus:bg-white/15 focus:border-sky-400 backdrop-blur-xs transition-all shadow-inner"
               />
             </div>
           </div>
@@ -156,18 +156,18 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
             <button
               type="button"
               onClick={() => setSelectedArticle(null)}
-              className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-sky-700 transition-all shadow-2xs"
+              className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white border-2 border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-sky-700 transition-all shadow-2xs"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Kembali ke Katalog Panduan</span>
             </button>
 
             {/* Main Article Container */}
-            <article className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <article className="bg-white p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-md space-y-6">
               
               {/* Top Meta Badges */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                <span className="px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-200/60">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b-2 border-slate-100">
+                <span className="px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border-2 border-sky-300">
                   {selectedArticle.category}
                 </span>
 
@@ -190,7 +190,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
               </h1>
 
               {/* Author Info Bar */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 flex items-center justify-between gap-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold shadow-xs">
                     <UserCheck className="w-5 h-5" />
@@ -204,7 +204,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                 <button
                   type="button"
                   onClick={handleShareClick}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-sky-700 hover:border-sky-300 text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-white border-2 border-slate-300 text-slate-700 hover:text-sky-700 hover:border-sky-400 text-xs font-bold shadow-2xs flex items-center space-x-1.5 transition-colors"
                 >
                   {copiedShare ? (
                     <>
@@ -221,12 +221,12 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
               </div>
 
               {/* Article Content */}
-              <div className="text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4 pt-2 whitespace-pre-line border-t border-slate-100 font-sans">
+              <div className="text-xs sm:text-sm leading-relaxed text-slate-700 space-y-4 pt-2 whitespace-pre-line border-t-2 border-slate-100 font-sans">
                 {selectedArticle.content}
               </div>
 
               {/* Call to Action Box */}
-              <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-sky-50 to-teal-50 border border-sky-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-sky-50 to-teal-50 border-2 border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="space-y-1 text-center sm:text-left">
                   <h4 className="text-xs font-black text-sky-950 flex items-center space-x-1.5 justify-center sm:justify-start">
                     <Sparkles className="w-4 h-4 text-sky-600" />
@@ -261,10 +261,10 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                     <div
                       key={rel.id}
                       onClick={() => handleSelectArticle(rel)}
-                      className="bg-white p-5 rounded-2xl border border-slate-200 hover:border-sky-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                      className="bg-white p-5 rounded-2xl border-2 border-slate-300 hover:border-sky-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                     >
                       <div className="space-y-2">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-slate-100 text-slate-700">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-slate-100 border border-slate-200 text-slate-700">
                           {rel.category}
                         </span>
                         <h4 className="text-xs font-bold text-slate-900 line-clamp-2 hover:text-sky-600 transition-colors">
@@ -275,7 +275,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                         </p>
                       </div>
 
-                      <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                      <div className="pt-3 mt-3 border-t-2 border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
                         <span>{rel.read_time} menit baca</span>
                         <span className="text-sky-600 font-bold flex items-center space-x-0.5">
                           <span>Baca</span>
@@ -294,17 +294,17 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
           <div className="space-y-6">
             
             {/* Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2 pb-4 border-b border-slate-200">
+            <div className="flex flex-wrap items-center gap-2 pb-4 border-b-2 border-slate-200">
               <Filter className="w-4 h-4 text-slate-500 mr-1" />
               {categories.map(cat => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     selectedCategory === cat
-                      ? 'bg-sky-600 text-white shadow-xs'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      ? 'bg-sky-600 text-white border-2 border-sky-600 shadow-xs'
+                      : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
                   }`}
                 >
                   {cat}
@@ -314,7 +314,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
 
             {/* Artikel Grid */}
             {filteredArticles.length === 0 ? (
-              <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3">
+              <div className="bg-white p-12 rounded-3xl border-2 border-slate-300 text-center space-y-3">
                 <BookOpen className="w-8 h-8 text-slate-300 mx-auto" />
                 <h4 className="text-sm font-bold text-slate-800">Tidak ada artikel yang cocok</h4>
                 <p className="text-xs text-slate-500">Coba ubah kata kunci pencarian atau pilih kategori lain.</p>
@@ -324,11 +324,11 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                 {filteredArticles.map(art => (
                   <article 
                     key={art.id}
-                    className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between hover:shadow-lg hover:border-sky-300 transition-all group"
+                    className="bg-white rounded-3xl border-2 border-slate-300 p-6 flex flex-col justify-between hover:shadow-xl hover:border-sky-500 transition-all group"
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-100">
+                        <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-50 text-sky-700 border-2 border-sky-200">
                           {art.category}
                         </span>
                         <span className="text-[11px] text-slate-400 flex items-center space-x-1">
@@ -346,7 +346,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                       </p>
                     </div>
 
-                    <div className="pt-5 mt-5 border-t border-slate-100 flex items-center justify-between">
+                    <div className="pt-5 mt-5 border-t-2 border-slate-100 flex items-center justify-between">
                       <div className="flex items-center space-x-1 text-[11px] font-medium text-slate-500">
                         <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                         <span>{art.author_name}</span>
@@ -354,7 +354,7 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSelectArticle(art)}
-                        className="px-3 py-1.5 rounded-lg bg-sky-50 group-hover:bg-sky-600 group-hover:text-white text-sky-700 text-xs font-bold flex items-center space-x-1 transition-all"
+                        className="px-3 py-1.5 rounded-lg bg-sky-50 border-2 border-sky-200 group-hover:bg-sky-600 group-hover:border-sky-600 group-hover:text-white text-sky-700 text-xs font-bold flex items-center space-x-1 transition-all"
                       >
                         <span>Baca Lengkap</span>
                         <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
