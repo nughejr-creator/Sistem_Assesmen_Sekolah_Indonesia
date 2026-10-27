@@ -21,7 +21,8 @@ import {
   Clock, 
   ShieldCheck,
   Send,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { 
   PublicArticle, 
