@@ -61,35 +61,35 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
     <div className="bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
       
       {/* =========================================================================
-          1. HERO SECTION DENGAN 2 KARTU INTERAKTIF
+          1. HERO SECTION DENGAN POLET GRADASI BIRU GELAP (DARK MIDNIGHT NAVY)
       ========================================================================= */}
-      <section id="beranda" className="relative pt-12 pb-20 overflow-hidden bg-gradient-to-b from-white via-slate-50 to-slate-100">
+      <section id="beranda" className="relative pt-14 pb-20 overflow-hidden bg-gradient-to-b from-[#071328] via-[#091d3c] to-[#040e1f] text-white border-b border-slate-800">
         
         {/* Background Decorative Blobs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-gradient-to-tr from-brand-200/40 via-sky-200/30 to-emerald-100/30 blur-3xl -z-10 rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-tr from-blue-600/25 via-sky-500/15 to-emerald-500/10 blur-3xl -z-10 rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto space-y-4">
             
             {/* Official Badge Tag */}
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-800 text-xs font-extrabold shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-brand-600 animate-spin" />
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-xs font-bold shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-sky-400 animate-spin" />
               <span>Platform Evaluasi Pendidikan Standar Nasional • Jenjang SD & SMP</span>
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-2xl sm:text-4xl lg:text-[42px] font-black text-slate-950 tracking-tight leading-snug sm:leading-tight max-w-4xl mx-auto">
+            <h1 className="text-2xl sm:text-4xl lg:text-[44px] font-black text-white tracking-tight leading-snug sm:leading-tight max-w-4xl mx-auto">
               Transformasi Asesmen Belajar Menjadi Lebih{' '}
-              <span className="bg-gradient-to-r from-brand-600 via-sky-600 to-teal-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-300 bg-clip-text text-transparent">
                 Akurat, Terstruktur,
               </span>{' '}
               dan Menyenangkan.
             </h1>
 
             {/* Sub-headline */}
-            <p className="text-xs sm:text-sm md:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-medium">
-              Platform manajemen ujian modern dengan <strong>Koreksi Otomatis & Koreksi Guru</strong>, bank soal multi-varian (HOTS & AKM), serta pelaksanaan ujian ramah anak dengan <strong>Dual-Storage Autosave</strong> (tahan mati lampu & offline).
+            <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium">
+              Platform manajemen ujian modern dengan <strong className="text-white font-semibold">Koreksi Otomatis & Koreksi Guru</strong>, bank soal multi-varian (HOTS & AKM), serta pelaksanaan ujian ramah anak dengan <strong className="text-white font-semibold">Dual-Storage Autosave</strong> (tahan mati lampu & offline).
             </p>
 
             {/* Hero CTA Action Buttons */}
@@ -97,19 +97,19 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenLogin('student')}
-                className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white text-sm font-black shadow-xl shadow-brand-500/25 flex items-center space-x-2.5 transition-all transform hover:-translate-y-0.5 active:scale-95"
+                className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white text-sm font-black shadow-xl shadow-emerald-500/25 flex items-center space-x-2.5 transition-all transform hover:-translate-y-0.5 active:scale-95 group"
               >
-                <GraduationCap className="w-5 h-5" />
+                <GraduationCap className="w-5 h-5 text-emerald-100 transition-transform group-hover:rotate-12" />
                 <span>Mulai Asesmen CBT Siswa</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
+                <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-0.5" />
               </button>
 
               <button
                 type="button"
                 onClick={() => onOpenLogin('student', 'SASI26')}
-                className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-sm font-bold shadow-xs transition-all flex items-center space-x-2"
+                className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-sm font-bold backdrop-blur-md transition-all flex items-center space-x-2 shadow-xs"
               >
-                <PlayCircle className="w-4 h-4 text-brand-600" />
+                <PlayCircle className="w-4 h-4 text-sky-400" />
                 <span>Coba Demo Simulasi Siswa</span>
               </button>
             </div>
@@ -120,11 +120,11 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-14 max-w-4xl mx-auto">
             
             {/* KARTU 1: AKSES CEPAT SISWA (MASUKKAN TOKEN TES) */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-brand-200 shadow-xl shadow-brand-500/5 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-full -mr-10 -mt-10 pointer-events-none" />
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xl relative overflow-hidden group text-slate-900">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-full -mr-10 -mt-10 pointer-events-none" />
               
               <div className="flex items-center space-x-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-md shadow-brand-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-sky-500/20">
                   <Key className="w-5 h-5" />
                 </div>
                 <div>
@@ -145,14 +145,14 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                       placeholder="CONTOH: SASI26"
                       value={quickTokenInput}
                       onChange={(e) => setQuickTokenInput(e.target.value.toUpperCase())}
-                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center font-mono font-black text-lg tracking-widest text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 uppercase transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-center font-mono font-black text-lg tracking-widest text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 uppercase transition-all"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white text-xs font-black rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all transform active:scale-95"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:via-teal-700 hover:to-sky-700 text-white text-xs font-black rounded-xl shadow-md flex items-center justify-center space-x-2 transition-all transform active:scale-95"
                 >
                   <span>Buka Lembar Ujian & Konfirmasi Data</span>
                   <ChevronRight className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             </div>
 
             {/* KARTU 2: RINGKASAN STATUS ASESMEN & KEANDALAN CBT */}
-            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-brand-950 text-white rounded-3xl p-6 sm:p-7 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
+            <div className="bg-[#0b172d]/90 rounded-3xl p-6 sm:p-7 border border-slate-700/80 shadow-2xl relative overflow-hidden flex flex-col justify-between text-white backdrop-blur-md">
               
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
@@ -175,7 +175,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                       Sesi CBT Berjalan
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-slate-300">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-slate-300 border border-white/10">
                     Live Server SASI
                   </span>
                 </div>
@@ -192,14 +192,14 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                     <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
                       <span className="text-[10px] text-slate-400 block">Daya Tahan Gangguan</span>
                       <span className="text-sm font-black text-emerald-400 flex items-center space-x-1 mt-0.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 inline" />
+                        <CheckCircle2 className="w-3.5 h-3.5 inline text-emerald-400" />
                         <span>Autosave Ganda</span>
                       </span>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
                       <span className="text-[10px] text-slate-400 block">Kesiapan Butir Soal</span>
-                      <span className="text-sm font-black text-brand-300 mt-0.5 block">
+                      <span className="text-sm font-black text-sky-300 mt-0.5 block">
                         Multi-Varian Paralel
                       </span>
                     </div>
