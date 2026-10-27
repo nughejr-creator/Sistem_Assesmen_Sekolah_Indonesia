@@ -1,0 +1,303 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 15px; /* Bump base font size slightly so all rem-based text is clearer and larger */
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply antialiased bg-[#f4f7fb] text-slate-900;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Print styling for official CBT Exam, BAP, Attendance & Leger Documents (MS Word Quality) */
+@media print {
+  @page {
+    margin: 1.2cm 1cm 1.2cm 1cm;
+    size: auto;
+  }
+
+  /* Force all modern browsers (Chrome, Edge, Firefox, Safari) to print exact borders and colors */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body,
+  #root,
+  .min-h-screen,
+  .h-screen,
+  main,
+  section,
+  .proctor-viewport,
+  .proctor-main-content {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide screen elements, navigation, buttons, sidebars and headers */
+  header,
+  nav,
+  aside,
+  button,
+  .print\:hidden,
+  .no-print,
+  #app-sidebar,
+  #app-header,
+  .proctor-sidebar,
+  .proctor-right-panel,
+  input[type="file"],
+  .fixed.bottom-0,
+  .network-status-indicator,
+  .fixed.bottom-4.left-4 {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Reset main layouts so they occupy 100% width cleanly */
+  main,
+  .proctor-main-content,
+  .proctor-viewport,
+  .p-6,
+  .p-8 {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* ========================================================================
+     MICROSOFT WORD STYLE TABLES (CRISP 100% SOLID BLACK BORDERS LIKE MS WORD)
+     ======================================================================== */
+  table,
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    margin-top: 8px !important;
+    margin-bottom: 12px !important;
+    border: 1.5px solid #000000 !important;
+    background-color: #ffffff !important;
+  }
+
+  table thead,
+  .print-table thead {
+    display: table-header-group !important;
+  }
+
+  table tr,
+  .print-table tr,
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  table th,
+  .print-table th {
+    background-color: #f2f2f2 !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+    border: 1.5px solid #000000 !important;
+    padding: 6px 8px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table td,
+  .print-table td {
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    padding: 5px 8px !important;
+    vertical-align: middle !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Borderless table helper for official header metadata */
+  table.table-borderless,
+  table.table-borderless th,
+  table.table-borderless td,
+  .table-borderless,
+  .table-borderless th,
+  .table-borderless td {
+    border: none !important;
+    background: transparent !important;
+    padding: 3px 4px !important;
+  }
+
+  /* Official double line under Indonesian Government Letterhead (KOP SURAT) */
+  .kop-border-thick {
+    border-bottom: 2.5px solid #000000 !important;
+    margin-top: 6px !important;
+  }
+  .kop-border-thin {
+    border-bottom: 1px solid #000000 !important;
+    margin-top: 1.5px !important;
+    margin-bottom: 14px !important;
+  }
+
+  /* High contrast boxes for notes, cards, and summaries */
+  .print-box-bordered {
+    border: 1.5px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 0 !important;
+  }
+
+  .print-badge {
+    border: 1px solid #000000 !important;
+    background: transparent !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+  }
+
+  /* Ruang tanda tangan fisik proporsional (anti-collapse saat print PDF) */
+  .signature-space,
+  .print-signature-space {
+    display: block !important;
+    height: 72px !important;
+    min-height: 72px !important;
+    width: 100% !important;
+    margin: 4px 0 !important;
+  }
+}
+
+/* Microsoft Word-Style Equation Fractions */
+.ms-word-fraction {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  margin: 0 0.25rem !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+}
+
+.fraction-num,
+.fraction-den {
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  padding: 0 0.25rem;
+  text-align: center;
+  font-weight: 800;
+  cursor: text !important;
+  user-select: text !important;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.fraction-num:empty::before,
+.fraction-den:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+/* Inline Math Root Pill */
+.inline-root-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+/* Lists styling for Visual Formula Editor and Rich Math CBT Content (Overriding Tailwind reset) */
+.visual-formula-editor ul,
+.rich-math-content ul {
+  list-style-type: disc !important;
+  padding-left: 1.6rem !important;
+  margin-top: 0.35rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.visual-formula-editor ol,
+.rich-math-content ol {
+  list-style-type: decimal !important;
+  padding-left: 1.6rem !important;
+  margin-top: 0.35rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.visual-formula-editor li,
+.rich-math-content li {
+  margin-bottom: 0.2rem !important;
+  display: list-item !important;
+}
+
+/* Custom list-style types */
+.visual-formula-editor ul[style*="circle"], .rich-math-content ul[style*="circle"],
+.visual-formula-editor ul.list-circle, .rich-math-content ul.list-circle { 
+  list-style-type: circle !important; 
+}
+.visual-formula-editor ul[style*="square"], .rich-math-content ul[style*="square"],
+.visual-formula-editor ul.list-square, .rich-math-content ul.list-square { 
+  list-style-type: square !important; 
+}
+.visual-formula-editor ol[style*="lower-alpha"], .rich-math-content ol[style*="lower-alpha"],
+.visual-formula-editor ol.list-lower-alpha, .rich-math-content ol.list-lower-alpha { 
+  list-style-type: lower-alpha !important; 
+}
+.visual-formula-editor ol[style*="upper-alpha"], .rich-math-content ol[style*="upper-alpha"],
+.visual-formula-editor ol.list-upper-alpha, .rich-math-content ol.list-upper-alpha { 
+  list-style-type: upper-alpha !important; 
+}
+.visual-formula-editor ol[style*="lower-roman"], .rich-math-content ol[style*="lower-roman"],
+.visual-formula-editor ol.list-lower-roman, .rich-math-content ol.list-lower-roman { 
+  list-style-type: lower-roman !important; 
+}
+.visual-formula-editor ol[style*="upper-roman"], .rich-math-content ol[style*="upper-roman"],
+.visual-formula-editor ol.list-upper-roman, .rich-math-content ol.list-upper-roman { 
+  list-style-type: upper-roman !important; 
+}
+
+
