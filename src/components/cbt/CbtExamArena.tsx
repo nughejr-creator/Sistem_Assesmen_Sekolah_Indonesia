@@ -1189,23 +1189,21 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-xl border border-slate-200">
           
-          {/* Header Kartu: Logo Aplikasi & Judul Konfirmasi Data */}
-          <div className="flex items-center gap-3.5 sm:gap-4 pb-4 border-b border-slate-200">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 max-w-[96px] max-h-[96px] rounded-2xl bg-white border border-slate-200/90 p-2 shadow-sm ring-1 ring-sky-500/20 flex items-center justify-center shrink-0 overflow-hidden">
+          {/* Header Kartu: Posisi Logo di Atas Teks & Rata Tengah (Centered Layout) */}
+          <div className="flex flex-col items-center text-center pb-3.5 sm:pb-4 border-b border-slate-200">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white border border-slate-200/90 p-1.5 shadow-xs ring-1 ring-sky-500/20 flex items-center justify-center shrink-0 overflow-hidden mb-2 sm:mb-2.5">
               <img 
                 src="/sasipedia-icon.png" 
                 alt="SASIPEDIA" 
-                className="w-full h-full max-w-full max-h-full object-contain drop-shadow-2xs" 
+                className="w-full h-full object-contain drop-shadow-2xs" 
               />
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base sm:text-lg md:text-xl font-extrabold text-slate-900 tracking-tight leading-snug">
-                Konfirmasi Data &amp; Token Peserta
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                Periksa kesesuaian identitas Anda sebelum memulai ujian.
-              </p>
-            </div>
+            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug">
+              Konfirmasi Data &amp; Token Peserta
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5 sm:mt-1 leading-relaxed">
+              Periksa kesesuaian identitas Anda sebelum memulai ujian.
+            </p>
           </div>
 
           <div className="py-5 space-y-4 text-xs">
