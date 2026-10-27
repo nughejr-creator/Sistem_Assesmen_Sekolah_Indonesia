@@ -377,23 +377,7 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
                   ? 'bg-amber-700 text-white' 
                   : 'bg-slate-100 text-slate-600';
 
-              // Total articles count calculation
-  const totalArticlesCount = useMemo(() => {
-    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
-    return Math.max(fromCategories, searchableArticles.length);
-  }, [categoryCounts, searchableArticles]);
-
-  if (isLoading && !aggregateData) {
-    return (
-      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
-      </aside>
-    );
-  }
-
-  return (
+              return (
                 <div
                   key={art.id}
                   onClick={() => onSelectArticle(art)}
@@ -510,23 +494,7 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
           <div className="grid grid-cols-1 gap-2.5">
             {quickLinks.map(link => {
               const IconComp = ICON_MAP[link.icon] || ExternalLink;
-              // Total articles count calculation
-  const totalArticlesCount = useMemo(() => {
-    const fromCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
-    return Math.max(fromCategories, searchableArticles.length);
-  }, [categoryCounts, searchableArticles]);
-
-  if (isLoading && !aggregateData) {
-    return (
-      <aside className="w-full space-y-6 sticky top-20 text-slate-800 animate-pulse">
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
-      </aside>
-    );
-  }
-
-  return (
+              return (
                 <a
                   key={link.id}
                   href={link.url}
