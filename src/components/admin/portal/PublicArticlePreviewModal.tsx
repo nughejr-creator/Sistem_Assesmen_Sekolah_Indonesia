@@ -58,12 +58,12 @@ export const PublicArticlePreviewModal: React.FC<PublicArticlePreviewModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-between overflow-hidden animate-fade-in">
+    <div className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex flex-col overflow-hidden animate-fade-in">
       
       {/* =======================================================================
           TOP BAR: RESPONSIVE SWITCHER & CLOSE ACTIONS
       ======================================================================= */}
-      <div className="w-full bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between text-white shrink-0 z-10">
+      <div className="w-full bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between text-white shrink-0 z-20 shadow-md">
         
         {/* Left: Indicator */}
         <div className="flex items-center space-x-2.5">
@@ -141,8 +141,8 @@ export const PublicArticlePreviewModal: React.FC<PublicArticlePreviewModalProps>
       {/* =======================================================================
           PREVIEW CANVAS AREA (SCROLLABLE & RESPONSIVE SIMULATION)
       ======================================================================= */}
-      <div className="w-full flex-1 overflow-y-auto p-4 sm:p-6 flex justify-center bg-slate-900/40">
-        <div className={`w-full bg-[#f4f7fb] min-h-full transition-all duration-300 rounded-2xl overflow-hidden flex flex-col ${viewportWidthClass}`}>
+      <div className="w-full flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 flex justify-center items-start bg-slate-900/60">
+        <div className={`w-full bg-[#f4f7fb] my-2 mb-16 transition-all duration-300 rounded-2xl shadow-2xl flex flex-col ${viewportWidthClass}`}>
           
           {/* Header Simulation Bar */}
           <div className="bg-slate-900 text-white px-6 py-4 border-b-2 border-slate-800 flex items-center justify-between">
