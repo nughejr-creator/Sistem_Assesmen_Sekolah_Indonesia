@@ -12,6 +12,7 @@ import {
   PublicSidebarAggregatePayload
 } from '../types/publicPortal';
 import { sanitizeHtml } from './safeHtmlSanitizer';
+import { INITIAL_EDUCATIONAL_ARTICLES } from './educationalContentSeeds';
 
 // ==============================================================================
 // SEED FALLBACK DATA (Untuk Preview Lokal & Kesiapan Offline)
@@ -96,184 +97,7 @@ export const FALLBACK_QUICK_LINKS: PortalQuickLink[] = [
   }
 ];
 
-export const FALLBACK_PUBLIC_ARTICLES: PublicArticle[] = [
-  {
-    id: 'art-1',
-    slug: 'kaidah-penulisan-soal-asesmen-sekolah-sd',
-    title: 'Kaidah Baku Penulisan Soal Asesmen Sekolah Tingkat Sekolah Dasar',
-    excerpt: 'Panduan komprehensif bagi pendidik dalam merumuskan stimulus kontekstual, pokok soal bebas bias, dan opsi jawaban yang logis sesuai standar asesmen nasional.',
-    featured_image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
-    tags: ['Asesmen SD', 'Kaidah Soal', 'AKM', 'Evaluasi'],
-    is_pinned: true,
-    is_featured: true,
-    content: `## Pendahuluan
-Penulisan butir soal yang bermutu merupakan prasyarat utama dalam memperoleh data capaian kompetensi peserta didik yang valid dan reliabel. Pada jenjang Sekolah Dasar, butir soal harus memperhatikan perkembangan kognitif anak serta menggunakan bahasa yang lugas dan tidak menimbulkan penafsiran ganda.
-
----
-
-### 1. Kaidah Materi (Content Validity)
-- **Kesesuaian Indikator:** Butir soal harus mengukur indikator pencapaian kompetensi yang telah dirumuskan dalam kisi-kisi.
-- **Homogenitas Opsi:** Pilihan jawaban (distractor) harus homogen dan logis ditinjau dari materi yang diujikan.
-- **Ketunggalan Jawaban:** Setiap butir soal pilihan ganda hanya memiliki satu kunci jawaban yang benar atau paling tepat.
-- **Bebas Bias Budaya & SARA:** Pokok soal tidak boleh merugikan kelompok suku, agama, ras, atau gender tertentu.
-
----
-
-### 2. Kaidah Konstruksi (Structural Rules)
-- **Ketegasan Pokok Soal:** Pokok soal (stem) dirumuskan dengan jelas, ringkas, dan tidak mengandung kalimat pengantar yang tidak perlu.
-- **Bebas Petunjuk Kunci:** Pokok soal tidak boleh secara terselubung memberi petunjuk (*clue*) ke arah jawaban yang benar.
-- **Hindari Negatif Ganda:** Hindari penggunaan kata seperti *"tidak"*, *"bukan"*, atau *"kecuali"* jika memungkinkan. Jika terpaksa digunakan, kata tersebut wajib dicetak tebal (*bold*) atau diberi garis bawah.
-- **Larangan Opsi Absolut:** Pilihan jawaban tidak boleh berbunyi *"Semua jawaban di atas benar"* atau *"Semua pilihan salah"* karena mengaburkan daya ukur butir soal.
-
----
-
-### 3. Kaidah Bahasa & Komunikasi
-- **Bahasa Baku & Ramah Anak:** Menggunakan kaidah Bahasa Indonesia yang baik dan benar dengan tingkat keterbacaan yang sesuai usia siswa SD.
-- **Efisiensi Kata:** Pilihan jawaban tidak mengulang kata atau frase yang sama jika dapat ditarik ke dalam pokok soal.
-- **Panjang Opsi Seimbang:** Panjang pilihan jawaban diupayakan relatif sama agar tidak memicu siswa menebak opsi terpanjang.`,
-    category: 'Panduan Asesmen',
-    author_name: 'Agi Hamdani, M.Pd',
-    read_time: 6,
-    views_count: 1420,
-    is_published: true,
-    published_at: '2026-10-25T08:00:00Z'
-  },
-  {
-    id: 'art-2',
-    slug: 'bedah-instrumen-akm-literasi-numerasi-fase-c',
-    title: 'Bedah Tuntas Karakteristik Stimulus AKM Literasi dan Numerasi Fase C (Kelas 5-6 SD)',
-    excerpt: 'Memahami anatomi stimulus teks informasi, teks fiksi, serta konteks saintifik-sosial budaya dalam Asesmen Kompetensi Minimum.',
-    content: `## Memahami Anatomi Stimulus AKM
-Asesmen Kompetensi Minimum (AKM) menakar daya nalar peserta didik dalam memproses informasi dan memecahkan persoalan dunia nyata. Keberhasilan butir AKM 80% ditentukan oleh kualitas stimulus yang disajikan.
-
----
-
-### Karakteristik Stimulus Literasi Membaca
-1. **Teks Informasi (Expository):** 
-   - Menyajikan fakta, tabel perbandingan, diagram alur, atau infografik ilmiah sederhana.
-   - Menguji 3 level kognitif: Menemukan informasi (*Retrieve & Access*), Memahami dan menginterpretasi (*Interpret & Integrate*), serta Merefleksi & mengevaluasi pesan teks (*Evaluate & Reflect*).
-2. **Teks Sastra / Fiksi:** 
-   - Mengangkat narasi cerita rakyat, fabel bermakna budi pekerti, atau kisah inspiratif persahabatan anak.
-   - Menggali pemahaman amanat implisit, karakter tokoh, dan sudut pandang pencerita.
-
----
-
-### Karakteristik Stimulus Numerasi
-Numerasi bukan sekadar berhitung cepat, melainkan bernalar matematis dalam tiga domain konteks:
-- **Konteks Personal:** Berkaitan langsung dengan aktivitas harian anak (jadwal bermain, tabungan jajan, resep kue keluarga).
-- **Konteks Sosial Budaya:** Tradisi pasar tradisional, kerajinan daerah, atau statistik kegiatan gotong royong warga desa.
-- **Konteks Saintifik:** Pengukuran suhu cuaca, daur hidup serangga, atau kecepatan sepeda.`,
-    category: 'Bedah AKM',
-    author_name: 'Agi Hamdani, M.Pd',
-    read_time: 8,
-    views_count: 980,
-    featured_image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80',
-    tags: ['AKM Literasi', 'Numerasi', 'Fase C', 'Stimulus'],
-    is_featured: true,
-    is_published: true,
-    published_at: '2026-10-26T09:30:00Z'
-  },
-  {
-    id: 'art-3',
-    slug: 'analisis-daya-beda-tingkat-kesukaran-soal',
-    title: 'Teknik Analisis Kualitas Butir Soal: Menghitung Indeks Kesukaran dan Daya Beda',
-    excerpt: 'Langkah praktis bagi guru dalam mengukur efektivitas butir soal sumatif guna membedakan siswa kelompok tinggi dan kelompok rendah.',
-    content: `## Mengapa Analisis Butir Soal Diperlukan?
-Setelah pelaksanaan asesmen sumatif (SAS atau SAT), guru perlu menganalisis instrumen ujian untuk mengetahui butir soal mana yang layak disimpan di bank soal, mana yang perlu direvisi redaksinya, dan mana yang harus digugurkan.
-
----
-
-### 1. Tingkat Kesukaran (Facility Value - P)
-Indeks kesukaran mengukur proporsi siswa yang menjawab benar terhadap total peserta:
-- Rumus: P = B / N (B: Jumlah siswa menjawab benar, N: Total peserta).
-- **0.00 s.d. 0.30**: Kategori Sukar (Periksa apakah materi belum diajarkan atau soal terlalu rumit).
-- **0.31 s.d. 0.70**: Kategori Sedang (Ideal untuk bank soal ujian sekolah).
-- **0.71 s.d. 1.00**: Kategori Mudah (Cocok untuk pertanyaan pemantik atau apersepsi).
-
----
-
-### 2. Daya Pembeda (Discrimination Index - D)
-Daya beda menunjukkan kemampuan butir soal membedakan siswa kelompok atas (pandai) dengan kelompok bawah:
-- **D >= 0.40**: Sangat Baik (Butir soal sangat efektif).
-- **0.30 s.d. 0.39**: Baik (Dapat langsung digunakan).
-- **0.20 s.d. 0.29**: Cukup (Perlu perbaikan opsi pengecoh atau kejelasan kalimat).
-- **D < 0.20**: Jelek / Negatif (Harus dibuang karena siswa pintar justru terkecoh).
-
----
-
-### 3. Efektivitas Pengecoh (Distractor Function)
-Pengecoh berfungsi baik jika dipilih oleh minimal **5%** peserta tes dari kelompok bawah dan lebih sedikit dipilih oleh kelompok atas.`,
-    category: 'Analisis Butir',
-    author_name: 'Agi Hamdani, M.Pd',
-    read_time: 7,
-    views_count: 1150,
-    featured_image: 'https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?auto=format&fit=crop&w=600&q=80',
-    tags: ['Analisis Butir', 'Daya Beda', 'Tingkat Kesukaran'],
-    is_published: true,
-    published_at: '2026-10-27T10:15:00Z'
-  },
-  {
-    id: 'art-4',
-    slug: 'pedoman-rubrik-penskoran-esai-hots',
-    title: 'Pedoman Penyusunan Rubrik Penskoran Soal Uraian / Esai Penalaran Tinggi (HOTS)',
-    excerpt: 'Menghindari subjektivitas penilaian guru dengan rubrik analitik berbobot jelas untuk soal-soal penalaran terbuka jenjang SD.',
-    content: `## Menghadirkan Keadilan dalam Menilai Soal Uraian
-Kelemahan terbesar bentuk soal uraian/esai adalah potensi bias subjektif pemeriksa. Tanpa rubrik yang terukur, dua guru yang memeriksa jawaban siswa yang sama dapat memberikan skor yang terpaut jauh.
-
----
-
-### Rubrik Holistik vs Rubrik Analitik
-- **Rubrik Holistik:** Memberikan skor tunggal berdasarkan kesan keseluruhan mutu jawaban. Cocok untuk penilaian esai sastra bebas.
-- **Rubrik Analitik (Direkomendasikan untuk Ujian Sekolah):** Membagi penilaian ke dalam beberapa kriteria spesifik (misal: Ketepatan Konsep, Langkah Penyelesaian, dan Alasan Logis).
-
----
-
-### Contoh Skala Penskoran Soal Penalaran Matematika (Bobot 4 Poin):
-1. **Skor 4 (Sempurna):** Konsep tepat, rumus benar, perhitungan akurat, dan disertai kesimpulan operasional.
-2. **Skor 3:** Konsep dan alur benar, namun terdapat kesalahan kecil komputasi angka akhir.
-3. **Skor 2:** Mengetahui rumus yang digunakan, namun langkah penerapan belum tuntas.
-4. **Skor 1:** Hanya menuliskan informasi yang diketahui pada pokok soal tanpa mampu merangkai solusi.
-5. **Skor 0:** Tidak menjawab atau jawaban tidak memiliki relevansi konsep sama sekali.`,
-    category: 'Rubrik & Penskoran',
-    author_name: 'Agi Hamdani, M.Pd',
-    read_time: 5,
-    views_count: 890,
-    is_published: true,
-    published_at: '2026-10-27T12:00:00Z'
-  },
-  {
-    id: 'art-5',
-    slug: 'asesmen-diagnostik-awal-kurikulum-merdeka',
-    title: 'Strategi Melaksanakan Asesmen Diagnostik Kognitif dan Non-Kognitif di Awal Tahun Ajaran',
-    excerpt: 'Langkah memetakan kesiapan belajar, gaya belajar, dan kondisi sosio-emosional murid sebelum memulai pembelajaran berdiferensiasi.',
-    content: `## Mengapa Asesmen Awal Krusial?
-Dalam paradigma Kurikulum Merdeka, guru dilarang berasumsi bahwa semua murid berangkat dari garis awal yang sama. Pembelajaran berdiferensiasi hanya dapat berjalan efektif jika didahului oleh asesmen diagnostik yang tepat.
-
----
-
-### 1. Asesmen Diagnostik Non-Kognitif
-Bertujuan menggali profil kesejahteraan psikologis dan latar belakang murid:
-- **Kondisi Emosional:** Apa yang kamu rasakan hari ini? Hal apa yang paling membuatmu bersemangat ke sekolah?
-- **Lingkungan Belajar di Rumah:** Siapa yang menemanimu belajar di rumah? Apakah ada meja belajar yang tenang?
-- **Gaya Belajar:** Apakah murid lebih cepat memahami lewat gambar/warna (Visual), cerita/lagu (Auditori), atau praktik gerak (Kinestetik).
-
----
-
-### 2. Asesmen Diagnostik Kognitif
-Bertujuan mendeteksi ketercapaian kompetensi prasyarat:
-- Berikan 10 butir soal sederhana yang mencakup:
-  * 2 soal dari materi prasyarat 2 tingkat kelas di bawahnya.
-  * 6 soal dari materi kelas sebelumnya.
-  * 2 soal materi pengantar yang akan dipelajari.
-- Kelompokkan hasil asesmen ke dalam 3 level: Paham Utuh, Paham Sebagian, dan Belum Paham.`,
-    category: 'Panduan Asesmen',
-    author_name: 'Agi Hamdani, M.Pd',
-    read_time: 6,
-    views_count: 1310,
-    is_published: true,
-    published_at: '2026-10-27T14:20:00Z'
-  }
-];
+export const FALLBACK_PUBLIC_ARTICLES: PublicArticle[] = INITIAL_EDUCATIONAL_ARTICLES;
 
 export const FALLBACK_TEACHING_RESOURCES: TeachingResource[] = [
   {
@@ -394,13 +218,15 @@ export async function getPublicArticles(category?: string): Promise<PublicArticl
     }
 
     const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      if (category && category !== 'Semua Topik') {
-        return FALLBACK_PUBLIC_ARTICLES.filter(a => a.category === category);
-      }
-      return FALLBACK_PUBLIC_ARTICLES;
+    const dbArticles = (!error && data) ? (data as PublicArticle[]) : [];
+    const dbSlugs = new Set(dbArticles.map(a => a.slug));
+    const unseeded = FALLBACK_PUBLIC_ARTICLES.filter(a => !dbSlugs.has(a.slug));
+    let combined = [...dbArticles, ...unseeded];
+
+    if (category && category !== 'Semua Topik') {
+      combined = combined.filter(a => a.category === category);
     }
-    return data as PublicArticle[];
+    return combined;
   } catch (err) {
     if (category && category !== 'Semua Topik') {
       return FALLBACK_PUBLIC_ARTICLES.filter(a => a.category === category);
@@ -627,7 +453,10 @@ export async function getAllPublicArticlesAdmin(): Promise<PublicArticle[]> {
       .order('created_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
-      adminArticlesStore = data as PublicArticle[];
+      const dbArticles = data as PublicArticle[];
+      const dbSlugs = new Set(dbArticles.map(a => a.slug));
+      const unseeded = FALLBACK_PUBLIC_ARTICLES.filter(a => !dbSlugs.has(a.slug));
+      adminArticlesStore = [...dbArticles, ...unseeded];
       return adminArticlesStore;
     }
   } catch (e) {}
