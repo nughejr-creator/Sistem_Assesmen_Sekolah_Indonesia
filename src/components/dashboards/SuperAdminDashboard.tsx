@@ -192,11 +192,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
     }
   };
 
-  // Realtime Subscriptions & Polling
+  // Sinkronisasi saat komponen dimuat (halaman awal/refresh) & WebSocket Realtime Supabase
   useEffect(() => {
+    // 1. Sinkronisasi data saat halaman awal dibuka atau di-refresh
     fetchRealtimeDashboardData();
 
-    // Supabase Live Realtime Subscription
+    // 2. Supabase Live Realtime Subscription (hanya bereaksi jika ada perubahan data riil di DB)
     const channel = supabase
       .channel('super_admin_dashboard_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, () => fetchRealtimeDashboardData())
@@ -209,14 +210,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
       .on('postgres_changes', { event: '*', schema: 'public', table: 'student_attempts' }, () => fetchRealtimeDashboardData())
       .subscribe();
 
-    // Backup Polling Interval (every 10 seconds)
-    const interval = setInterval(() => {
-      fetchRealtimeDashboardData();
-    }, 10000);
-
+    // Polling otomatis 10 detik dinonaktifkan untuk menghemat kuota egress Supabase.
+    // Sinkronisasi selanjutnya dapat dipicu via tombol "Segarkan Data" manual atau WebSocket event.
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
     };
   }, []);
 

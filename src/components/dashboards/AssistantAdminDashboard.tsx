@@ -160,10 +160,12 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
     }
   }, []);
 
-  // Supabase Live Realtime Subscription + 10s Backup Polling
+  // Sinkronisasi saat komponen dimuat (halaman awal/refresh) & WebSocket Realtime Supabase
   useEffect(() => {
+    // 1. Sinkronisasi data saat halaman awal dibuka atau di-refresh
     fetchRealtimeDashboardData();
 
+    // 2. Supabase Live Realtime Subscription (hanya bereaksi jika ada perubahan data riil di DB)
     const channel = supabase
       .channel('assistant_admin_dashboard_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'blueprint_items' }, () => fetchRealtimeDashboardData())
@@ -176,13 +178,10 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
         }
       });
 
-    const interval = setInterval(() => {
-      fetchRealtimeDashboardData();
-    }, 10000);
-
+    // Polling otomatis 10 detik dinonaktifkan untuk menghemat kuota egress Supabase.
+    // Sinkronisasi selanjutnya dapat dipicu via tombol "Segarkan Data" manual atau WebSocket event.
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
     };
   }, [fetchRealtimeDashboardData]);
 
