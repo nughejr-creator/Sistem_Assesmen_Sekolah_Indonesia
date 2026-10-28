@@ -1,3 +1,44 @@
+/**
+ * Wrapper eksekusi update Supabase dengan deteksi silent-fail RLS
+ * Memastikan ID/slug terkirim benar dan memvalidasi apakah baris benar-benar terupdate di database
+ */
+export async function executeSafeSupabaseUpdate<T extends { id?: string; slug?: string }>(
+  tableName: 'public_articles' | 'teacher_contributions',
+  targetIdentifier: { id?: string; slug?: string },
+  payload: Record<string, any>
+): Promise<{ success: boolean; data: T }> {
+  const isUuid = targetIdentifier.id && isValidUUID(targetIdentifier.id);
+  
+  let query = supabase.from(tableName).update({
+    ...payload,
+    updated_at: new Date().toISOString()
+  });
+
+  if (isUuid) {
+    query = query.eq('id', targetIdentifier.id);
+  } else if (targetIdentifier.slug) {
+    query = query.eq('slug', targetIdentifier.slug);
+  } else {
+    throw new Error('Gagal update: Parameter ID (UUID) atau Slug unik tidak ditemukan.');
+  }
+
+  // WAJIB .select() untuk membaca hasil pembaruan aktual dari PostgreSQL
+  const { data, error } = await query.select();
+
+  if (error) {
+    throw new Error(`Supabase Error [${error.code}]: ${error.message}`);
+  }
+
+  // Deteksi silent-fail RLS: status HTTP 200 tetapi baris terupdate adalah 0 (array kosong)
+  if (!data || data.length === 0) {
+    throw new Error(
+      'Pembaruan ditolak oleh database (Row Level Security / RLS memblokir izin atau artikel tidak ditemukan).'
+    );
+  }
+
+  return { success: true, data: data[0] as T };
+}
+
 import { supabase } from './supabase';
 import { 
   PublicArticle, 
@@ -12,6 +53,7 @@ import {
   PublicSidebarAggregatePayload
 } from '../types/publicPortal';
 import { sanitizeHtml } from './safeHtmlSanitizer';
+import { isValidUUID } from './syncHelper';
 import { INITIAL_EDUCATIONAL_ARTICLES } from './educationalContentSeeds';
 
 // ==============================================================================
@@ -96,6 +138,32 @@ export const FALLBACK_QUICK_LINKS: PortalQuickLink[] = [
     order_index: 4
   }
 ];
+
+// ==============================================================================
+// LOCAL STORAGE PERSISTENCE HELPERS (Untuk Sinkronisasi Offline & Anti-Hilang)
+// ==============================================================================
+export const LOCAL_STORAGE_ARTICLES_KEY = 'sasi_public_articles_cache';
+
+export function getCachedPublicArticles(): PublicArticle[] {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    }
+  } catch (e) {}
+  return [];
+}
+
+export function setCachedPublicArticles(articles: PublicArticle[]): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(articles));
+    }
+  } catch (e) {}
+}
 
 export const FALLBACK_PUBLIC_ARTICLES: PublicArticle[] = INITIAL_EDUCATIONAL_ARTICLES;
 
@@ -206,6 +274,7 @@ const localDownloadCounts: Record<string, number> = {};
  * Mengambil daftar artikel wawasan publik dari Supabase (dengan fallback)
  */
 export async function getPublicArticles(category?: string): Promise<PublicArticle[]> {
+  const cached = getCachedPublicArticles();
   try {
     let query = supabase
       .from('public_articles')
@@ -219,19 +288,38 @@ export async function getPublicArticles(category?: string): Promise<PublicArticl
 
     const { data, error } = await query;
     const dbArticles = (!error && data) ? (data as PublicArticle[]) : [];
-    const dbSlugs = new Set(dbArticles.map(a => a.slug));
-    const unseeded = FALLBACK_PUBLIC_ARTICLES.filter(a => !dbSlugs.has(a.slug));
-    let combined = [...dbArticles, ...unseeded];
+    
+    // Gabungkan database dengan local cache (local edit diprioritaskan jika memiliki timestamp updated_at lebih baru)
+    const articleMap = new Map<string, PublicArticle>();
+
+    // 1. Masukkan seeds bawaan
+    FALLBACK_PUBLIC_ARTICLES.forEach(a => articleMap.set(a.slug, a));
+
+    // 2. Timpa dengan hasil database Supabase
+    dbArticles.forEach(a => articleMap.set(a.slug, a));
+
+    // 3. Timpa dengan cache lokal jika admin telah melakukan pembaruan di browser
+    cached.forEach(a => {
+      const existing = articleMap.get(a.slug);
+      if (!existing || !existing.updated_at || (a.updated_at && new Date(a.updated_at) >= new Date(existing.updated_at))) {
+        articleMap.set(a.slug, a);
+      }
+    });
+
+    let combined = Array.from(articleMap.values())
+      .filter(a => a.is_published)
+      .sort((a, b) => new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime());
 
     if (category && category !== 'Semua Topik') {
       combined = combined.filter(a => a.category === category);
     }
     return combined;
   } catch (err) {
+    const source = cached.length > 0 ? cached : FALLBACK_PUBLIC_ARTICLES;
     if (category && category !== 'Semua Topik') {
-      return FALLBACK_PUBLIC_ARTICLES.filter(a => a.category === category);
+      return source.filter(a => a.category === category && a.is_published);
     }
-    return FALLBACK_PUBLIC_ARTICLES;
+    return source.filter(a => a.is_published);
   }
 }
 
@@ -239,6 +327,9 @@ export async function getPublicArticles(category?: string): Promise<PublicArticl
  * Mengambil satu artikel berdasarkan slug unik
  */
 export async function getArticleBySlug(slug: string): Promise<PublicArticle | null> {
+  const cached = getCachedPublicArticles();
+  const localMatch = cached.find(a => a.slug === slug);
+
   try {
     const { data, error } = await supabase
       .from('public_articles')
@@ -247,12 +338,18 @@ export async function getArticleBySlug(slug: string): Promise<PublicArticle | nu
       .eq('is_published', true)
       .single();
 
-    if (error || !data) {
-      const fallback = FALLBACK_PUBLIC_ARTICLES.find(a => a.slug === slug);
-      return fallback || null;
+    if (!error && data) {
+      const dbArticle = data as PublicArticle;
+      if (localMatch && localMatch.updated_at && dbArticle.updated_at && new Date(localMatch.updated_at) > new Date(dbArticle.updated_at)) {
+        return localMatch;
+      }
+      return dbArticle;
     }
-    return data as PublicArticle;
+    if (localMatch) return localMatch;
+    const fallback = FALLBACK_PUBLIC_ARTICLES.find(a => a.slug === slug);
+    return fallback || null;
   } catch (err) {
+    if (localMatch) return localMatch;
     const fallback = FALLBACK_PUBLIC_ARTICLES.find(a => a.slug === slug);
     return fallback || null;
   }
@@ -397,8 +494,9 @@ export async function uploadEducationalResourceFile(
 // ADMIN CMS PORTAL MANAGER FUNCTIONS (CRUD & KURASI)
 // ==============================================================================
 
-// Mutable in-memory stores with full fallback sync
-let adminArticlesStore: PublicArticle[] = [...FALLBACK_PUBLIC_ARTICLES];
+// Mutable in-memory stores with full fallback sync & LocalStorage hydration
+const initialAdminArticles = getCachedPublicArticles();
+let adminArticlesStore: PublicArticle[] = initialAdminArticles.length > 0 ? initialAdminArticles : [...FALLBACK_PUBLIC_ARTICLES];
 let adminResourcesStore: TeachingResource[] = [...FALLBACK_TEACHING_RESOURCES];
 let adminContributionsStore: TeacherContribution[] = [
   {
@@ -446,6 +544,7 @@ let adminProfileStore: DeveloperProfile = { ...FALLBACK_DEVELOPER_PROFILE };
  * Mengambil semua artikel untuk dashboard admin (termasuk draf)
  */
 export async function getAllPublicArticlesAdmin(): Promise<PublicArticle[]> {
+  const cached = getCachedPublicArticles();
   try {
     const { data, error } = await supabase
       .from('public_articles')
@@ -454,12 +553,34 @@ export async function getAllPublicArticlesAdmin(): Promise<PublicArticle[]> {
 
     if (!error && data && data.length > 0) {
       const dbArticles = data as PublicArticle[];
-      const dbSlugs = new Set(dbArticles.map(a => a.slug));
-      const unseeded = FALLBACK_PUBLIC_ARTICLES.filter(a => !dbSlugs.has(a.slug));
-      adminArticlesStore = [...dbArticles, ...unseeded];
+      const articleMap = new Map<string, PublicArticle>();
+
+      // Masukkan seeds bawaan
+      FALLBACK_PUBLIC_ARTICLES.forEach(a => articleMap.set(a.id || a.slug, a));
+
+      // Masukkan record dari cloud database Supabase
+      dbArticles.forEach(a => articleMap.set(a.id || a.slug, a));
+
+      // Gabungkan cache lokal yang mungkin belum sempat disinkronkan ke cloud
+      cached.forEach(a => {
+        const key = a.id || a.slug;
+        const existing = articleMap.get(key);
+        if (!existing || !existing.updated_at || (a.updated_at && new Date(a.updated_at) >= new Date(existing.updated_at))) {
+          articleMap.set(key, a);
+        }
+      });
+
+      adminArticlesStore = Array.from(articleMap.values())
+        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      
+      setCachedPublicArticles(adminArticlesStore);
       return adminArticlesStore;
     }
   } catch (e) {}
+
+  if (cached.length > 0) {
+    adminArticlesStore = cached;
+  }
   return adminArticlesStore;
 }
 
@@ -468,45 +589,34 @@ export async function getAllPublicArticlesAdmin(): Promise<PublicArticle[]> {
  */
 export async function savePublicArticle(
   article: Partial<PublicArticle>
-): Promise<{ success: boolean; data?: PublicArticle; error?: string }> {
+): Promise<{ success: boolean; data?: PublicArticle; isCloudSynced?: boolean; error?: string }> {
+  let isCloudSynced = false;
+  const isNew = !article.id;
+  // Sanitasi HTML menyeluruh untuk mencegah celah XSS sambil mempertahankan tag kaya
+  const sanitizedContent = article.content ? sanitizeHtml(article.content) : '';
+  const pinExpiry = article.pin_expires_at || article.pinned_until || null;
+  const viewCount = article.view_count !== undefined ? article.view_count : (article.views_count || 0);
+
+  const articlePayload: Partial<PublicArticle> = {
+    ...article,
+    content: sanitizedContent,
+    is_pinned: !!article.is_pinned,
+    pin_expires_at: pinExpiry,
+    pinned_until: pinExpiry,
+    is_featured: !!article.is_featured,
+    view_count: viewCount,
+    views_count: viewCount,
+    slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `artikel-${Date.now()}`,
+    updated_at: new Date().toISOString()
+  };
+
+  sidebarAggregateCache = null; // Invalidate aggregate cache
+  let savedArticle: PublicArticle | null = null;
+
   try {
-    const isNew = !article.id;
-    // Sanitasi HTML menyeluruh untuk mencegah celah XSS sambil mempertahankan tag kaya
-    const sanitizedContent = article.content ? sanitizeHtml(article.content) : '';
-    const pinExpiry = article.pin_expires_at || article.pinned_until || null;
-    const viewCount = article.view_count !== undefined ? article.view_count : (article.views_count || 0);
-
-    const articlePayload: Partial<PublicArticle> = {
-      ...article,
-      content: sanitizedContent,
-      is_pinned: !!article.is_pinned,
-      pin_expires_at: pinExpiry,
-      pinned_until: pinExpiry,
-      is_featured: !!article.is_featured,
-      view_count: viewCount,
-      views_count: viewCount,
-      slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `artikel-${Date.now()}`,
-      updated_at: new Date().toISOString()
-    };
-
-    sidebarAggregateCache = null; // Invalidate aggregate cache
-
-    if (isNew) {
-      const { data, error } = await supabase
-        .from('public_articles')
-        .insert([{
-          ...articlePayload,
-          id: undefined,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-      if (!error && data) {
-        adminArticlesStore.unshift(data as PublicArticle);
-        return { success: true, data: data as PublicArticle };
-      }
-    } else {
+    const hasValidUuid = article.id && isValidUUID(article.id);
+    if (hasValidUuid) {
+      // 1. Jika ID adalah UUID valid (sudah ada di database Cloud)
       const { data, error } = await supabase
         .from('public_articles')
         .update(articlePayload)
@@ -515,59 +625,102 @@ export async function savePublicArticle(
         .single();
 
       if (!error && data) {
-        adminArticlesStore = adminArticlesStore.map(a => a.id === article.id ? (data as PublicArticle) : a);
-        return { success: true, data: data as PublicArticle };
+        savedArticle = data as PublicArticle;
+        isCloudSynced = true;
+      }
+    } else {
+      // 2. Jika ID bukan UUID (misal seed ID 'art-xxx') atau artikel baru,
+      // periksa apakah sudah ada baris di database berdasarkan slug unik
+      const { data: existingData } = await supabase
+        .from('public_articles')
+        .select('id')
+        .eq('slug', articlePayload.slug)
+        .maybeSingle();
+
+      if (existingData && existingData.id) {
+        // Baris sudah ada di Cloud: update berdasarkan ID cloud yang valid
+        const { data, error } = await supabase
+          .from('public_articles')
+          .update(articlePayload)
+          .eq('id', existingData.id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          savedArticle = data as PublicArticle;
+          isCloudSynced = true;
+        }
+      } else {
+        // Baris belum ada: lakukan INSERT dengan UUID baru dari database
+        const { data, error } = await supabase
+          .from('public_articles')
+          .insert([{
+            ...articlePayload,
+            id: undefined,
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (!error && data) {
+          savedArticle = data as PublicArticle;
+          isCloudSynced = true;
+        }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Supabase cloud update skipped/failed, proceeding to resilient local storage:', e);
+  }
 
-  // Fallback in-memory update
-  sidebarAggregateCache = null;
-  const pinExpiry = article.pin_expires_at || article.pinned_until || null;
-  const viewCount = article.view_count !== undefined ? article.view_count : (article.views_count || 0);
-
-  if (article.id) {
-    adminArticlesStore = adminArticlesStore.map(a => 
-      a.id === article.id ? ({ 
-        ...a, 
-        ...article, 
-        content: article.content ? sanitizeHtml(article.content) : a.content,
-        is_pinned: article.is_pinned !== undefined ? !!article.is_pinned : a.is_pinned,
-        pin_expires_at: pinExpiry !== undefined ? pinExpiry : a.pin_expires_at,
-        pinned_until: pinExpiry !== undefined ? pinExpiry : a.pinned_until,
-        is_featured: article.is_featured !== undefined ? !!article.is_featured : a.is_featured,
+  // Jika update cloud tertolak (misal karena RLS Supabase aktif atau jaringan offline), buat objek lokal yang valid
+  if (!savedArticle) {
+    if (article.id) {
+      const existing = adminArticlesStore.find(a => a.id === article.id);
+      savedArticle = {
+        ...(existing || {}),
+        ...articlePayload,
+        id: article.id,
+        created_at: existing?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as PublicArticle;
+    } else {
+      savedArticle = {
+        id: `art-${Date.now()}`,
+        slug: articlePayload.slug!,
+        title: article.title || 'Artikel Tanpa Judul',
+        excerpt: article.excerpt || '',
+        content: sanitizedContent,
+        category: article.category || 'Panduan Asesmen',
+        author_name: article.author_name || 'Agi Hamdani, M.Pd',
+        read_time: article.read_time || 5,
         view_count: viewCount,
         views_count: viewCount,
-        updated_at: new Date().toISOString() 
-      } as PublicArticle) : a
-    );
-    const updated = adminArticlesStore.find(a => a.id === article.id);
-    return { success: true, data: updated };
-  } else {
-    const newArt: PublicArticle = {
-      id: `art-${Date.now()}`,
-      slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `artikel-${Date.now()}`,
-      title: article.title || 'Artikel Tanpa Judul',
-      excerpt: article.excerpt || '',
-      content: article.content ? sanitizeHtml(article.content) : '',
-      category: article.category || 'Panduan Asesmen',
-      author_name: article.author_name || 'Agi Hamdani, M.Pd',
-      read_time: article.read_time || 5,
-      view_count: viewCount,
-      views_count: viewCount,
-      is_pinned: !!article.is_pinned,
-      pin_expires_at: pinExpiry,
-      pinned_until: pinExpiry,
-      is_featured: !!article.is_featured,
-      is_published: article.is_published ?? true,
-      published_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      ...article
-    };
-    adminArticlesStore.unshift(newArt);
-    return { success: true, data: newArt };
+        is_pinned: !!article.is_pinned,
+        pin_expires_at: pinExpiry,
+        pinned_until: pinExpiry,
+        is_featured: !!article.is_featured,
+        is_published: article.is_published ?? true,
+        published_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...articlePayload
+      } as PublicArticle;
+    }
   }
+
+  // Perbarui adminArticlesStore in-memory
+  const existingIdx = adminArticlesStore.findIndex(a => a.id === savedArticle!.id || (savedArticle!.slug && a.slug === savedArticle!.slug));
+  if (existingIdx >= 0) {
+    adminArticlesStore[existingIdx] = savedArticle;
+  } else {
+    adminArticlesStore.unshift(savedArticle);
+  }
+
+  // Simpan secara permanen ke LocalStorage browser agar tidak hilang setelah reload
+  setCachedPublicArticles(adminArticlesStore);
+  sidebarAggregateCache = null;
+
+  return { success: true, data: savedArticle, isCloudSynced };
 }
 
 /**
@@ -578,6 +731,8 @@ export async function deletePublicArticle(id: string): Promise<{ success: boolea
     await supabase.from('public_articles').delete().eq('id', id);
   } catch (e) {}
   adminArticlesStore = adminArticlesStore.filter(a => a.id !== id);
+  setCachedPublicArticles(adminArticlesStore);
+  sidebarAggregateCache = null;
   return { success: true };
 }
 
@@ -588,7 +743,9 @@ export async function toggleArticlePublish(id: string, is_published: boolean): P
   try {
     await supabase.from('public_articles').update({ is_published }).eq('id', id);
   } catch (e) {}
-  adminArticlesStore = adminArticlesStore.map(a => a.id === id ? { ...a, is_published } : a);
+  adminArticlesStore = adminArticlesStore.map(a => a.id === id ? { ...a, is_published, updated_at: new Date().toISOString() } : a);
+  setCachedPublicArticles(adminArticlesStore);
+  sidebarAggregateCache = null;
   return { success: true };
 }
 

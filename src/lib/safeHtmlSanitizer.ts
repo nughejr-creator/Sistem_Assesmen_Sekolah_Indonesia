@@ -132,12 +132,18 @@ export function calculateReadTime(content: string): number {
 export function formatArticleContent(raw: string): string {
   if (!raw) return '';
 
-  let html = raw;
+  // 1. Normalisasi string escape literal '\n' atau '\r\n' menjadi karakter baris baru sesungguhnya
+  const normalized = raw
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n');
+
+  let html = normalized;
 
   // Check if content appears to be raw markdown rather than HTML
-  const hasHtmlTags = /<[a-z][\s\S]*>/i.test(raw);
+  const hasHtmlTags = /<[a-z][\s\S]*>/i.test(normalized);
   if (!hasHtmlTags) {
-    html = raw
+    html = normalized
       // Headers
       .replace(/^### (.*$)/gim, '<h3 class="text-base font-bold text-slate-900 mt-4 mb-2">$1</h3>')
       .replace(/^## (.*$)/gim, '<h2 class="text-lg font-black text-slate-900 mt-6 mb-3 border-b pb-1">$1</h2>')

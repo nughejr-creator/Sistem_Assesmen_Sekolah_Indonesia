@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useLayoutEffect } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -45,6 +45,10 @@ import {
 } from 'lucide-react';
 import katex from 'katex';
 import { countWords, countCharacters, calculateReadTime } from '../../../lib/safeHtmlSanitizer';
+
+export interface WordRibbonEditorRef {
+  getLatestContent: () => string;
+}
 
 interface WordRibbonEditorProps {
   value: string;
@@ -104,19 +108,75 @@ const LATEX_TEMPLATES = [
   { label: 'Matriks 2x2', code: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}' }
 ];
 
-export const WordRibbonEditor: React.FC<WordRibbonEditorProps> = ({
+/**
+ * Menormalkan kode HTML yang di-paste atau diketik di editor:
+ * - Mengekstrak isi <body> jika user menyalin dokumen HTML utuh (<html>...</html>)
+ * - Membersihkan tag doctype, html, head, meta
+ * - Menormalkan karakter baris baru
+ */
+export function normalizeHtmlForEditor(raw: string): string {
+  if (!raw) return '';
+  let str = raw.trim();
+
+  // 1. Ekstrak isi <body> jika user menyalin seluruh dokumen HTML
+  const bodyMatch = str.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) {
+    str = bodyMatch[1].trim();
+  } else {
+    // Bersihkan tag pembungkus doctype, html, head jika ada
+    str = str
+      .replace(/<!DOCTYPE[^>]*>/gi, '')
+      .replace(/<html[^>]*>/gi, '')
+      .replace(/<\/html>/gi, '')
+      .replace(/<head[\s\S]*?<\/head>/gi, '')
+      .replace(/<body[^>]*>/gi, '')
+      .replace(/<\/body>/gi, '');
+  }
+
+  // 2. Normalisasi literal escape \n atau \r\n jika ada
+  str = str
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n');
+
+  return str.trim();
+}
+
+export const WordRibbonEditor = forwardRef<WordRibbonEditorRef, WordRibbonEditorProps>(({
   value,
   onChange,
   placeholder = 'Mulai ketik materi artikel Anda di sini...',
   minHeight = '380px'
-}) => {
+}, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<'beranda' | 'sisipkan' | 'tata_letak'>('beranda');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSourceMode, setIsSourceMode] = useState(false);
-  const [sourceCode, setSourceCode] = useState(value || '');
+  const [sourceCode, setSourceCode] = useState<string>(normalizeHtmlForEditor(value || ''));
+
+  // Single Source of Truth buffer ref
+  const contentBufferRef = useRef<string>(normalizeHtmlForEditor(value || ''));
+
+  // Guard flag untuk mencegah siklus useEffect prop 'value' menimpa input pengguna
+  const isInternalEditingRef = useRef<boolean>(false);
+
+  // Snapshot extractor untuk memastikan state terbaru diambil sebelum submit
+  const getLatestContent = useCallback((): string => {
+    if (isSourceMode) {
+      return textareaRef.current?.value ?? contentBufferRef.current ?? '';
+    } else {
+      const visual = editorRef.current?.innerHTML;
+      return (visual && visual.trim() !== '' && visual.trim() !== '<br>') 
+        ? visual 
+        : (contentBufferRef.current || '');
+    }
+  }, [isSourceMode]);
+
+  useImperativeHandle(ref, () => ({
+    getLatestContent
+  }), [getLatestContent]);
 
   // Modals state
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -151,18 +211,38 @@ export const WordRibbonEditor: React.FC<WordRibbonEditorProps> = ({
   const [readTime, setReadTime] = useState(1);
   const [lastAutoSave, setLastAutoSave] = useState<string>('Baru saja');
 
-  // Track if internal update to avoid re-triggering innerHTML resets
-  const isInternalUpdate = useRef(false);
-
-  // Initialize and sync content
+  // Initialize on mount
   useEffect(() => {
-    if (editorRef.current && !isInternalUpdate.current) {
-      if (editorRef.current.innerHTML !== (value || '')) {
-        editorRef.current.innerHTML = value || '';
-      }
+    const initialContent = normalizeHtmlForEditor(value || '');
+    contentBufferRef.current = initialContent;
+    setSourceCode(initialContent);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = initialContent;
     }
-    updateMetrics(value || '');
-    setSourceCode(value || '');
+    if (textareaRef.current) {
+      textareaRef.current.value = initialContent;
+    }
+    updateMetrics(initialContent);
+  }, []);
+
+  // Sync prop 'value' HANYA saat ada perubahan dari luar (bukan dari ketikan / toggle sendiri)
+  useEffect(() => {
+    if (isInternalEditingRef.current) {
+      isInternalEditingRef.current = false;
+      return;
+    }
+    if (value !== undefined && value !== contentBufferRef.current) {
+      const normalized = normalizeHtmlForEditor(value);
+      contentBufferRef.current = normalized;
+      setSourceCode(normalized);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = normalized;
+      }
+      if (textareaRef.current) {
+        textareaRef.current.value = normalized;
+      }
+      updateMetrics(normalized);
+    }
   }, [value]);
 
   const updateMetrics = (html: string) => {
@@ -178,14 +258,12 @@ export const WordRibbonEditor: React.FC<WordRibbonEditorProps> = ({
 
   const handleEditorInput = () => {
     if (!editorRef.current) return;
-    isInternalUpdate.current = true;
     const html = editorRef.current.innerHTML;
+    contentBufferRef.current = html;
+    isInternalEditingRef.current = true;
+    setSourceCode(html);
     onChange(html);
     updateMetrics(html);
-    setSourceCode(html);
-    setTimeout(() => {
-      isInternalUpdate.current = false;
-    }, 50);
   };
 
   // Helper execCommand wrapper
@@ -369,27 +447,66 @@ export const WordRibbonEditor: React.FC<WordRibbonEditorProps> = ({
     handleEditorInput();
   };
 
-  // Toggle Source Mode
+  // Toggle Source Mode (Sinkronisasi Dua Arah Visual <-> HTML Persistent-DOM Anti-Hilang)
   const handleToggleSourceMode = () => {
-    if (isSourceMode) {
-      if (editorRef.current) {
-        editorRef.current.innerHTML = sourceCode;
+    if (!isSourceMode) {
+      // 1. Sedang di Mode Visual -> Beralih ke Mode HTML
+      // Ambil konten visual terkini langsung dari innerHTML jika ada isinya
+      const visualHtml = editorRef.current?.innerHTML;
+      const hasContent = visualHtml !== undefined && visualHtml.trim() !== '' && visualHtml.trim() !== '<br>';
+      const targetContent = hasContent ? visualHtml : contentBufferRef.current;
+
+      contentBufferRef.current = targetContent;
+      isInternalEditingRef.current = true;
+      setSourceCode(targetContent);
+
+      // Injeksi nilai ke textarea DOM secara sinkron seketika
+      if (textareaRef.current) {
+        textareaRef.current.value = targetContent;
       }
-      onChange(sourceCode);
-      updateMetrics(sourceCode);
+
+      setIsSourceMode(true);
+      onChange(targetContent);
+      updateMetrics(targetContent);
     } else {
+      // 2. Sedang di Mode HTML -> Beralih ke Mode Visual
+      // Ambil teks dari textarea atau buffer
+      const rawCode = textareaRef.current?.value ?? sourceCode ?? contentBufferRef.current ?? '';
+      const cleanHtml = normalizeHtmlForEditor(rawCode);
+
+      contentBufferRef.current = cleanHtml;
+      isInternalEditingRef.current = true;
+      setSourceCode(cleanHtml);
+
+      // INJEKSI LANGSUNG SECARA SINKRON SEBELUM/BERSAMAAN DENGAN STATE SWITCH (TANPA SETTIMEOUT!)
       if (editorRef.current) {
-        setSourceCode(editorRef.current.innerHTML);
+        editorRef.current.innerHTML = cleanHtml;
       }
+
+      setIsSourceMode(false);
+      onChange(cleanHtml);
+      updateMetrics(cleanHtml);
     }
-    setIsSourceMode(!isSourceMode);
   };
 
   const handleSourceChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const code = e.target.value;
+    contentBufferRef.current = code;
+    isInternalEditingRef.current = true;
     setSourceCode(code);
     onChange(code);
     updateMetrics(code);
+  };
+
+  // Handler paste khusus jika user mem-paste potongan kode HTML langsung di mode visual
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const text = e.clipboardData.getData('text/plain');
+    const html = e.clipboardData.getData('text/html');
+    if (text && /<[a-z][\s\S]*>/i.test(text) && !html) {
+      e.preventDefault();
+      document.execCommand('insertHTML', false, text);
+      handleEditorInput();
+    }
   };
 
   // Keyboard shortcut listener
@@ -985,28 +1102,28 @@ export const WordRibbonEditor: React.FC<WordRibbonEditorProps> = ({
       )}
 
       {/* =====================================================================
-          3. MAIN EDITOR CONTENT AREA
+          3. MAIN EDITOR CONTENT AREA (PERSISTENT DOM: KEDUA ELEMEN SELALU DI DOM)
       ===================================================================== */}
       <div className="flex-1 bg-white relative overflow-y-auto">
-        {isSourceMode ? (
-          <textarea
-            value={sourceCode}
-            onChange={handleSourceChange}
-            className="w-full h-full p-4 font-mono text-xs text-slate-800 bg-slate-900 text-slate-100 resize-none outline-none focus:ring-0 leading-relaxed"
-            style={{ minHeight }}
-            spellCheck={false}
-          />
-        ) : (
-          <div
-            ref={editorRef}
-            contentEditable
-            onInput={handleEditorInput}
-            onKeyDown={handleKeyDown}
-            data-placeholder={placeholder}
-            className="w-full p-6 outline-none text-xs sm:text-sm text-slate-800 leading-relaxed text-justify font-sans focus:outline-none min-h-[380px] prose prose-slate max-w-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-slate-400 [&:empty]:before:pointer-events-none"
-            style={{ minHeight }}
-          />
-        )}
+        <textarea
+          ref={textareaRef}
+          value={sourceCode}
+          onChange={handleSourceChange}
+          style={{ display: isSourceMode ? 'block' : 'none', minHeight }}
+          className="w-full h-full p-4 font-mono text-xs text-slate-100 bg-slate-900 resize-none outline-none focus:ring-0 leading-relaxed"
+          spellCheck={false}
+        />
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning={true}
+          onInput={handleEditorInput}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          data-placeholder={placeholder}
+          style={{ display: isSourceMode ? 'none' : 'block', minHeight }}
+          className="w-full p-6 outline-none text-xs sm:text-sm text-slate-800 leading-relaxed text-justify font-sans focus:outline-none min-h-[380px] prose prose-slate max-w-none [&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-slate-400 [&:empty]:before:pointer-events-none"
+        />
       </div>
 
       {/* =====================================================================
@@ -1390,4 +1507,6 @@ export const WordRibbonEditor: React.FC<WordRibbonEditorProps> = ({
       )}
     </div>
   );
-};
+});
+
+WordRibbonEditor.displayName = 'WordRibbonEditor';

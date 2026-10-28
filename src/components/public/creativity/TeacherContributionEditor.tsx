@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   PenTool, 
   Save, 
@@ -12,9 +12,9 @@ import {
   Eye,
   Sparkles
 } from 'lucide-react';
-import { submitTeacherContribution } from '../../../lib/publicPortalService';
+import { submitTeacherContribution, executeSafeSupabaseUpdate } from '../../../lib/publicPortalService';
 import { ContributionContentType } from '../../../types/publicPortal';
-import { WordRibbonEditor } from '../../admin/portal/WordRibbonEditor';
+import { WordRibbonEditor, WordRibbonEditorRef } from '../../admin/portal/WordRibbonEditor';
 import { PublicArticlePreviewModal } from '../../admin/portal/PublicArticlePreviewModal';
 import { calculateReadTime } from '../../../lib/safeHtmlSanitizer';
 
@@ -36,6 +36,8 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
   const [summary, setSummary] = useState('');
   const [body, setBody] = useState(initialContent || '');
   const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [activeContributionId, setActiveContributionId] = useState<string | null>(null);
+  const editorRef = useRef<WordRibbonEditorRef>(null);
   
   // Status feedback
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,11 +45,14 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const handleSave = async (status: 'draft' | 'pending_review') => {
+    // 1. Ekstrak snapshot konten HTML terbaru langsung dari editor aktif (Visual maupun HTML)
+    const latestHtml = editorRef.current ? editorRef.current.getLatestContent() : body;
+
     if (!title.trim()) {
       setFeedbackMessage({ type: 'error', text: 'Mohon isi judul karya terlebih dahulu.' });
       return;
     }
-    if (!body.trim()) {
+    if (!latestHtml.trim()) {
       setFeedbackMessage({ type: 'error', text: 'Mohon tuliskan konten utama karya Anda.' });
       return;
     }
@@ -55,37 +60,71 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
     setIsSubmitting(true);
     setFeedbackMessage(null);
 
-    const result = await submitTeacherContribution({
-      teacher_id: '00000000-0000-0000-0000-000000000000', // Mock authenticated teacher session
-      teacher_name: authorName,
-      teacher_school: authorSchool,
-      title: title.trim(),
-      content_type: contentType,
-      summary: summary.trim() || title.trim(),
-      body: body.trim(),
-      attachment_url: attachmentUrl.trim() || undefined,
-      status: status
-    });
+    try {
+      if (activeContributionId) {
+        // MODE UPDATE: Gunakan safe update wrapper dengan deteksi RLS
+        const updateRes = await executeSafeSupabaseUpdate<any>(
+          'teacher_contributions',
+          { id: activeContributionId },
+          {
+            title: title.trim(),
+            content_type: contentType,
+            summary: summary.trim() || title.trim(),
+            body: latestHtml.trim(),
+            attachment_url: attachmentUrl.trim() || null,
+            status: status
+          }
+        );
 
-    setIsSubmitting(false);
-
-    if (result.success) {
-      if (status === 'draft') {
-        setFeedbackMessage({
-          type: 'draft',
-          text: 'Draf karya Anda berhasil disimpan secara aman di sistem. Anda dapat melanjutkannya kapan saja.'
-        });
+        if (status === 'draft') {
+          setFeedbackMessage({
+            type: 'draft',
+            text: 'Pembaruan draf karya Anda berhasil disimpan secara aman di database Cloud.'
+          });
+        } else {
+          setFeedbackMessage({
+            type: 'success',
+            text: 'Pembaruan karya Anda berhasil diajukan untuk kurasi tim SASI!'
+          });
+        }
       } else {
-        setFeedbackMessage({
-          type: 'success',
-          text: 'Karya Anda berhasil diajukan untuk kurasi! Tim Super Admin SASI akan meninjau kelayakan pedagogis sebelum diterbitkan secara resmi.'
+        // MODE INSERT: Buat entri naskah baru
+        const result = await submitTeacherContribution({
+          teacher_id: '00000000-0000-0000-0000-000000000000',
+          teacher_name: authorName,
+          teacher_school: authorSchool,
+          title: title.trim(),
+          content_type: contentType,
+          summary: summary.trim() || title.trim(),
+          body: latestHtml.trim(),
+          attachment_url: attachmentUrl.trim() || undefined,
+          status: status
         });
+
+        if (result.success && result.data) {
+          setActiveContributionId(result.data.id); // Simpan ID agar aksi simpan berikutnya menjadi UPDATE
+          if (status === 'draft') {
+            setFeedbackMessage({
+              type: 'draft',
+              text: 'Draf karya Anda berhasil disimpan ke sistem. Anda dapat melanjutkan menyuntingnya kapan saja.'
+            });
+          } else {
+            setFeedbackMessage({
+              type: 'success',
+              text: 'Karya Anda berhasil diajukan untuk kurasi! Tim Super Admin SASI akan meninjau kelayakan pedagogis sebelum diterbitkan secara resmi.'
+            });
+          }
+        } else {
+          throw new Error(result.error || 'Gagal menyimpan karya.');
+        }
       }
-    } else {
+    } catch (err: any) {
       setFeedbackMessage({
         type: 'error',
-        text: result.error || 'Terjadi kendala saat menyimpan karya. Pastikan server aktif.'
+        text: err.message || 'Terjadi kendala saat menyimpan karya. Pastikan izin akses database telah aktif.'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -227,6 +266,7 @@ export const TeacherContributionEditor: React.FC<TeacherContributionEditorProps>
           </div>
 
           <WordRibbonEditor
+            ref={editorRef}
             value={body}
             onChange={(html) => setBody(html)}
             placeholder="Mulai tuliskan naskah perangkat ajar, skenario pembelajaran, butir soal, atau praktik baik Anda di sini..."

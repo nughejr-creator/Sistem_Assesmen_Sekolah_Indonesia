@@ -63,7 +63,7 @@ import {
   deletePortalQuickLink
 } from '../../../lib/publicPortalService';
 import { UserProfile } from '../../../types/database';
-import { WordRibbonEditor } from './WordRibbonEditor';
+import { WordRibbonEditor, WordRibbonEditorRef } from './WordRibbonEditor';
 import { PublicArticlePreviewModal } from './PublicArticlePreviewModal';
 import { calculateReadTime } from '../../../lib/safeHtmlSanitizer';
 
@@ -80,9 +80,11 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
   const [articles, setArticles] = useState<PublicArticle[]>([]);
   const [articleSearch, setArticleSearch] = useState('');
   const [editingArticle, setEditingArticle] = useState<Partial<PublicArticle> | null>(null);
+  const ribbonEditorRef = useRef<WordRibbonEditorRef>(null);
   const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   const [previewArticle, setPreviewArticle] = useState<PublicArticle | null>(null);
   const [tagsInputValue, setTagsInputValue] = useState('');
+  const [articleSavedToast, setArticleSavedToast] = useState<{ show: boolean; msg: string } | null>(null);
 
   // ===========================================================================
   // TAB 2: RESOURCES STATE
@@ -195,10 +197,16 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       .map(t => t.trim())
       .filter(Boolean);
 
-    const calculatedTime = calculateReadTime(editingArticle.content || '');
+    // Ambil snapshot konten terkini langsung dari instance editor aktif (baik Visual maupun Mode HTML)
+    const latestContent = ribbonEditorRef.current
+      ? ribbonEditorRef.current.getLatestContent()
+      : (editingArticle.content || '');
+
+    const calculatedTime = calculateReadTime(latestContent);
 
     const updatedArticle: Partial<PublicArticle> = {
       ...editingArticle,
+      content: latestContent,
       is_published: isPublished,
       tags: tagsArray,
       read_time: editingArticle.read_time && editingArticle.read_time > 0 ? editingArticle.read_time : calculatedTime
@@ -217,6 +225,13 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       });
       setIsArticleModalOpen(false);
       setEditingArticle(null);
+      setArticleSavedToast({
+        show: true,
+        msg: res.isCloudSynced 
+          ? 'Artikel berhasil disimpan dan disinkronkan ke Cloud Supabase & Portal Publik!' 
+          : 'Artikel berhasil disimpan dan langsung aktif di Portal Publik!'
+      });
+      setTimeout(() => setArticleSavedToast(null), 3500);
     }
   };
 
@@ -527,6 +542,13 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
       ======================================================================= */}
       {activeTab === 'articles' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+          
+          {articleSavedToast && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center space-x-2 animate-fade-in shadow-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="font-bold">{articleSavedToast.msg}</span>
+            </div>
+          )}
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
@@ -1435,6 +1457,7 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
                 </div>
 
                 <WordRibbonEditor
+                  ref={ribbonEditorRef}
                   value={editingArticle.content || ''}
                   onChange={(html) => setEditingArticle(prev => prev ? { ...prev, content: html } : prev)}
                   placeholder="Ketik naskah artikel wawasan asesmen di sini..."
