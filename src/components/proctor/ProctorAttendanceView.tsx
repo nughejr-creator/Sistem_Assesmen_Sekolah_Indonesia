@@ -39,7 +39,9 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
   });
 
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [selectedClassFilter, setSelectedClassFilter] = useState<string>('auto');
   const [students, setStudents] = useState<UserProfile[]>([]);
+  const [attempts, setAttempts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, StudentAttendance>>({});
   const [isPrintMode, setIsPrintMode] = useState(false);
@@ -51,10 +53,82 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
     return [];
   });
 
-  // Fetch real students, sessions, and supervisors from Supabase Cloud
+  // Helper presisi untuk mengekstrak nomor tingkatan kelas (contoh: "Kelas 6", "Kls 6", "6-A", "VI")
+  const extractGradeNumber = (str?: string | null): string | null => {
+    if (!str) return null;
+    const clean = str.trim();
+
+    // 1. Eksplisit kata "Kelas X", "Kls X", "Kelas VI", dsb
+    const matchExplicit = clean.match(/\b(?:kelas|kls)\s*(?:ke-?)?\s*(1[0-2]|[1-9]|VI|IV|V|III|II|I)\b/i);
+    if (matchExplicit) {
+      const val = matchExplicit[1].toUpperCase();
+      const romanMap: Record<string, string> = {
+        'I': '1', 'II': '2', 'III': '3', 'IV': '4', 'V': '5', 'VI': '6',
+        'VII': '7', 'VIII': '8', 'IX': '9', 'X': '10', 'XI': '11', 'XII': '12'
+      };
+      return romanMap[val] || val;
+    }
+
+    // 2. Format pendek khusus field grade_class siswa (contoh: "6", "6-A", "6A", "VI", "VI-A")
+    const matchClassShort = clean.match(/^(?:kelas\s*)?(1[0-2]|[1-9]|VI|IV|V|III|II|I)(?:[-/\s]?[A-Za-z]|\b)/i);
+    if (matchClassShort) {
+      const val = matchClassShort[1].toUpperCase();
+      const romanMap: Record<string, string> = {
+        'I': '1', 'II': '2', 'III': '3', 'IV': '4', 'V': '5', 'VI': '6',
+        'VII': '7', 'VIII': '8', 'IX': '9', 'X': '10', 'XI': '11', 'XII': '12'
+      };
+      return romanMap[val] || val;
+    }
+
+    // 3. Fallback jika ada angka 1-12
+    const anyDigit = clean.match(/\b([1-9]|1[0-2])\b/);
+    if (anyDigit) return anyDigit[1];
+
+    return null;
+  };
+
+  // Helper untuk menentukan tingkatan kelas dari sesi ujian
+  const getSessionGrade = (sess?: ExamSession | null): string | null => {
+    if (!sess) return null;
+    // 1. Dari session_name (contoh: "Sesi Ujian - SAS Matematika Kelas 6 SD" atau "Kelas 6-A")
+    const fromName = extractGradeNumber(sess.session_name);
+    if (fromName) return fromName;
+
+    // 2. Dari package.title (contoh: "Sumatif Akhir Semester (SAS) Matematika Kelas 6 SD")
+    const fromPkg = extractGradeNumber(sess.package?.title);
+    if (fromPkg) return fromPkg;
+
+    // 3. Fallback Fase Kurikulum Merdeka (Fase A = Kelas 1, Fase B = Kelas 4, Fase C = Kelas 6, dst)
+    if (sess.package?.phase) {
+      const p = sess.package.phase.toUpperCase();
+      if (p === 'A') return '1';
+      if (p === 'B') return '4';
+      if (p === 'C') return '6';
+      if (p === 'D') return '7';
+      if (p === 'E') return '10';
+      if (p === 'F') return '11';
+    }
+
+    return null;
+  };
+
+  // Normalisasi kode rombel (contoh: "Kelas 6-A" -> "6-A")
+  const normalizeClassCode = (str?: string | null): string => {
+    if (!str) return '';
+    return str.trim().replace(/^kelas\s*/i, '');
+  };
+
+  // Reset class filter ke 'auto' jika sesi berubah
+  useEffect(() => {
+    setSelectedClassFilter('auto');
+  }, [selectedSessionId]);
+
+  // Fetch real students, sessions, attempts, and supervisors from Supabase Cloud
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const schId = school.id || '1e6e1bbb-05cb-49a8-8ab0-e166336c9222';
+
         const { data: cloudSessions } = await supabase
           .from('exam_sessions')
           .select('*, package:exam_packages(*)')
@@ -62,7 +136,7 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
 
         if (cloudSessions) {
           const matched = cloudSessions.filter(
-            s => school.id && s.school_id === school.id
+            s => s.school_id === schId
           );
           setSessions(matched as ExamSession[]);
           if (matched.length > 0) {
@@ -78,28 +152,36 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
           .from('user_profiles')
           .select('*')
           .eq('role', 'student')
+          .eq('school_id', schId)
           .order('full_name');
 
         if (cloudStudents) {
-          const matchedStudents = cloudStudents.filter(
-            s => school.id && s.school_id === school.id
-          );
-          setStudents(matchedStudents);
+          setStudents(cloudStudents);
         } else {
           setStudents([]);
+        }
+
+        // Fetch Attempts
+        const { data: cloudAttempts } = await supabase
+          .from('student_attempts')
+          .select('id, student_id, session_id, status, final_score')
+          .eq('school_id', schId);
+
+        if (cloudAttempts) {
+          setAttempts(cloudAttempts);
         }
 
         // Fetch Supervisors
         const { data: spvData } = await supabase
           .from('supervisors')
           .select('*')
-          .eq('school_id', school.id || '1e6e1bbb-05cb-49a8-8ab0-e166336c9222')
+          .eq('school_id', schId)
           .order('name');
 
         if (spvData && spvData.length > 0) {
           setSupervisors(spvData);
           try {
-            localStorage.setItem(`sasi_supervisors_${school.id || 'default'}`, JSON.stringify(spvData));
+            localStorage.setItem(`sasi_supervisors_${schId}`, JSON.stringify(spvData));
           } catch (err) {}
         }
       } catch (e) {
@@ -156,17 +238,23 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
     return null;
   }, [activeSession, supervisors]);
 
-  // Initialize attendance records: students who are logged in or completed attempt default to 'hadir'
+  // Initialize attendance records: preserve existing proctor marks
   useEffect(() => {
-    const initialRecords: Record<string, StudentAttendance> = {};
-    students.forEach(st => {
-      initialRecords[st.id] = {
-        studentId: st.id,
-        status: st.is_logged_in ? 'hadir' : 'hadir' // default hadir, proktor can change
-      };
+    if (students.length === 0) return;
+    setAttendanceRecords(prev => {
+      const next = { ...prev };
+      students.forEach(st => {
+        if (!next[st.id]) {
+          const hasAttempt = attempts.some(a => a.student_id === st.id && a.session_id === activeSession?.id);
+          next[st.id] = {
+            studentId: st.id,
+            status: hasAttempt || st.is_logged_in ? 'hadir' : 'hadir'
+          };
+        }
+      });
+      return next;
     });
-    setAttendanceRecords(initialRecords);
-  }, [students]);
+  }, [students, attempts, activeSession?.id]);
 
   const handleStatusChange = (studentId: string, status: 'hadir' | 'sakit' | 'izin' | 'alpa') => {
     setAttendanceRecords(prev => ({
@@ -178,20 +266,83 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
     }));
   };
 
-  const filteredStudents = students.filter(st => {
-    if (!searchQuery.trim()) return true;
+  // 1. Tingkat kelas sesi aktif (contoh: "6", "4", atau null)
+  const sessionGrade = useMemo(() => getSessionGrade(activeSession), [activeSession]);
+
+  // 2. Daftar rombel unik yang ada di sekolah (dikelompokkan sesuai tingkat sesi bila ada)
+  const availableClasses = useMemo(() => {
+    const classSet = new Set<string>();
+    students.forEach(st => {
+      const cls = normalizeClassCode(st.grade_class);
+      if (cls) {
+        if (!sessionGrade || extractGradeNumber(cls) === sessionGrade) {
+          classSet.add(cls);
+        }
+      }
+    });
+    return Array.from(classSet).sort();
+  }, [students, sessionGrade]);
+
+  // 3. Filter siswa sesuai tingkat kelas sesi dan seleksi rombel
+  const eligibleStudents = useMemo(() => {
+    return students.filter(st => {
+      const studentGrade = extractGradeNumber(st.grade_class);
+      const studentClassNorm = normalizeClassCode(st.grade_class);
+
+      // Jika user memilih rombel tertentu secara manual
+      if (selectedClassFilter !== 'auto' && selectedClassFilter !== 'all') {
+        return studentClassNorm.toLowerCase() === selectedClassFilter.toLowerCase();
+      }
+
+      // Jika user memilih tampilkan semua rombel sekolah
+      if (selectedClassFilter === 'all') {
+        return true;
+      }
+
+      // Mode 'auto': otomatis hanya siswa yang satu tingkat kelas dengan sesi ujian
+      if (sessionGrade) {
+        // Siswa dari kelas/tingkatan lain (contoh: Kelas 4 di sesi Kelas 6) dikeluarkan secara mutlak
+        if (studentGrade && studentGrade !== sessionGrade) {
+          return false;
+        }
+        // Jika data siswa tidak punya informasi kelas sama sekali dan sesi memiliki kelas spesifik -> jangan sertakan
+        if (!studentGrade) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [students, sessionGrade, selectedClassFilter]);
+
+  // 4. Filter akhir dengan pencarian nama / NISN / rombel
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery.trim()) return eligibleStudents;
     const q = searchQuery.toLowerCase();
-    return (
+    return eligibleStudents.filter(st => (
       st.full_name?.toLowerCase().includes(q) ||
       st.username?.toLowerCase().includes(q) ||
       st.grade_class?.toLowerCase().includes(q)
-    );
-  });
+    ));
+  }, [eligibleStudents, searchQuery]);
 
-  const totalHadir = Object.values(attendanceRecords).filter(a => a.status === 'hadir').length;
-  const totalSakit = Object.values(attendanceRecords).filter(a => a.status === 'sakit').length;
-  const totalIzin = Object.values(attendanceRecords).filter(a => a.status === 'izin').length;
-  const totalAlpa = Object.values(attendanceRecords).filter(a => a.status === 'alpa').length;
+  // KPI dihitung spesifik berdasarkan daftar peserta yang tampil pada sesi / rombel terpilih
+  const totalHadir = useMemo(() => 
+    filteredStudents.filter(st => (attendanceRecords[st.id]?.status || 'hadir') === 'hadir').length,
+    [filteredStudents, attendanceRecords]
+  );
+  const totalSakit = useMemo(() => 
+    filteredStudents.filter(st => attendanceRecords[st.id]?.status === 'sakit').length,
+    [filteredStudents, attendanceRecords]
+  );
+  const totalIzin = useMemo(() => 
+    filteredStudents.filter(st => attendanceRecords[st.id]?.status === 'izin').length,
+    [filteredStudents, attendanceRecords]
+  );
+  const totalAlpa = useMemo(() => 
+    filteredStudents.filter(st => attendanceRecords[st.id]?.status === 'alpa').length,
+    [filteredStudents, attendanceRecords]
+  );
 
   return (
     <div className="space-y-6">
@@ -251,6 +402,7 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
           </h2>
           <p className="text-xs font-semibold">
             Tahun Pelajaran 2026/2027 • {activeSession.session_name}
+            {selectedClassFilter !== 'auto' && selectedClassFilter !== 'all' ? ` • Kelas ${selectedClassFilter}` : ''}
           </p>
         </div>
 
@@ -258,18 +410,41 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
         <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-4 print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5">
-              <label className="text-xs font-bold text-slate-600">Pilih Sesi Ujian:</label>
-              <select
-                value={selectedSessionId}
-                onChange={(e) => setSelectedSessionId(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800"
-              >
-                {sessions.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.session_name} (Token: {s.token_code})
+              <div className="flex items-center space-x-1.5">
+                <label className="text-xs font-bold text-slate-600">Pilih Sesi Ujian:</label>
+                <select
+                  value={selectedSessionId}
+                  onChange={(e) => setSelectedSessionId(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500"
+                >
+                  {sessions.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.session_name} (Token: {s.token_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter Rombel / Kelas Khusus Sesi Ini */}
+              <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1">
+                <Filter className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                <label className="text-xs font-bold text-slate-700">Filter Rombel:</label>
+                <select
+                  value={selectedClassFilter}
+                  onChange={(e) => setSelectedClassFilter(e.target.value)}
+                  className="bg-transparent border-none text-xs font-bold text-slate-900 focus:outline-hidden cursor-pointer"
+                >
+                  <option value="auto">
+                    {sessionGrade ? `Sesuai Sesi (Kelas ${sessionGrade})` : 'Semua Kelas'}
                   </option>
-                ))}
-              </select>
+                  {availableClasses.map(cls => (
+                    <option key={cls} value={cls}>
+                      Kelas {cls}
+                    </option>
+                  ))}
+                  <option value="all">Semua Siswa Sekolah (Tanpa Filter)</option>
+                </select>
+              </div>
 
               {/* Status Pengawas Sesi Otomatis */}
               <div className="flex items-center space-x-1.5 text-[11px] px-2.5 py-1 rounded-lg border bg-slate-50 border-slate-200">
@@ -284,6 +459,12 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
                     Belum Ditugaskan (Cetak Titik-titik)
                   </span>
                 )}
+              </div>
+
+              {/* Total Peserta Terdaftar Badge */}
+              <div className="flex items-center space-x-1 text-[11px] px-2.5 py-1 rounded-lg bg-brand-50 border border-brand-200 text-brand-800 font-bold">
+                <Users className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                <span>{filteredStudents.length} Peserta</span>
               </div>
             </div>
 
@@ -335,7 +516,14 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
             </thead>
 
             <tbody className="divide-y divide-slate-200 text-slate-800 print:text-black">
-              {filteredStudents.map((st, idx) => {
+              {filteredStudents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-400 font-medium italic">
+                    Tidak ada data peserta ujian untuk tingkatan / rombel ini.
+                  </td>
+                </tr>
+              ) : (
+                filteredStudents.map((st, idx) => {
                 const currentStatus = attendanceRecords[st.id]?.status || 'hadir';
 
                 return (
@@ -423,8 +611,9 @@ export const ProctorAttendanceView: React.FC<ProctorAttendanceViewProps> = ({ sc
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
+              })
+            )}
+          </tbody>
           </table>
         </div>
 
