@@ -107,7 +107,7 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({
                   onClick={(e) => handleLinkClick(e, 'ruang-kreativitas')}
                   className="hover:text-amber-400 transition-colors text-left flex items-center space-x-1"
                 >
-                  <span>Asisten Guru AI (6 Alur)</span>
+                  <span>Asisten Guru AI (7 Alur)</span>
                   <span className="text-[9px] px-1 bg-amber-500/20 text-amber-300 rounded font-bold">AI</span>
                 </button>
               </li>

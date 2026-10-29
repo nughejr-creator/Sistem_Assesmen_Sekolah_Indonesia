@@ -328,17 +328,19 @@ export const AssessmentInsightsPage: React.FC<AssessmentInsightsPageProps> = ({
           <div className="space-y-6">
             
             {/* Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2 pb-4 border-b-2 border-slate-200">
-              <Filter className="w-4 h-4 text-slate-500 mr-1" />
+            <div className="flex items-center gap-2 pb-4 border-b-2 border-slate-200 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 border border-slate-200/70 mr-2 shrink-0">
+                <Filter className="w-4 h-4" />
+              </div>
               {categories.map(cat => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`whitespace-nowrap transition-all duration-200 active:scale-95 ${
                     selectedCategory === cat
-                      ? 'bg-sky-600 text-white border-2 border-sky-600 shadow-xs'
-                      : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                      ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-md shadow-indigo-500/25 rounded-xl px-4 py-2 text-sm tracking-wide'
+                      : 'bg-slate-100/90 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/40 rounded-xl px-4 py-2 text-sm font-medium'
                   }`}
                 >
                   {cat}

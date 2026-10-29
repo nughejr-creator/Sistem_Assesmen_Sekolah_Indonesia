@@ -556,14 +556,14 @@ export async function getAllPublicArticlesAdmin(): Promise<PublicArticle[]> {
       const articleMap = new Map<string, PublicArticle>();
 
       // Masukkan seeds bawaan
-      FALLBACK_PUBLIC_ARTICLES.forEach(a => articleMap.set(a.id || a.slug, a));
+      FALLBACK_PUBLIC_ARTICLES.forEach(a => articleMap.set(a.slug, a));
 
-      // Masukkan record dari cloud database Supabase
-      dbArticles.forEach(a => articleMap.set(a.id || a.slug, a));
+      // Masukkan record dari cloud database Supabase (menimpa seed dengan data dan UUID asli dari Cloud)
+      dbArticles.forEach(a => articleMap.set(a.slug, a));
 
       // Gabungkan cache lokal yang mungkin belum sempat disinkronkan ke cloud
       cached.forEach(a => {
-        const key = a.id || a.slug;
+        const key = a.slug;
         const existing = articleMap.get(key);
         if (!existing || !existing.updated_at || (a.updated_at && new Date(a.updated_at) >= new Date(existing.updated_at))) {
           articleMap.set(key, a);
@@ -591,136 +591,139 @@ export async function savePublicArticle(
   article: Partial<PublicArticle>
 ): Promise<{ success: boolean; data?: PublicArticle; isCloudSynced?: boolean; error?: string }> {
   let isCloudSynced = false;
-  const isNew = !article.id;
-  // Sanitasi HTML menyeluruh untuk mencegah celah XSS sambil mempertahankan tag kaya
+  let cloudErrorMsg: string | null = null;
+  sidebarAggregateCache = null;
+
+  // 1. Sanitasi konten HTML
   const sanitizedContent = article.content ? sanitizeHtml(article.content) : '';
-  const pinExpiry = article.pin_expires_at || article.pinned_until || null;
+  const pinExpiry = article.pin_expires_at || (article as any).pinned_until || null;
   const viewCount = article.view_count !== undefined ? article.view_count : (article.views_count || 0);
 
-  const articlePayload: Partial<PublicArticle> = {
-    ...article,
+  // 2. Slug unik
+  const targetSlug = article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `artikel-${Date.now()}`;
+
+  // 3. WHITELIST DATABASE PAYLOAD: Hanya kolom resmi yang ada di tabel PostgreSQL public_articles
+  // CATATAN: 'id' dan 'pinned_until' TIDAK BOLEH dikirim ke Supabase
+  const dbPayload: Record<string, any> = {
+    slug: targetSlug,
+    title: article.title || 'Artikel Tanpa Judul',
+    excerpt: article.excerpt || null,
     content: sanitizedContent,
+    category: article.category || 'Panduan Asesmen',
+    author_name: article.author_name || 'Agi Hamdani, M.Pd',
+    author_id: (article.author_id && isValidUUID(article.author_id)) ? article.author_id : null,
+    featured_image: article.featured_image || null,
+    tags: Array.isArray(article.tags) ? article.tags : [],
+    read_time: Number(article.read_time) || 5,
+    views_count: Number(viewCount) || 0,
+    view_count: Number(viewCount) || 0,
     is_pinned: !!article.is_pinned,
     pin_expires_at: pinExpiry,
-    pinned_until: pinExpiry,
     is_featured: !!article.is_featured,
-    view_count: viewCount,
-    views_count: viewCount,
-    slug: article.slug || article.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `artikel-${Date.now()}`,
+    is_published: article.is_published ?? true,
+    published_at: article.published_at || new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
 
-  sidebarAggregateCache = null; // Invalidate aggregate cache
   let savedArticle: PublicArticle | null = null;
 
   try {
     const hasValidUuid = article.id && isValidUUID(article.id);
     if (hasValidUuid) {
-      // 1. Jika ID adalah UUID valid (sudah ada di database Cloud)
+      // 1. Update langsung menggunakan UUID valid di Supabase
       const { data, error } = await supabase
         .from('public_articles')
-        .update(articlePayload)
+        .update(dbPayload)
         .eq('id', article.id)
         .select()
         .single();
 
-      if (!error && data) {
+      if (error) {
+        cloudErrorMsg = `Supabase Error [${error.code}]: ${error.message}`;
+        console.error('savePublicArticle Update by UUID failed:', error);
+      } else if (data) {
         savedArticle = data as PublicArticle;
         isCloudSynced = true;
       }
     } else {
-      // 2. Jika ID bukan UUID (misal seed ID 'art-xxx') atau artikel baru,
-      // periksa apakah sudah ada baris di database berdasarkan slug unik
+      // 2. Jika ID bukan UUID (misal dummy seed 'art-xxx'), cocokkan baris Supabase berdasarkan slug
       const { data: existingData } = await supabase
         .from('public_articles')
         .select('id')
-        .eq('slug', articlePayload.slug)
+        .eq('slug', targetSlug)
         .maybeSingle();
 
       if (existingData && existingData.id) {
-        // Baris sudah ada di Cloud: update berdasarkan ID cloud yang valid
+        // Baris sudah ada di Cloud: update berdasarkan UUID Cloud
         const { data, error } = await supabase
           .from('public_articles')
-          .update(articlePayload)
+          .update(dbPayload)
           .eq('id', existingData.id)
           .select()
           .single();
 
-        if (!error && data) {
+        if (error) {
+          cloudErrorMsg = `Supabase Error [${error.code}]: ${error.message}`;
+          console.error('savePublicArticle Update by Slug failed:', error);
+        } else if (data) {
           savedArticle = data as PublicArticle;
           isCloudSynced = true;
         }
       } else {
-        // Baris belum ada: lakukan INSERT dengan UUID baru dari database
+        // Baris belum ada: lakukan INSERT baru
         const { data, error } = await supabase
           .from('public_articles')
           .insert([{
-            ...articlePayload,
-            id: undefined,
+            ...dbPayload,
             created_at: new Date().toISOString()
           }])
           .select()
           .single();
 
-        if (!error && data) {
+        if (error) {
+          cloudErrorMsg = `Supabase Error [${error.code}]: ${error.message}`;
+          console.error('savePublicArticle Insert failed:', error);
+        } else if (data) {
           savedArticle = data as PublicArticle;
           isCloudSynced = true;
         }
       }
     }
-  } catch (e) {
-    console.warn('Supabase cloud update skipped/failed, proceeding to resilient local storage:', e);
+  } catch (err: any) {
+    cloudErrorMsg = err?.message || 'Gagal tersambung ke Supabase Cloud.';
+    console.error('savePublicArticle exception:', err);
   }
 
-  // Jika update cloud tertolak (misal karena RLS Supabase aktif atau jaringan offline), buat objek lokal yang valid
+  // Fallback lokal jika operasi database gagal
   if (!savedArticle) {
-    if (article.id) {
-      const existing = adminArticlesStore.find(a => a.id === article.id);
-      savedArticle = {
-        ...(existing || {}),
-        ...articlePayload,
-        id: article.id,
-        created_at: existing?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as PublicArticle;
-    } else {
-      savedArticle = {
-        id: `art-${Date.now()}`,
-        slug: articlePayload.slug!,
-        title: article.title || 'Artikel Tanpa Judul',
-        excerpt: article.excerpt || '',
-        content: sanitizedContent,
-        category: article.category || 'Panduan Asesmen',
-        author_name: article.author_name || 'Agi Hamdani, M.Pd',
-        read_time: article.read_time || 5,
-        view_count: viewCount,
-        views_count: viewCount,
-        is_pinned: !!article.is_pinned,
-        pin_expires_at: pinExpiry,
-        pinned_until: pinExpiry,
-        is_featured: !!article.is_featured,
-        is_published: article.is_published ?? true,
-        published_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        ...articlePayload
-      } as PublicArticle;
-    }
+    savedArticle = {
+      id: article.id || `art-${Date.now()}`,
+      ...dbPayload,
+      pinned_until: pinExpiry,
+      created_at: (article as any)?.created_at || new Date().toISOString()
+    } as PublicArticle;
   }
 
   // Perbarui adminArticlesStore in-memory
-  const existingIdx = adminArticlesStore.findIndex(a => a.id === savedArticle!.id || (savedArticle!.slug && a.slug === savedArticle!.slug));
+  const existingIdx = adminArticlesStore.findIndex(
+    a => a.id === savedArticle!.id || (savedArticle!.slug && a.slug === savedArticle!.slug)
+  );
   if (existingIdx >= 0) {
     adminArticlesStore[existingIdx] = savedArticle;
   } else {
     adminArticlesStore.unshift(savedArticle);
   }
 
-  // Simpan secara permanen ke LocalStorage browser agar tidak hilang setelah reload
+  // Simpan ke LocalStorage sebagai redundansi lokal
   setCachedPublicArticles(adminArticlesStore);
   sidebarAggregateCache = null;
 
-  return { success: true, data: savedArticle, isCloudSynced };
+  return { 
+    success: true, 
+    data: savedArticle, 
+    isCloudSynced, 
+    error: cloudErrorMsg || undefined 
+  };
 }
 
 /**
@@ -879,13 +882,21 @@ export async function updateTeacherContributionStatus(
   reviewed_by?: string
 ): Promise<{ success: boolean; data?: TeacherContribution; error?: string }> {
   try {
+    // Sanitasi reviewed_by: wajib UUID valid auth.users atau null agar tidak memicu 22P02
+    const reviewedByUuid = (reviewed_by && isValidUUID(reviewed_by)) ? reviewed_by : null;
+
     const payload = {
       status,
       review_notes: review_notes || null,
-      reviewed_by: reviewed_by || null,
+      reviewed_by: reviewedByUuid,
       reviewed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+
+    const isUuid = isValidUUID(id);
+    if (!isUuid) {
+      throw new Error(`ID kontribusi bukan UUID database yang valid: ${id}`);
+    }
 
     const { data, error } = await supabase
       .from('teacher_contributions')
@@ -894,11 +905,15 @@ export async function updateTeacherContributionStatus(
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error('updateTeacherContributionStatus Supabase error:', error);
+    } else if (data) {
       adminContributionsStore = adminContributionsStore.map(c => c.id === id ? (data as TeacherContribution) : c);
       return { success: true, data: data as TeacherContribution };
     }
-  } catch (e) {}
+  } catch (e: any) {
+    console.warn('updateTeacherContributionStatus fallback to local update:', e?.message || e);
+  }
 
   adminContributionsStore = adminContributionsStore.map(c => {
     if (c.id === id) {

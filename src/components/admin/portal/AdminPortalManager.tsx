@@ -65,7 +65,8 @@ import {
 import { UserProfile } from '../../../types/database';
 import { WordRibbonEditor, WordRibbonEditorRef } from './WordRibbonEditor';
 import { PublicArticlePreviewModal } from './PublicArticlePreviewModal';
-import { calculateReadTime } from '../../../lib/safeHtmlSanitizer';
+import { calculateReadTime, formatArticleContent } from '../../../lib/safeHtmlSanitizer';
+import { isValidUUID } from '../../../lib/syncHelper';
 
 interface AdminPortalManagerProps {
   currentUser: UserProfile;
@@ -348,15 +349,72 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
 
   const handleProcessCuration = async (status: ContributionStatus) => {
     if (!reviewingContribution) return;
+
+    // Sanitasi reviewed_by: wajib UUID valid auth.users agar tidak memicu error tipe 22P02 di PostgreSQL
+    const reviewerId = (currentUser.id && isValidUUID(currentUser.id)) ? currentUser.id : undefined;
+
     const res = await updateTeacherContributionStatus(
       reviewingContribution.id,
       status,
       reviewNotes,
-      currentUser.full_name
+      reviewerId
     );
 
     if (res.success && res.data) {
-      setContributions(prev => prev.map(c => c.id === res.data!.id ? res.data! : c));
+      // Perbarui antrean kontribusi guru di state
+      const updatedContribution = res.data;
+      setContributions(prev => prev.map(c => c.id === updatedContribution.id ? updatedContribution : c));
+
+      // Jika disetujui (baik 'published' langsung tayang atau 'draft' untuk disunting dulu)
+      if (status === 'published' || status === 'draft') {
+        const categoryMap: Record<string, string> = {
+          'Artikel Edukasi': 'Panduan Asesmen',
+          'Praktik Baik': 'Wawasan Kurikulum',
+          'Soal & Rubrik': 'Rubrik & Penskoran',
+          'Modul Ajar': 'Panduan Asesmen',
+          'LKPD': 'Analisis Butir'
+        };
+
+        const targetCategory = categoryMap[reviewingContribution.content_type] || 'Panduan Asesmen';
+        const authorFormatted = reviewingContribution.teacher_school
+          ? `${reviewingContribution.teacher_name} (${reviewingContribution.teacher_school})`
+          : reviewingContribution.teacher_name;
+
+        const targetSlug = reviewingContribution.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || `karya-guru-${Date.now()}`;
+
+        await savePublicArticle({
+          title: reviewingContribution.title,
+          slug: targetSlug,
+          content: reviewingContribution.body,
+          excerpt: reviewingContribution.summary || reviewingContribution.title,
+          author_name: authorFormatted,
+          category: targetCategory,
+          is_published: status === 'published',
+          published_at: new Date().toISOString()
+        });
+
+        // Muat ulang daftar artikel publik di Super Admin agar langsung sinkron
+        const freshArts = await getAllPublicArticlesAdmin();
+        setArticles(freshArts);
+
+        setArticleSavedToast({
+          show: true,
+          msg: status === 'published'
+            ? `Karya "${reviewingContribution.title}" disetujui dan langsung terbit di Portal Publik!`
+            : `Karya "${reviewingContribution.title}" disetujui dan disimpan sebagai Draf Artikel Publik!`
+        });
+        setTimeout(() => setArticleSavedToast(null), 4000);
+      } else if (status === 'rejected') {
+        setArticleSavedToast({
+          show: true,
+          msg: `Karya "${reviewingContribution.title}" telah ditandai ditolak / minta revisi.`
+        });
+        setTimeout(() => setArticleSavedToast(null), 4000);
+      }
+
       setReviewingContribution(null);
     }
   };
@@ -1690,9 +1748,10 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
                 </h3>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto font-sans">
-                {reviewingContribution.body}
-              </div>
+              <div 
+                className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 leading-relaxed max-h-80 overflow-y-auto font-sans prose prose-slate max-w-none text-xs"
+                dangerouslySetInnerHTML={{ __html: formatArticleContent(reviewingContribution.body) }}
+              />
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Catatan Kurasi / Alasan Penolakan (Opsional)</label>
@@ -1718,18 +1777,28 @@ export const AdminPortalManager: React.FC<AdminPortalManagerProps> = ({ currentU
                   <button
                     type="button"
                     onClick={() => setReviewingContribution(null)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold"
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100"
                   >
                     Tutup
                   </button>
 
                   <button
                     type="button"
+                    onClick={() => handleProcessCuration('draft')}
+                    className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-300 flex items-center space-x-1.5"
+                    title="Setujui karya dan simpan sebagai Draf publik untuk disunting terlebih dahulu"
+                  >
+                    <FileText className="w-4 h-4 text-amber-700" />
+                    <span>Setujui sbg Draf</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => handleProcessCuration('published')}
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md flex items-center space-x-1.5"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md flex items-center space-x-1.5"
                   >
                     <Check className="w-4 h-4" />
-                    <span>Setujui & Terbitkan Resmi</span>
+                    <span>Setujui & Terbitkan Langsung</span>
                   </button>
                 </div>
               </div>

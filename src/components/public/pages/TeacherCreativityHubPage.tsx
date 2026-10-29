@@ -82,30 +82,30 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
       ======================================================================= */}
       <div className={hideBanner ? "space-y-6" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8"}>
         
-        <div className="flex overflow-x-auto space-x-2 pb-4 border-b-2 border-slate-200 scrollbar-thin">
+        <div className="overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex items-center gap-3 py-2 pb-4 border-b-2 border-slate-200/80">
           
           {/* Pilar 1 */}
           <button
             type="button"
             onClick={() => setActiveTab('ai')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-2 ${
+            className={`whitespace-nowrap flex items-center space-x-2 text-xs transition-all duration-200 active:scale-95 ${
               activeTab === 'ai'
-                ? 'bg-amber-500 text-slate-950 border-2 border-amber-600 shadow-sm font-black'
-                : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-md shadow-orange-500/20 rounded-xl px-5 py-2.5'
+                : 'bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl px-5 py-2.5 font-medium'
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Asisten Guru AI (6 Alur)</span>
+            <span>Asisten Guru AI (7 Alur)</span>
           </button>
 
           {/* Pilar 2 */}
           <button
             type="button"
             onClick={() => setActiveTab('kontribusi')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-2 ${
+            className={`whitespace-nowrap flex items-center space-x-2 text-xs transition-all duration-200 active:scale-95 ${
               activeTab === 'kontribusi'
-                ? 'bg-amber-500 text-slate-950 border-2 border-amber-600 shadow-sm font-black'
-                : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-md shadow-orange-500/20 rounded-xl px-5 py-2.5'
+                : 'bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl px-5 py-2.5 font-medium'
             }`}
           >
             <PenTool className="w-4 h-4" />
@@ -119,10 +119,10 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
           <button
             type="button"
             onClick={() => setActiveTab('perangkat')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-2 ${
+            className={`whitespace-nowrap flex items-center space-x-2 text-xs transition-all duration-200 active:scale-95 ${
               activeTab === 'perangkat'
-                ? 'bg-amber-500 text-slate-950 border-2 border-amber-600 shadow-sm font-black'
-                : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-md shadow-orange-500/20 rounded-xl px-5 py-2.5'
+                : 'bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl px-5 py-2.5 font-medium'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -133,10 +133,10 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
           <button
             type="button"
             onClick={() => setActiveTab('lkpd')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-2 ${
+            className={`whitespace-nowrap flex items-center space-x-2 text-xs transition-all duration-200 active:scale-95 ${
               activeTab === 'lkpd'
-                ? 'bg-amber-500 text-slate-950 border-2 border-amber-600 shadow-sm font-black'
-                : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-md shadow-orange-500/20 rounded-xl px-5 py-2.5'
+                : 'bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl px-5 py-2.5 font-medium'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -147,10 +147,10 @@ export const TeacherCreativityHubPage: React.FC<TeacherCreativityHubPageProps> =
           <button
             type="button"
             onClick={() => setActiveTab('administrasi')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-2 ${
+            className={`whitespace-nowrap flex items-center space-x-2 text-xs transition-all duration-200 active:scale-95 ${
               activeTab === 'administrasi'
-                ? 'bg-amber-500 text-slate-950 border-2 border-amber-600 shadow-sm font-black'
-                : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-md shadow-orange-500/20 rounded-xl px-5 py-2.5'
+                : 'bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl px-5 py-2.5 font-medium'
             }`}
           >
             <FileSpreadsheet className="w-4 h-4" />

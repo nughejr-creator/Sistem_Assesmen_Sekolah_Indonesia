@@ -11,9 +11,10 @@ import {
   Subject,
   StudentAnswer,
   UserProfile,
-  SchoolLevel
+  SchoolLevel,
+  QuestionWriterAssignment
 } from '../../types/database';
-import { MOCK_BLUEPRINT, MOCK_SUBJECTS } from '../../lib/mockData';
+import { MOCK_BLUEPRINT, MOCK_SUBJECTS, MOCK_WRITER_ASSIGNMENTS } from '../../lib/mockData';
 import { supabase } from '../../lib/supabase';
 import { 
   generateValidUUID, 
@@ -27,12 +28,16 @@ import {
   isObsoleteSubject,
   fetchBlueprintItemWritersFromCloud,
   saveBlueprintItemWriterToCloud,
-  deleteBlueprintItemWriterFromCloud
+  deleteBlueprintItemWriterFromCloud,
+  fetchWriterAssignmentsFromCloud,
+  saveWriterAssignmentToCloud,
+  deduplicateWriterAssignments
 } from '../../lib/syncHelper';
 import { getContextOptionsForSubject } from '../../lib/contextPresetData';
 import { CreatableCombobox } from './CreatableCombobox';
 import { QuestionEditorModal } from './QuestionEditorModal';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
+import { RichMathText } from '../common/RichMathText';
 import { 
   exportBlueprintToExcel, 
   downloadBlueprintTemplate, 
@@ -76,7 +81,9 @@ import {
   Info,
   X,
   Trash2,
-  User
+  User,
+  RotateCcw,
+  ArrowLeft
 } from 'lucide-react';
 
 const BLUEPRINT_ITEMS_KEY = 'sasi_blueprint_items_cache';
@@ -98,6 +105,47 @@ export interface BlueprintMatrixProps {
   onSubModeChange?: (mode: 'kisi-kisi' | 'penulisan' | 'bank-soal') => void;
 }
 
+function getAssignmentStatusInfo(status?: string): {
+  key: 'draft' | 'in_progress' | 'pending_review' | 'needs_revision' | 'approved';
+  label: string;
+  badgeClass: string;
+} {
+  const s = (status || '').toLowerCase().trim();
+  if (s === 'terverifikasi' || s === 'approved' || s === 'selesai' || s === 'selesai (terverifikasi)') {
+    return {
+      key: 'approved',
+      label: 'Terverifikasi',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+    };
+  }
+  if (s === 'perlu revisi' || s === 'needs_revision' || s === 'revisi') {
+    return {
+      key: 'needs_revision',
+      label: 'Perlu Revisi',
+      badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200'
+    };
+  }
+  if (s === 'menunggu verifikasi' || s === 'menunggu riviu' || s === 'pending_review' || s === 'menunggu verifikasi (selesai penulis)') {
+    return {
+      key: 'pending_review',
+      label: 'Menunggu Verifikasi',
+      badgeClass: 'bg-blue-50 text-blue-700 border border-blue-200'
+    };
+  }
+  if (s === 'proses penulisan' || s === 'dalam penulisan' || s === 'in_progress' || s === 'penulisan') {
+    return {
+      key: 'in_progress',
+      label: 'Proses Penulisan',
+      badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200'
+    };
+  }
+  return {
+    key: 'draft',
+    label: 'Draft',
+    badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200'
+  };
+}
+
 export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({ 
   currentUser, 
   initialScope,
@@ -105,6 +153,9 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
   onSubModeChange
 }) => {
   const [blueprint] = useState<Blueprint>(MOCK_BLUEPRINT);
+
+  
+
 
   // Check if current user is Super Admin
   const isSuperAdmin = useMemo(() => {
@@ -379,6 +430,311 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     initialScope?.isLocked,
     initialScope?.defaultMode
   ]);
+
+  // Assignments state for Bank Soal Terverifikasi Monitoring
+  const [writerAssignments, setWriterAssignments] = useState<QuestionWriterAssignment[]>(() => {
+    try {
+      const cached = localStorage.getItem('sasi_writer_assignments_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateWriterAssignments(parsed);
+        }
+      }
+    } catch (e) {}
+    return deduplicateWriterAssignments(MOCK_WRITER_ASSIGNMENTS);
+  });
+
+  // Realtime Cloud sync for assignments
+  useEffect(() => {
+    let isMounted = true;
+    const loadAssignments = async () => {
+      try {
+        const cloudData = await fetchWriterAssignmentsFromCloud();
+        if (cloudData && cloudData.length > 0 && isMounted) {
+          setWriterAssignments(prev => {
+            const merged = deduplicateWriterAssignments([...cloudData, ...prev]);
+            try { localStorage.setItem('sasi_writer_assignments_cache', JSON.stringify(merged)); } catch (e) {}
+            return merged;
+          });
+        }
+      } catch (err) {}
+    };
+    loadAssignments();
+
+    const handleUpdate = () => {
+      try {
+        const cached = localStorage.getItem('sasi_writer_assignments_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) setWriterAssignments(deduplicateWriterAssignments(parsed));
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('sasi_assignments_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('sasi_assignments_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  // Filter States for Monitoring Paket Bank Soal Terverifikasi
+  const [monSearchTerm, setMonSearchTerm] = useState('');
+  const [monFilterGrade, setMonFilterGrade] = useState('ALL');
+  const [monFilterSubject, setMonFilterSubject] = useState('ALL');
+  const [monFilterAssessment, setMonFilterAssessment] = useState('ALL');
+  const [monFilterStatus, setMonFilterStatus] = useState('ALL');
+
+  // Preview & Verification Modal State
+  const [previewAssignment, setPreviewAssignment] = useState<QuestionWriterAssignment | null>(null);
+  const [isRevisionFormOpen, setIsRevisionFormOpen] = useState(false);
+  const [revisionNotesInput, setRevisionNotesInput] = useState('');
+  const [activePreviewQuestionTab, setActivePreviewQuestionTab] = useState<number | 'ALL'>('ALL');
+
+  // Teacher Workspace State Check
+  const isAssignmentReadOnly = useMemo(() => {
+    if (!initialScope?.assignment) return false;
+    const s = (initialScope.assignment.status || '').toLowerCase().trim();
+    return s === 'terverifikasi' || s === 'approved' || s === 'selesai' || s === 'selesai (terverifikasi)';
+  }, [initialScope?.assignment?.status]);
+
+  const isAssignmentNeedsRevision = useMemo(() => {
+    if (!initialScope?.assignment) return false;
+    const s = (initialScope.assignment.status || '').toLowerCase().trim();
+    return s === 'perlu revisi' || s === 'needs_revision' || s === 'revisi';
+  }, [initialScope?.assignment?.status]);
+
+  // Handler: Setujui / Lolos Verifikasi
+  const handleApproveAssignment = async (asg: QuestionWriterAssignment) => {
+    const reviewerName = currentUser?.full_name || currentUser?.name || (currentUser?.role === 'assistant_admin' ? 'Asisten Admin' : currentUser?.role === 'super_admin' ? 'Super Admin' : 'Administrator');
+    const updatedAsg: QuestionWriterAssignment = {
+      ...asg,
+      status: 'Terverifikasi',
+      reviewed_by: reviewerName,
+      reviewed_at: new Date().toISOString()
+    };
+
+    const nextAssignments = writerAssignments.map(a => a.id === asg.id ? updatedAsg : a);
+    setWriterAssignments(nextAssignments);
+    try {
+      localStorage.setItem('sasi_writer_assignments_cache', JSON.stringify(nextAssignments));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('sasi_assignments_updated'));
+    } catch (e) {}
+
+    await saveWriterAssignmentToCloud(updatedAsg);
+
+    // Tandai butir kisi-kisi dan butir soal sebagai Selesai / Terbit
+    setItems(prev => {
+      const updated = prev.map(item => {
+        const matchSub = (item.subject_name || '').toLowerCase() === asg.subject_name.toLowerCase();
+        const matchGrd = (item.grade_class || '').toLowerCase().includes(asg.grade_class.toLowerCase());
+        if (matchSub && matchGrd) {
+          return { ...item, workflow_status: 'Selesai' as const };
+        }
+        return item;
+      });
+      try { localStorage.setItem(BLUEPRINT_ITEMS_KEY, JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+
+    setQuestionBank(prev => {
+      const updated = prev.map(q => {
+        const matchSub = (q.subject_name || '').toLowerCase() === asg.subject_name.toLowerCase();
+        const matchGrd = (q.grade_class || '').toLowerCase().includes(asg.grade_class.toLowerCase());
+        if (matchSub && matchGrd) {
+          return { ...q, status: 'Terbit' as const, workflow_status: 'Terbit' as const };
+        }
+        return q;
+      });
+      try { localStorage.setItem(QUESTION_BANK_KEY, JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+
+    setPreviewAssignment(null);
+    setIsRevisionFormOpen(false);
+    setRevisionNotesInput('');
+    alert(`Paket soal "${asg.subject_name} - ${asg.grade_class}" berhasil Disetujui & Terverifikasi ke Bank Soal!`);
+  };
+
+  // Handler: Kembalikan untuk Perbaikan / Revisi
+  const handleRejectForRevision = async (asg: QuestionWriterAssignment) => {
+    if (!revisionNotesInput.trim()) {
+      alert('Mohon tuliskan Catatan / Umpan Balik Perbaikan bagi penulis.');
+      return;
+    }
+
+    const reviewerName = currentUser?.full_name || currentUser?.name || (currentUser?.role === 'assistant_admin' ? 'Asisten Admin' : currentUser?.role === 'super_admin' ? 'Super Admin' : 'Administrator');
+    const updatedAsg: QuestionWriterAssignment = {
+      ...asg,
+      status: 'Perlu Revisi',
+      revision_notes: revisionNotesInput.trim(),
+      reviewed_by: reviewerName,
+      reviewed_at: new Date().toISOString()
+    };
+
+    const nextAssignments = writerAssignments.map(a => a.id === asg.id ? updatedAsg : a);
+    setWriterAssignments(nextAssignments);
+    try {
+      localStorage.setItem('sasi_writer_assignments_cache', JSON.stringify(nextAssignments));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('sasi_assignments_updated'));
+    } catch (e) {}
+
+    await saveWriterAssignmentToCloud(updatedAsg);
+
+    setPreviewAssignment(null);
+    setIsRevisionFormOpen(false);
+    setRevisionNotesInput('');
+    alert(`Paket soal "${asg.subject_name} - ${asg.grade_class}" telah dikembalikan ke penulis dengan catatan perbaikan.`);
+  };
+
+  // Handler: Guru Penulis Kirim Kembali ke Verifikator
+  const handleTeacherResubmit = async () => {
+    if (!initialScope?.assignment) return;
+    const asg = initialScope.assignment;
+    const updatedAsg: QuestionWriterAssignment = {
+      ...asg,
+      status: 'Menunggu Verifikasi',
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      const cached = localStorage.getItem('sasi_writer_assignments_cache');
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const next = list.map((a: any) => a.id === asg.id ? updatedAsg : a);
+          localStorage.setItem('sasi_writer_assignments_cache', JSON.stringify(next));
+        }
+      }
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('sasi_assignments_updated'));
+    } catch (e) {}
+
+    await saveWriterAssignmentToCloud(updatedAsg);
+    alert('Naskah soal revisi berhasil dikirim kembali ke Verifikator.');
+  };
+
+  // Handler: Guru Penulis Mengajukan Naskah Baru Selesai
+  const handleTeacherSubmitForReview = async () => {
+    if (!initialScope?.assignment) return;
+    const asg = initialScope.assignment;
+    const updatedAsg: QuestionWriterAssignment = {
+      ...asg,
+      status: 'Menunggu Verifikasi',
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      const cached = localStorage.getItem('sasi_writer_assignments_cache');
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const next = list.map((a: any) => a.id === asg.id ? updatedAsg : a);
+          localStorage.setItem('sasi_writer_assignments_cache', JSON.stringify(next));
+        }
+      }
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('sasi_assignments_updated'));
+    } catch (e) {}
+
+    await saveWriterAssignmentToCloud(updatedAsg);
+    alert('Naskah soal penugasan ini berhasil diajukan ke Verifikator.');
+  };
+
+  // Helper: Ambil data butir soal untuk penugasan tertentu
+  const getAssignmentQuestions = (asg: QuestionWriterAssignment) => {
+    const cleanAsgSubject = (asg.subject_name || '').toLowerCase().trim();
+    const cleanAsgGrade = (asg.grade_class || '').toLowerCase().trim();
+    const cleanAsgName = (asg.user_name || '').toLowerCase().trim();
+    const normAsgUserId = toValidUUID(asg.user_id);
+
+    const matchedItems = items.filter(item => {
+      const itemSubject = (item.subject_name || '').toLowerCase().trim();
+      const itemGrade = (item.grade_class || '').toLowerCase().trim();
+      const itemWriterId = item.writer_id;
+      const itemWriterName = (item.writer_name || '').toLowerCase().trim();
+
+      const matchSub = itemSubject.includes(cleanAsgSubject) || cleanAsgSubject.includes(itemSubject);
+      const matchGrd = itemGrade.includes(cleanAsgGrade) || cleanAsgGrade.includes(itemGrade);
+      const matchW = !asg.user_id || itemWriterId === asg.user_id || toValidUUID(itemWriterId) === normAsgUserId ||
+        (itemWriterName && (itemWriterName.includes(cleanAsgName) || cleanAsgName.includes(itemWriterName)));
+
+      return matchSub && matchGrd && (matchW || !itemWriterId);
+    });
+
+    const itemIds = new Set(matchedItems.map(i => i.id));
+    const matchedQuestions = questionBank.filter(q => {
+      if (q.blueprint_item_id && itemIds.has(q.blueprint_item_id)) return true;
+      const qSub = (q.subject_name || '').toLowerCase().trim();
+      const qGrd = (q.grade_class || '').toLowerCase().trim();
+      return (qSub.includes(cleanAsgSubject) || cleanAsgSubject.includes(qSub)) &&
+             (qGrd.includes(cleanAsgGrade) || cleanAsgGrade.includes(qGrd));
+    });
+
+    const writtenCount = matchedQuestions.filter(q => q.question_text?.trim()).length;
+    const target = asg.target_questions || matchedItems.length || 20;
+
+    return {
+      items: matchedItems,
+      questions: matchedQuestions,
+      writtenCount,
+      target
+    };
+  };
+
+  // Filtered Assignments for Monitoring
+  const filteredWriterAssignments = useMemo(() => {
+    return writerAssignments.filter(asg => {
+      if (asg.is_archived || asg.status === 'Diarsipkan') return false;
+
+      // Filter Jenjang dari button Step 1
+      if (selectedLevel && asg.level !== selectedLevel) return false;
+
+      // Filter Jenjang & Kelas Dropdown
+      if (monFilterGrade !== 'ALL') {
+        if (monFilterGrade === 'SD_ALL') {
+          if (asg.level !== 'SD') return false;
+        } else if (monFilterGrade === 'SMP_ALL') {
+          if (asg.level !== 'SMP') return false;
+        } else {
+          if (!asg.grade_class.toLowerCase().includes(monFilterGrade.toLowerCase())) return false;
+        }
+      }
+
+      // Filter Mata Pelajaran Dropdown
+      if (monFilterSubject !== 'ALL') {
+        if (!asg.subject_name.toLowerCase().includes(monFilterSubject.toLowerCase())) return false;
+      }
+
+      // Filter Jenis Asesmen Dropdown
+      if (monFilterAssessment !== 'ALL') {
+        const matches = (asg.assessment_types || []).some(t => t.toLowerCase().includes(monFilterAssessment.toLowerCase()));
+        if (!matches) return false;
+      }
+
+      // Filter Status Dropdown
+      if (monFilterStatus !== 'ALL') {
+        const statusInfo = getAssignmentStatusInfo(asg.status);
+        if (statusInfo.key !== monFilterStatus) return false;
+      }
+
+      // Search Term (Penulis atau Judul Paket)
+      if (monSearchTerm.trim()) {
+        const q = monSearchTerm.toLowerCase();
+        const matchWriter = (asg.user_name || '').toLowerCase().includes(q);
+        const matchSubject = (asg.subject_name || '').toLowerCase().includes(q);
+        const matchGrade = (asg.grade_class || '').toLowerCase().includes(q);
+        const matchInst = (asg.user_institution || '').toLowerCase().includes(q);
+        if (!matchWriter && !matchSubject && !matchGrade && !matchInst) return false;
+      }
+
+      return true;
+    });
+  }, [writerAssignments, selectedLevel, monFilterGrade, monFilterSubject, monFilterAssessment, monFilterStatus, monSearchTerm]);
 
   // Header Filter Realtime (Jenjang & Jenis Asesmen untuk 4 Kartu Status Penugasan)
   const [headerLevelFilter, setHeaderLevelFilter] = useState<'ALL' | 'SD' | 'SMP'>('SD');
@@ -2664,8 +3020,433 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
               </div>
             </div>
 
-            {/* SELEKSI LANGKAH BERTINGKAT (JIKA FILTER BELUM LENGKAP) */}
-            {!isFilterComplete && (
+            {/* BANNERS FOR TEACHER WORKSPACE: REVISION ALERT OR READ-ONLY LOCK */}
+            {initialScope?.assignment && (
+              <div className="space-y-3">
+                {isAssignmentNeedsRevision && (
+                  <div className="sticky top-2 z-30 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                        <AlertTriangle className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-black text-sm text-amber-900">
+                          Catatan Perbaikan Verifikator:
+                        </h4>
+                        <p className="text-xs text-amber-800 font-medium italic">
+                          "{initialScope.assignment.revision_notes || 'Silakan lakukan revisi pada butir yang diminta, kemudian klik \'Kirim Kembali\' setelah selesai.'}"
+                        </p>
+                        <p className="text-[11px] text-amber-700">
+                          Akses edit lembar kerja kembali dibuka. Silakan sesuaikan butir soal dan kisi-kisi, lalu kirim kembali.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTeacherResubmit}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs rounded-xl shadow-xs shrink-0 flex items-center space-x-1.5 transition active:scale-95"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Kirim Kembali</span>
+                    </button>
+                  </div>
+                )}
+
+                {isAssignmentReadOnly && (
+                  <div className="sticky top-2 z-30 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 shadow-sm flex items-center justify-between gap-3 animate-fade-in">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-200 text-emerald-800 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-sm text-emerald-900">
+                          Status: Selesai (Terverifikasi)
+                        </h4>
+                        <p className="text-xs text-emerald-800">
+                          Paket soal ini telah disetujui verifikator dan masuk Bank Soal. Lembar kerja berada dalam mode <strong>hanya-baca (read-only)</strong>.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold shrink-0 flex items-center space-x-1">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Terkunci</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SELEKSI LANGKAH BERTINGKAT ATAU MONITORING BANK SOAL TERVERIFIKASI */}
+            {activeSubMode === 'bank-soal' && !initialScope?.isLocked ? (
+              <div className="space-y-6 animate-fade-in">
+                
+                {/* BAGIAN 1: PERAMPINGAN TOMBOL PEMILIH JENJANG (SD & SMP) */}
+                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                        Langkah 1 dari 4 • Pemilih Jenjang
+                      </span>
+                      <h3 className="text-lg font-black text-slate-900 mt-1.5">
+                        Pilih Jenjang Satuan Pendidikan
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Pilih jenjang sekolah untuk memfilter penugasan naskah soal dan memuat bank soal yang relevan.
+                      </p>
+                    </div>
+                    {selectedLevel && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLevel(null)}
+                        className="text-xs font-bold text-slate-500 hover:text-indigo-600 underline px-2 py-1"
+                      >
+                        Tampilkan Semua Jenjang (Reset)
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    {/* Tombol Jenjang SD */}
+                    <div
+                      onClick={() => setSelectedLevel(selectedLevel === 'SD' ? null : 'SD')}
+                      className={`py-3 px-4 rounded-xl border transition-all duration-150 cursor-pointer flex items-center justify-between ${
+                        selectedLevel === 'SD'
+                          ? 'border-2 border-indigo-600 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500/20'
+                          : 'border-slate-200/80 bg-white hover:border-indigo-400 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          selectedLevel === 'SD' ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'
+                        }`}>
+                          <GraduationCap className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                          <h4 className="text-sm font-semibold text-slate-800">Jenjang SD</h4>
+                          <p className="text-xs text-slate-500">Fase A, Fase B, Fase C (Kelas 1 - 6)</p>
+                        </div>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                        selectedLevel === 'SD' ? 'bg-indigo-600 text-white' : 'text-slate-400 group-hover:text-indigo-600'
+                      }`}>
+                        {selectedLevel === 'SD' ? 'Aktif ✓' : 'Pilih'}
+                      </span>
+                    </div>
+
+                    {/* Tombol Jenjang SMP */}
+                    <div
+                      onClick={() => setSelectedLevel(selectedLevel === 'SMP' ? null : 'SMP')}
+                      className={`py-3 px-4 rounded-xl border transition-all duration-150 cursor-pointer flex items-center justify-between ${
+                        selectedLevel === 'SMP'
+                          ? 'border-2 border-indigo-600 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500/20'
+                          : 'border-slate-200/80 bg-white hover:border-indigo-400 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          selectedLevel === 'SMP' ? 'bg-indigo-100 text-indigo-700' : 'bg-sky-100 text-sky-700'
+                        }`}>
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                          <h4 className="text-sm font-semibold text-slate-800">Jenjang SMP</h4>
+                          <p className="text-xs text-slate-500">Fase D (Kelas 7 - 9)</p>
+                        </div>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                        selectedLevel === 'SMP' ? 'bg-indigo-600 text-white' : 'text-slate-400 group-hover:text-indigo-600'
+                      }`}>
+                        {selectedLevel === 'SMP' ? 'Aktif ✓' : 'Pilih'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BAGIAN 2: FILTER & MONITORING PAKET BANK SOAL TERVERIFIKASI */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+                  
+                  {/* Header Modul Monitoring */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                    <div className="flex items-center space-x-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-600/25 shrink-0">
+                        <Archive className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-extrabold text-xl text-slate-900">
+                            Bank Soal Terverifikasi & Monitoring Paket
+                          </h3>
+                          <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full border border-emerald-200">
+                            Supervisi Penugasan
+                          </span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                          Tinjau kemajuan butir naskah guru, periksa rubrik & kunci jawaban, dan lakukan verifikasi dua arah langsung.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Stats Badges */}
+                    <div className="flex items-center flex-wrap gap-2 text-xs font-bold">
+                      <span className="px-3 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl">
+                        Total Paket: {filteredWriterAssignments.length}
+                      </span>
+                      <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl">
+                        Menunggu: {filteredWriterAssignments.filter(a => getAssignmentStatusInfo(a.status).key === 'pending_review').length}
+                      </span>
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl">
+                        Terverifikasi: {filteredWriterAssignments.filter(a => getAssignmentStatusInfo(a.status).key === 'approved').length}
+                      </span>
+                      <span className="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl">
+                        Perlu Revisi: {filteredWriterAssignments.filter(a => getAssignmentStatusInfo(a.status).key === 'needs_revision').length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 1. PANEL KOTAK FILTER RESPONSIF */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80">
+                    
+                    {/* Input Pencarian */}
+                    <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                        Pencarian Teks
+                      </label>
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={monSearchTerm}
+                          onChange={(e) => setMonSearchTerm(e.target.value)}
+                          placeholder="Cari nama penulis / judul paket..."
+                          className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-medium placeholder:text-slate-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Dropdown Jenjang & Kelas */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                        Jenjang & Kelas
+                      </label>
+                      <select
+                        value={monFilterGrade}
+                        onChange={(e) => setMonFilterGrade(e.target.value)}
+                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="ALL">Semua Jenjang & Kelas</option>
+                        <option value="SD_ALL">Semua SD (Kelas 1–6)</option>
+                        <option value="Kelas 1">SD - Kelas 1</option>
+                        <option value="Kelas 2">SD - Kelas 2</option>
+                        <option value="Kelas 3">SD - Kelas 3</option>
+                        <option value="Kelas 4">SD - Kelas 4</option>
+                        <option value="Kelas 5">SD - Kelas 5</option>
+                        <option value="Kelas 6">SD - Kelas 6</option>
+                        <option value="SMP_ALL">Semua SMP (Kelas 7–9)</option>
+                        <option value="Kelas 7">SMP - Kelas 7</option>
+                        <option value="Kelas 8">SMP - Kelas 8</option>
+                        <option value="Kelas 9">SMP - Kelas 9</option>
+                      </select>
+                    </div>
+
+                    {/* Dropdown Mata Pelajaran */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                        Mata Pelajaran
+                      </label>
+                      <select
+                        value={monFilterSubject}
+                        onChange={(e) => setMonFilterSubject(e.target.value)}
+                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="ALL">Semua Mapel</option>
+                        <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                        <option value="Matematika">Matematika</option>
+                        <option value="IPAS">IPAS</option>
+                        <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                        <option value="Bahasa Inggris">Bahasa Inggris</option>
+                        <option value="PJOK">PJOK</option>
+                        <option value="Seni Budaya">Seni Budaya / Seni Rupa</option>
+                        <option value="Informatika">Informatika</option>
+                        <option value="Pendidikan Agama">Pendidikan Agama</option>
+                      </select>
+                    </div>
+
+                    {/* Dropdown Jenis Asesmen */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                        Jenis Asesmen
+                      </label>
+                      <select
+                        value={monFilterAssessment}
+                        onChange={(e) => setMonFilterAssessment(e.target.value)}
+                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="ALL">Semua Jenis</option>
+                        <option value="SAS">Sumatif Akhir Semester (SAS)</option>
+                        <option value="STS">Sumatif Tengah Semester (STS)</option>
+                        <option value="PTS">Penilaian Tengah Semester (PTS)</option>
+                        <option value="Formatif">Asesmen Formatif/Harian</option>
+                        <option value="SAT">Sumatif Akhir Tahun (SAT)</option>
+                        <option value="SAJ">Ujian Sekolah (SAJ)</option>
+                      </select>
+                    </div>
+
+                    {/* Dropdown Status Paket */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                        Status Paket
+                      </label>
+                      <select
+                        value={monFilterStatus}
+                        onChange={(e) => setMonFilterStatus(e.target.value)}
+                        className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="ALL">Semua Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="in_progress">Proses Penulisan</option>
+                        <option value="pending_review">Menunggu Verifikasi (Selesai Penulis)</option>
+                        <option value="needs_revision">Perlu Revisi</option>
+                        <option value="approved">Terverifikasi (Approved)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 2. TAMPILAN TABEL MONITORING PAKET PENUGASAN */}
+                  <div className="border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                      <table className="table-auto w-full text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                          <tr>
+                            <th className="py-3 px-4 w-12 text-center">No</th>
+                            <th className="py-3 px-4">Nama Penulis</th>
+                            <th className="py-3 px-4">Jenjang & Kelas</th>
+                            <th className="py-3 px-4">Mata Pelajaran</th>
+                            <th className="py-3 px-4">Jenis Tes</th>
+                            <th className="py-3 px-4">Progres Soal</th>
+                            <th className="py-3 px-4">Keterangan / Status</th>
+                            <th className="py-3 px-4 text-center w-20">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {filteredWriterAssignments.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} className="py-12 text-center text-slate-500 text-xs">
+                                <Archive className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                Tidak ada paket penugasan bank soal yang cocok dengan filter yang dipilih.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredWriterAssignments.map((asg, idx) => {
+                              const statusInfo = getAssignmentStatusInfo(asg.status);
+                              const qData = getAssignmentQuestions(asg);
+                              const progressText = `${qData.writtenCount}/${qData.target} Butir`;
+
+                              return (
+                                <tr key={asg.id} className="hover:bg-slate-50/80 transition-colors">
+                                  {/* 1. No */}
+                                  <td className="py-3.5 px-4 text-center font-bold text-slate-400 text-xs">
+                                    {idx + 1}
+                                  </td>
+
+                                  {/* 2. Nama Penulis */}
+                                  <td className="py-3.5 px-4">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-brand-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                        {(asg.user_name || 'G').charAt(0).toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div className="font-bold text-slate-900 text-xs sm:text-sm">
+                                          {asg.user_name}
+                                        </div>
+                                        <div className="text-[11px] text-slate-500 line-clamp-1">
+                                          {asg.user_institution || asg.user_email || 'Instansi Terdaftar'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* 3. Jenjang & Kelas */}
+                                  <td className="py-3.5 px-4">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                                      {asg.level} - {asg.grade_class}
+                                    </span>
+                                  </td>
+
+                                  {/* 4. Mata Pelajaran */}
+                                  <td className="py-3.5 px-4">
+                                    <span className="font-bold text-slate-800 text-xs sm:text-sm">
+                                      {asg.subject_name}
+                                    </span>
+                                  </td>
+
+                                  {/* 5. Jenis Tes */}
+                                  <td className="py-3.5 px-4">
+                                    <div className="flex flex-wrap gap-1">
+                                      {(asg.assessment_types || ['SAS']).map(t => (
+                                        <span
+                                          key={t}
+                                          className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                                        >
+                                          {t}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </td>
+
+                                  {/* 6. Progres Soal */}
+                                  <td className="py-3.5 px-4">
+                                    <div className="space-y-1">
+                                      <span className="text-xs font-extrabold text-slate-800">
+                                        {progressText}
+                                      </span>
+                                      <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                        <div
+                                          className="bg-indigo-600 h-full rounded-full transition-all duration-300"
+                                          style={{ width: `${Math.min(100, (qData.writtenCount / (qData.target || 1)) * 100)}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* 7. Keterangan / Status */}
+                                  <td className="py-3.5 px-4">
+                                    <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold ${statusInfo.badgeClass}`}>
+                                      {statusInfo.key === 'approved' && <CheckCircle2 className="w-3 h-3" />}
+                                      {statusInfo.key === 'needs_revision' && <AlertTriangle className="w-3 h-3" />}
+                                      {statusInfo.key === 'pending_review' && <Clock className="w-3 h-3" />}
+                                      <span>{statusInfo.label}</span>
+                                    </span>
+                                  </td>
+
+                                  {/* 8. Aksi */}
+                                  <td className="py-3.5 px-4 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPreviewAssignment(asg);
+                                        setIsRevisionFormOpen(false);
+                                        setRevisionNotesInput(asg.revision_notes || '');
+                                        setActivePreviewQuestionTab('ALL');
+                                      }}
+                                      title="Lihat Daftar & Pratinjau Butir Soal"
+                                      className="p-2 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-800 transition shadow-xs active:scale-95 inline-flex items-center justify-center"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            ) : !isFilterComplete && (
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 animate-fade-in">
                 
                 {/* LANGKAH 1: PILIH JENJANG */}
@@ -2683,39 +3464,51 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                       <button
                         type="button"
-                        onClick={() => setSelectedLevel('SD')}
-                        className="group relative flex items-center justify-between p-6 rounded-3xl text-left transition-all duration-200 border-2 bg-white hover:bg-rose-50/60 text-slate-800 border-rose-200 hover:border-rose-400 shadow-xs hover:shadow-lg hover:-translate-y-0.5"
+                        onClick={() => setSelectedLevel(selectedLevel === 'SD' ? null : 'SD')}
+                        className={`group relative flex items-center justify-between py-3 px-4 rounded-xl border transition-all duration-150 cursor-pointer ${
+                          selectedLevel === 'SD'
+                            ? 'border-2 border-indigo-600 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500/20'
+                            : 'border border-slate-200/80 bg-white hover:border-indigo-400 hover:shadow-sm'
+                        }`}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-xs">
-                            <GraduationCap className="w-7 h-7" />
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                            selectedLevel === 'SD' ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'
+                          }`}>
+                            <GraduationCap className="w-5 h-5" />
                           </div>
-                          <div>
-                            <h4 className="font-black text-lg text-slate-900">Jenjang SD</h4>
-                            <p className="text-xs text-slate-500 mt-0.5">Fase A, Fase B, Fase C (Kelas 1 - 6)</p>
+                          <div className="text-left">
+                            <h4 className="text-sm font-semibold text-slate-800">Jenjang SD</h4>
+                            <p className="text-xs text-slate-500">Fase A, Fase B, Fase C (Kelas 1 - 6)</p>
                           </div>
                         </div>
-                        <ChevronRight className="w-6 h-6 text-rose-400 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className={`w-4 h-4 transition-transform group-hover:translate-x-0.5 ${selectedLevel === 'SD' ? 'text-indigo-600' : 'text-slate-400'}`} />
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => setSelectedLevel('SMP')}
-                        className="group relative flex items-center justify-between p-6 rounded-3xl text-left transition-all duration-200 border-2 bg-white hover:bg-sky-50/60 text-slate-800 border-sky-200 hover:border-sky-400 shadow-xs hover:shadow-lg hover:-translate-y-0.5"
+                        onClick={() => setSelectedLevel(selectedLevel === 'SMP' ? null : 'SMP')}
+                        className={`group relative flex items-center justify-between py-3 px-4 rounded-xl border transition-all duration-150 cursor-pointer ${
+                          selectedLevel === 'SMP'
+                            ? 'border-2 border-indigo-600 bg-indigo-50/70 shadow-sm ring-1 ring-indigo-500/20'
+                            : 'border border-slate-200/80 bg-white hover:border-indigo-400 hover:shadow-sm'
+                        }`}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-14 h-14 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-xs">
-                            <BookOpen className="w-7 h-7" />
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                            selectedLevel === 'SMP' ? 'bg-indigo-100 text-indigo-700' : 'bg-sky-100 text-sky-700'
+                          }`}>
+                            <BookOpen className="w-5 h-5" />
                           </div>
-                          <div>
-                            <h4 className="font-black text-lg text-slate-900">Jenjang SMP</h4>
-                            <p className="text-xs text-slate-500 mt-0.5">Fase D (Kelas 7 - 9)</p>
+                          <div className="text-left">
+                            <h4 className="text-sm font-semibold text-slate-800">Jenjang SMP</h4>
+                            <p className="text-xs text-slate-500">Fase D (Kelas 7 - 9)</p>
                           </div>
                         </div>
-                        <ChevronRight className="w-6 h-6 text-sky-400 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className={`w-4 h-4 transition-transform group-hover:translate-x-0.5 ${selectedLevel === 'SMP' ? 'text-indigo-600' : 'text-slate-400'}`} />
                       </button>
                     </div>
                   </div>
@@ -5973,6 +6766,303 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+{/* BAGIAN 3: MODAL PRATINJAU SOAL & LOGIKA VERIFIKASI DUA ARAH (TRUE FULLSCREEN) */}
+      {previewAssignment && typeof document !== 'undefined' && createPortal(
+        (() => {
+          const asg = previewAssignment;
+          const statusInfo = getAssignmentStatusInfo(asg.status);
+          const qData = getAssignmentQuestions(asg);
+          const questionsList = qData.questions;
+          const itemsList = qData.items;
+
+          return (
+            <div className="fixed inset-0 z-[9999] bg-slate-950 w-screen h-screen flex flex-col overflow-hidden animate-fade-in select-text">
+              <div className="w-full h-full bg-slate-100 flex flex-col overflow-hidden">
+                
+                {/* 1. Modal Top Bar (Sticky Header Layar Penuh) */}
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 sm:px-8 py-3.5 flex items-center justify-between gap-4 shrink-0 shadow-md z-30">
+                  <div className="flex items-center space-x-3.5 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewAssignment(null)}
+                      className="p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white transition shrink-0"
+                      title="Kembali / Tutup Layar Penuh"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                          {asg.level} • {asg.grade_class} (Fase {asg.phase})
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusInfo.badgeClass}`}>
+                          {statusInfo.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 hidden md:inline">
+                          • Target: {qData.target} Butir Soal
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-white truncate mt-0.5">
+                        Pratinjau Paket: {asg.subject_name}
+                      </h3>
+                      <p className="text-xs text-slate-300 truncate">
+                        Penulis: <strong>{asg.user_name}</strong> ({asg.user_institution || 'Instansi Terdaftar'}) • Ditugaskan: {(asg.assessment_types || []).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewAssignment(null)}
+                      className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition flex items-center space-x-1.5"
+                      title="Tutup Pratinjau Fullscreen"
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="hidden sm:inline">Tutup</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Revision Notes Alert Banner (Jika Pernah Ada Catatan Revisi) */}
+                {asg.revision_notes && (
+                  <div className="bg-rose-50 border-b border-rose-200 px-6 sm:px-8 py-3 text-xs space-y-1 shrink-0 z-20">
+                    <div className="flex items-center space-x-2 font-bold text-rose-800">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>Catatan Revisi Terakhir (Verifikator):</span>
+                    </div>
+                    <p className="text-rose-700 font-medium whitespace-pre-wrap pl-6">
+                      "{asg.revision_notes}"
+                    </p>
+                    {asg.reviewed_at && (
+                      <div className="text-[10px] text-rose-500 pl-6">
+                        Ditinjau oleh: {asg.reviewed_by || 'Verifikator'} • {new Date(asg.reviewed_at).toLocaleString('id-ID')}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. Sub-header Navigasi Nomor Butir Soal */}
+                {questionsList.length > 0 && (
+                  <div className="bg-white px-5 sm:px-8 py-2.5 border-b border-slate-200 flex items-center justify-between gap-4 overflow-x-auto text-xs shrink-0 shadow-2xs z-10">
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="font-extrabold text-slate-700 flex items-center space-x-1.5">
+                        <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
+                        <span>Navigasi Butir:</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                        {questionsList.length} Butir Ditulis
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setActivePreviewQuestionTab('ALL')}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs transition shrink-0 ${
+                          activePreviewQuestionTab === 'ALL'
+                            ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                        }`}
+                      >
+                        Semua Butir ({questionsList.length})
+                      </button>
+                      {questionsList.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setActivePreviewQuestionTab(i)}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs transition shrink-0 ${
+                            activePreviewQuestionTab === i
+                              ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-xs'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                          }`}
+                        >
+                          No. {i + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Modal Body: Daftar Butir Soal Layar Penuh */}
+                <div className="overflow-y-auto p-4 sm:p-8 flex-1 bg-slate-100/80">
+                  <div className="max-w-4xl mx-auto space-y-6">
+                    {questionsList.length === 0 ? (
+                      <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3 shadow-xs">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto">
+                          <PenTool className="w-7 h-7" />
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-base">
+                          Belum Ada Butir Soal yang Disimpan
+                        </h4>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                          Penulis belum menulis naskah butir soal untuk penugasan ini (Target: {asg.target_questions || 30} butir). Lembar kerja kisi-kisi memuat {itemsList.length} butir terpetakan.
+                        </p>
+                      </div>
+                    ) : (
+                      questionsList
+                        .filter((_, idx) => activePreviewQuestionTab === 'ALL' || activePreviewQuestionTab === idx)
+                        .map((q, idx) => {
+                          const originalIndex = activePreviewQuestionTab === 'ALL' ? idx : Number(activePreviewQuestionTab);
+                          const matchedBp = itemsList.find(i => i.id === q.blueprint_item_id) || itemsList[originalIndex];
+
+                          const rawType = q.question_type || matchedBp?.question_type || 'Pilihan Ganda';
+                          const normalizedQType = rawType
+                            .replace('Benar-Salah', 'Benar/Salah')
+                            .replace('Benar / Salah', 'Benar/Salah');
+
+                          const questionForRenderer: QuestionBankItem = {
+                            ...q,
+                            question_type: normalizedQType as any
+                          };
+
+                          return (
+                            <div
+                              key={q.id || idx}
+                              className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-6"
+                            >
+                              {/* Top Bar Butir Soal */}
+                              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                                <div className="flex items-center space-x-2.5">
+                                  <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-brand-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                                    {originalIndex + 1}
+                                  </span>
+                                  <span className="font-bold text-xs px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                                    {normalizedQType}
+                                  </span>
+                                  <span className="font-bold text-xs px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80">
+                                    {matchedBp?.cognitive_level || 'Penalaran (L2)'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200/80">
+                                    🎯 Bobot: {q.weight || 10} Poin
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Indikator Kisi-Kisi Acuan */}
+                              {(matchedBp?.indicator_question || matchedBp?.indicator) && (
+                                <div className="text-xs text-indigo-950 bg-indigo-50/70 p-4 rounded-2xl border border-indigo-200/70 space-y-1.5">
+                                  <div className="font-extrabold text-indigo-800 flex items-center space-x-1.5 uppercase tracking-wider text-[11px]">
+                                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Indikator Soal Acuan Kisi-Kisi:</span>
+                                  </div>
+                                  <div className="leading-relaxed font-medium">
+                                    <RichMathText content={matchedBp.indicator_question || matchedBp.indicator} />
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* RENDER UTUH SOAL CBT DENGAN QuestionRenderer (Mendukung HTML, List <ol><li>, [justify], Rumus Math, Gambar & Kunci Jawaban) */}
+                              <div className="pt-1">
+                                <QuestionRenderer
+                                  question={questionForRenderer}
+                                  fontSize="normal"
+                                  showAnswerKey={true}
+                                  onUpdateAnswer={() => {}}
+                                />
+                              </div>
+
+                              {/* Rubrik Penilaian / Pembahasan Soal */}
+                              {(q.rubric || q.answer_explanation) && (
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-900 space-y-1.5">
+                                  <div className="font-extrabold flex items-center space-x-1.5 text-slate-700 uppercase tracking-wider text-[11px]">
+                                    <Info className="w-4 h-4 text-indigo-600" />
+                                    <span>Rubrik Penilaian / Pembahasan Soal:</span>
+                                  </div>
+                                  <div className="leading-relaxed font-sans text-xs text-slate-700">
+                                    <RichMathText content={q.rubric || q.answer_explanation} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                </div>
+
+                {/* 5. Sticky Bottom Footer: Action Buttons */}
+                <div className="bg-white border-t border-slate-200 px-6 sm:px-8 py-4 shrink-0 shadow-lg z-30">
+                  {isRevisionFormOpen ? (
+                    <div className="max-w-4xl mx-auto space-y-3 animate-fade-in">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-rose-800 flex items-center space-x-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Catatan / Umpan Balik Perbaikan bagi Penulis (Wajib Diisi):</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={revisionNotesInput}
+                          onChange={(e) => setRevisionNotesInput(e.target.value)}
+                          placeholder="Tuliskan nomor butir soal dan arahan perbaikan spesifik bagi penulis..."
+                          className="w-full text-xs p-3 rounded-xl border border-rose-300 focus:outline-hidden focus:ring-2 focus:ring-rose-500 bg-rose-50/30 text-slate-800 placeholder:text-slate-400"
+                        />
+                      </div>
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsRevisionFormOpen(false)}
+                          className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectForRevision(asg)}
+                          className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition shadow-md shadow-rose-600/25 flex items-center space-x-1.5 active:scale-95"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Kirim Arahan Revisi ke Penulis</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewAssignment(null)}
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition w-full sm:w-auto"
+                      >
+                        Tutup Pratinjau
+                      </button>
+
+                      <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                        {/* Tombol Aksi 2: Kembalikan untuk Perbaikan / Revisi */}
+                        <button
+                          type="button"
+                          onClick={() => setIsRevisionFormOpen(true)}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition active:scale-95 flex items-center space-x-1.5"
+                          title="Kembalikan paket soal ke penulis dengan catatan perbaikan"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          <span>Kembalikan untuk Perbaikan / Revisi</span>
+                        </button>
+
+                        {/* Tombol Aksi 1: Setujui / Lolos Verifikasi */}
+                        <button
+                          type="button"
+                          onClick={() => handleApproveAssignment(asg)}
+                          className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition shadow-md shadow-emerald-600/25 active:scale-95 flex items-center space-x-1.5"
+                          title="Setujui dan kunci naskah masuk ke Bank Soal Terverifikasi"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Setujui / Lolos Verifikasi</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </div>
+          );
+        })(),
+        document.body
       )}
 
     </div>

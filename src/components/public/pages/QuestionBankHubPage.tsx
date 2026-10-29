@@ -60,7 +60,7 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
     }).then(data => setResources(data));
   };
 
-  const phases = ['Semua Fase', 'Fase A', 'Fase B', 'Fase C'];
+  const phases = ['Semua Fase', 'Fase A', 'Fase B', 'Fase C', 'Fase D'];
   const categories = ['Semua', 'Matriks Kisi-Kisi', 'Naskah Kartu Soal', 'Instrumen Diagnostik Awal'];
   const subjects = ['Semua', 'Bahasa Indonesia', 'Matematika', 'IPAS', 'Pendidikan Pancasila'];
 
@@ -137,21 +137,21 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
             <span>Filter Repositori Instrumen Evaluasi</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-1">
             
             {/* Filter 1: Fase & Jenjang */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1.5">Fase / Jenjang Kelas</label>
-              <div className="flex flex-wrap gap-1.5">
+              <label className="block text-xs font-bold text-slate-600 mb-2">Fase / Jenjang Kelas</label>
+              <div className="flex flex-wrap gap-2">
                 {phases.map(p => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => setSelectedPhase(p)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`transition-all duration-150 active:scale-95 ${
                       selectedPhase === p
-                        ? 'bg-slate-900 text-white border-2 border-slate-900 shadow-2xs'
-                        : 'bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
+                        ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-sm shadow-indigo-500/20 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
+                        : 'bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/60 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
                     }`}
                   >
                     {p}
@@ -162,17 +162,17 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
 
             {/* Filter 2: Kategori Instrumen */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1.5">Kategori Dokumen</label>
-              <div className="flex flex-wrap gap-1.5">
+              <label className="block text-xs font-bold text-slate-600 mb-2">Kategori Dokumen</label>
+              <div className="flex flex-wrap gap-2">
                 {categories.map(c => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setSelectedCategory(c)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`transition-all duration-150 active:scale-95 ${
                       selectedCategory === c
-                        ? 'bg-emerald-600 text-white border-2 border-emerald-600 shadow-2xs'
-                        : 'bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
+                        ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-sm shadow-indigo-500/20 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
+                        : 'bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/60 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
                     }`}
                   >
                     {c}
@@ -183,17 +183,17 @@ export const QuestionBankHubPage: React.FC<QuestionBankHubPageProps> = ({
 
             {/* Filter 3: Mata Pelajaran */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1.5">Mata Pelajaran</label>
-              <div className="flex flex-wrap gap-1.5">
+              <label className="block text-xs font-bold text-slate-600 mb-2">Mata Pelajaran</label>
+              <div className="flex flex-wrap gap-2">
                 {subjects.map(s => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setSelectedSubject(s)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`transition-all duration-150 active:scale-95 ${
                       selectedSubject === s
-                        ? 'bg-sky-600 text-white border-2 border-sky-600 shadow-2xs'
-                        : 'bg-slate-50 text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
+                        ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-sm shadow-indigo-500/20 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
+                        : 'bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/60 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
                     }`}
                   >
                     {s}

@@ -248,7 +248,10 @@ export interface QuestionWriterAssignment {
   level: SchoolLevel; // SD, SMP
   assessment_types: AssessmentType[]; // ['SAS', 'PTS', 'SAT', 'Formatif', 'SAJ']
   target_questions?: number; // Target butir soal, default 30
-  status: 'Draft' | 'Dalam Penulisan' | 'Menunggu Riviu' | 'Selesai' | 'Diarsipkan';
+  status: 'Draft' | 'Dalam Penulisan' | 'Proses Penulisan' | 'Menunggu Riviu' | 'Menunggu Verifikasi' | 'Perlu Revisi' | 'Selesai' | 'Terverifikasi' | 'Diarsipkan' | 'needs_revision' | 'approved' | 'pending_review' | 'in_progress';
+  revision_notes?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
   is_archived?: boolean;
   archived_at?: string;
   notes?: string;

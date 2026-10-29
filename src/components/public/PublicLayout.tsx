@@ -48,11 +48,21 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   };
 
   const [currentRoute, setCurrentRoute] = useState<PublicNavRoute>(getRouteFromHash);
+  const getInitialOptionsFromHash = () => {
+    try {
+      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+      if (hash.includes('desain-atribut-kelas') || hash.includes('atribut-kelas')) {
+        return { tab: 'ai' as const, generatorIndex: 6 };
+      }
+    } catch (e) {}
+    return {};
+  };
+
   const [navOptions, setNavOptions] = useState<{
     category?: string;
     tab?: 'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi';
     generatorIndex?: number;
-  }>({});
+  }>(getInitialOptionsFromHash);
 
   // Layout-level Sidebar Aggregate Cache State
   const [sidebarAggregate, setSidebarAggregate] = useState<PublicSidebarAggregatePayload | null>(null);
@@ -87,6 +97,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
 
   useEffect(() => {
     const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+      if (hash.includes('desain-atribut-kelas') || hash.includes('atribut-kelas')) {
+        setCurrentRoute('ruang-kreativitas');
+        setNavOptions({ tab: 'ai', generatorIndex: 6 });
+        return;
+      }
       setCurrentRoute(getRouteFromHash());
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -111,7 +127,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       setNavOptions({});
     }
     try {
-      window.location.hash = `#/${route}`;
+      if (route === 'ruang-kreativitas' && options?.generatorIndex === 6) {
+        window.location.hash = '#/ruang-kreativitas-guru/asisten-guru-ai/desain-atribut-kelas';
+      } else {
+        window.location.hash = `#/${route}`;
+      }
     } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

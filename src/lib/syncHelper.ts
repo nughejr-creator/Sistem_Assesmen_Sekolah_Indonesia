@@ -849,6 +849,7 @@ export async function deleteBlueprintItemWriterFromCloud(itemId: string) {
  * Helper Serialisasi Pipe untuk Penyimpanan Hemat Ruang di PostgreSQL VARCHAR(255)
  */
 export function encodeWriterAssignmentToPipe(a: QuestionWriterAssignment): string {
+  const safeNotes = (a.revision_notes || '').replace(/\|/g, '&#124;');
   const parts = [
     a.user_id || '',
     a.user_name || '',
@@ -863,7 +864,10 @@ export function encodeWriterAssignmentToPipe(a: QuestionWriterAssignment): strin
     a.target_questions ?? 30,
     a.status || 'Draft',
     a.is_archived ? '1' : '0',
-    a.created_at || new Date().toISOString()
+    a.created_at || new Date().toISOString(),
+    safeNotes,
+    a.reviewed_by || '',
+    a.reviewed_at || ''
   ];
   return `SASI_P1:${parts.join('|')}`;
 }
@@ -898,7 +902,10 @@ export function decodeWriterAssignmentFromPipe(id: string, text: string): Questi
     target_questions_str,
     status,
     is_archived_str,
-    created_at
+    created_at,
+    raw_revision_notes,
+    reviewed_by,
+    reviewed_at
   ] = parts;
 
   return {
@@ -916,6 +923,9 @@ export function decodeWriterAssignmentFromPipe(id: string, text: string): Questi
     target_questions: target_questions_str ? parseInt(target_questions_str, 10) : 30,
     status: (status as any) || 'Draft',
     is_archived: is_archived_str === '1',
+    revision_notes: raw_revision_notes ? raw_revision_notes.replace(/&#124;/g, '|') : undefined,
+    reviewed_by: reviewed_by || undefined,
+    reviewed_at: reviewed_at || undefined,
     created_at: created_at || new Date().toISOString(),
     updated_at: new Date().toISOString()
   };

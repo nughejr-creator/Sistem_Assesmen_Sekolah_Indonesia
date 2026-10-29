@@ -37,6 +37,7 @@ interface PublicNavbarProps {
 interface SubMenuItem {
   icon: string; // 3D / Emotikon Berwarna
   label: string;
+  description?: string;
   route: PublicNavRoute;
   options?: PublicNavOptions;
 }
@@ -136,6 +137,13 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
       label: 'Generator Refleksi & Umpan Balik',
       route: 'ruang-kreativitas',
       options: { tab: 'ai', generatorIndex: 5 }
+    },
+    {
+      icon: '🎨',
+      label: 'Desain Atribut Kelas',
+      description: 'Generator prompt display visual, kesepakatan kelas, dan dekorasi lingkungan belajar interaktif.',
+      route: 'ruang-kreativitas',
+      options: { tab: 'ai', generatorIndex: 6 }
     }
   ];
 
@@ -225,7 +233,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               }`}
             >
               <BookOpen className="w-3.5 h-3.5 text-blue-700 transition-transform group-hover:scale-110" />
-              <span>Soal & Asesmen</span>
+              <span>Bedah Soal & Asesmen</span>
               <ChevronDown className="w-3.5 h-3.5 text-blue-600 group-hover:text-blue-950 transition-transform duration-200 group-hover:rotate-180" />
             </button>
 
@@ -319,7 +327,12 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                     <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border-2 border-amber-200 text-base shadow-xs flex-shrink-0 group-hover/item:scale-110 transition-transform">
                       {item.icon}
                     </div>
-                    <span className="truncate">{item.label}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-bold">{item.label}</div>
+                      {item.description && (
+                        <div className="text-[10px] text-amber-900/75 font-normal truncate">{item.description}</div>
+                      )}
+                    </div>
                   </div>
                 ))}
 
@@ -427,7 +440,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <BookOpen className="w-4 h-4 text-blue-700" />
-                  <span>Soal & Asesmen</span>
+                  <span>Bedah Soal & Asesmen</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-blue-700 transition-transform ${mobileAccordion === 'wawasan' ? 'rotate-180' : ''}`} />
               </button>
@@ -512,7 +525,12 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                         <div className="w-7 h-7 rounded-lg bg-white border border-amber-200 flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
                           {item.icon}
                         </div>
-                        <span>{item.label}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-bold">{item.label}</div>
+                          {item.description && (
+                            <div className="text-[10px] text-amber-900/75 font-normal truncate">{item.description}</div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

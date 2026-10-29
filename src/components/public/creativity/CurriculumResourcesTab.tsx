@@ -74,15 +74,15 @@ export const CurriculumResourcesTab: React.FC = () => {
 
         {/* Filter Pills */}
         <div className="flex flex-wrap items-center gap-2">
-          {['Semua Fase', 'Fase A', 'Fase B', 'Fase C'].map(phase => (
+          {['Semua Fase', 'Fase A', 'Fase B', 'Fase C', 'Fase D'].map(phase => (
             <button
               key={phase}
               type="button"
               onClick={() => setSelectedPhase(phase)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`transition-all duration-150 active:scale-95 ${
                 selectedPhase === phase
-                  ? 'bg-slate-900 text-white border-2 border-slate-900 shadow-2xs'
-                  : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-100'
+                  ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold shadow-sm shadow-indigo-500/20 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
+                  : 'bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/60 rounded-xl px-3.5 py-1.5 text-xs md:text-sm'
               }`}
             >
               {phase}
