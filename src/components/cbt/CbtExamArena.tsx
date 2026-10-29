@@ -771,12 +771,12 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
     setIsAutosaving(true);
     try {
       const clusterClient = getSupabaseClientForSchool(student.school_id);
-      const pList = pendingKeys.map(qId => {
+      const batchAnswers = pendingKeys.map(qId => {
         const ans = currentPending[qId];
         const matchedQ = questions.find(q => q.id === ans.question_id);
         const evalRes = matchedQ ? evaluateSingleQuestion(matchedQ, ans) : { itemScore: 0 };
 
-        return safeSupabaseUpsert('student_answers', {
+        return {
           id: toValidUUID(ans.id),
           attempt_id: toValidUUID(activeAttemptId),
           question_id: toValidUUID(ans.question_id),
@@ -784,10 +784,11 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
           answer_text: ans.answer_text || null,
           is_doubtful: ans.is_doubtful || false,
           score_obtained: evalRes.itemScore
-        }, student.school_id);
+        };
       });
 
-      await Promise.all(pList);
+      // 1. Batch upsert seluruh antrean jawaban dalam 1 payload (super cepat & hemat jaringan)
+      await safeSupabaseUpsert('student_answers', batchAnswers, student.school_id);
 
       // Update student_attempts progress ke database kluster & ambil status terbaru (Action Intercept)
       const sourceAnswers = answersSnapshot || answers;
@@ -900,13 +901,13 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
     };
   }, [phase, activeAttemptId, student.school_id, handleForceComplete]);
 
-  // Navigasi soal pintar: otomatis sinkronkan jawaban nomor sebelumnya saat berpindah nomor
-  const handleNavigateQuestion = async (newIndex: number) => {
+  // Navigasi soal pintar: berpindah seketika 0ms & sinkronkan jawaban di latar belakang
+  const handleNavigateQuestion = (newIndex: number) => {
     if (newIndex < 0 || newIndex >= questions.length) return;
-    if (Object.keys(pendingAnswersRef.current).length > 0) {
-      await flushPendingAnswers();
-    }
     setCurrentIndex(newIndex);
+    if (Object.keys(pendingAnswersRef.current).length > 0) {
+      flushPendingAnswers();
+    }
   };
 
   // Update Answer dengan Dual Autosave (LocalStorage Instan 0ms + Supabase Cloud Smart Debounce 60 Detik)

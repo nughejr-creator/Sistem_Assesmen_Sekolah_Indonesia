@@ -1019,11 +1019,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
       }
     }
 
-    // Authoritative Sync: Segera sinkronkan cache lokal dengan database setelah mutasi
-    await fetchUsersFromCloud();
-
+    // Tutup modal seketika (0 ms) agar proktor/admin tidak mengalami delay
     setShowAddModal(false);
     setEditingUser(null);
+
+    // Authoritative Sync: Lakukan sinkronisasi di latar belakang tanpa memblokir tampilan
+    fetchUsersFromCloud().catch(err => console.warn('Background sync users error:', err));
   };
 
   const openEditModal = (u: UserProfile) => {
