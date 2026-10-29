@@ -36,3 +36,5 @@ scratch/
 *.temp
 powershell.bat
 *.mjs
+SASI_CBT_SERVER_PORTABLE/
+*.zip
