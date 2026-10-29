@@ -3,6 +3,8 @@ import { School } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import {
   Building2,
+  MessageCircle,
+  PhoneCall,
   MapPin,
   Phone,
   Mail,
@@ -310,219 +312,135 @@ export const SchoolProfileView: React.FC<SchoolProfileViewProps> = ({ school: in
       {!isEditing ? (
         <div className="space-y-6">
           
-          {/* Hero School Identity Card */}
-          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-brand-950 text-white rounded-3xl p-7 sm:p-9 shadow-xl shadow-slate-900/10 border border-slate-800 relative overflow-hidden">
-            <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+          {/* Header Identitas Satuan Pendidikan (Sesuai Desain Resmi Tut Wuri Handayani) */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-6">
             
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="flex items-center space-x-5">
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-brand-600 to-sky-400 text-white font-black text-3xl flex items-center justify-center shadow-lg shadow-brand-500/30 border-2 border-white/20 shrink-0">
-                  {formData.name?.charAt(0) || 'S'}
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-brand-500 text-white">
-                      Satuan Pendidikan Resmi
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      SASI Cloud ID: #{formData.id ? formData.id.slice(0, 8) : '1e6e1bbb'}
-                    </span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
-                    {formData.name}
-                  </h1>
-                  <p className="text-slate-300 text-xs sm:text-sm mt-1 flex flex-wrap items-center gap-2">
-                    <span>{formData.district || 'Pamulihan'}, {formData.regency_city || 'Sumedang'}</span>
-                    <span>•</span>
-                    <span>{formData.province || 'Jawa Barat'}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Badges Container */}
-              <div className="flex flex-wrap md:flex-col items-start md:items-end gap-2.5 shrink-0">
-                <div className="px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-xs font-mono font-bold text-white flex items-center space-x-2">
-                  <span className="text-slate-400 font-sans text-[11px]">NPSN:</span>
-                  <span className="text-sky-300 font-extrabold">{formData.npsn}</span>
-                </div>
-                <div className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-200 text-xs font-bold flex items-center space-x-1.5">
-                  <Award className="w-4 h-4 text-amber-400" />
-                  <span>{getAccreditationLabel(formData.accreditation)}</span>
-                </div>
-                <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold flex items-center space-x-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Status: {formData.status || 'Negeri'}</span>
-                </div>
-              </div>
+            {/* Logo Universal Tut Wuri Handayani */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-sky-50/60 p-1 flex items-center justify-center shrink-0 border-2 border-sky-100 shadow-2xs overflow-hidden">
+              <img 
+                src="/tutwuri-logo.png" 
+                alt="Logo Tut Wuri Handayani" 
+                className="w-full h-full object-contain"
+              />
             </div>
-          </div>
 
-          {/* 3 Executive Data Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Card 1: Data Pokok Lembaga */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center space-x-3 pb-4 mb-4 border-b border-slate-100">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-sm text-slate-900">Data Pokok Lembaga</h3>
-                    <p className="text-[11px] text-slate-400">Identitas struktural satuan pendidikan</p>
-                  </div>
-                </div>
+            {/* Nama Sekolah & Deretan Badge Status */}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl lg:text-[28px] font-black text-slate-900 tracking-tight leading-snug">
+                {formData.name}
+              </h1>
 
-                <div className="space-y-3.5 text-xs">
-                  <div>
-                    <span className="text-slate-400 block text-[11px] font-bold">Nama Resmi:</span>
-                    <span className="font-extrabold text-slate-900 text-sm">{formData.name}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[11px] font-bold">NPSN:</span>
-                      <span className="font-mono font-bold text-slate-800">{formData.npsn}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[11px] font-bold">Jenjang:</span>
-                      <span className="font-bold text-slate-800">{getLevelLabel(formData.level)}</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[11px] font-bold">Status Lembaga:</span>
-                      <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200 text-[11px]">
-                        {formData.status || 'Negeri'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[11px] font-bold">Akreditasi:</span>
-                      <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-700 font-extrabold border border-amber-200 text-[11px]">
-                        Peringkat {formData.accreditation || 'B'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold">
+                  NPSN: <strong className="font-bold text-slate-900">{formData.npsn}</strong>
+                </span>
 
-              <div className="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Sinkronisasi Cloud:</span>
-                <span className="text-emerald-600 font-bold flex items-center space-x-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Aktif di Supabase</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-semibold">
+                  Status: <strong className="font-bold text-emerald-700">{formData.status || 'Negeri'}</strong>
+                </span>
+
+                <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-xs font-semibold">
+                  Akreditasi: <strong className="font-bold text-amber-700">Peringkat {formData.accreditation || 'B'}</strong>
+                </span>
+
+                <span className="px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-300 text-xs font-semibold">
+                  Jenjang: <strong className="font-bold text-sky-700">{formData.level || 'SD'}</strong>
                 </span>
               </div>
             </div>
 
-            {/* Card 2: Data Kepala Sekolah / Pimpinan */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center space-x-3 pb-4 mb-4 border-b border-slate-100">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <UserCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-sm text-slate-900">Pimpinan & Penanggung Jawab</h3>
-                    <p className="text-[11px] text-slate-400">Penanda tangan sah BAP & Hasil CBT</p>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/60 to-slate-50 border border-emerald-100 text-center mb-4">
-                  <div className="w-14 h-14 rounded-full bg-emerald-600 text-white font-black text-xl flex items-center justify-center mx-auto shadow-md shadow-emerald-600/20 border-2 border-white">
-                    {formData.principal_name?.charAt(0) || 'K'}
-                  </div>
-                  <h4 className="font-extrabold text-sm text-slate-900 mt-2.5">
-                    {formData.principal_name || 'Aep Yayat, S.Pd.SD.'}
-                  </h4>
-                  <p className="text-[11px] font-mono font-semibold text-emerald-800 mt-0.5">
-                    NIP: {formData.principal_nip || '19750812 200003 2 004'}
-                  </p>
-                </div>
-
-                <div className="space-y-2 text-xs text-slate-600">
-                  <div className="flex items-start space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span className="text-[11px] leading-relaxed">
-                      Nama dan NIP ini otomatis tercantum pada lembar <strong>Berita Acara Pelaksanaan (BAP)</strong> ruang ujian.
-                    </span>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span className="text-[11px] leading-relaxed">
-                      Tercetak resmi pada lembar <strong>Pengesahan Rekap & Leger Nilai</strong> akhir asesmen.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Otoritas:</span>
-                <span className="text-slate-700 font-bold">Penanggung Jawab Sekolah</span>
-              </div>
-            </div>
-
-            {/* Card 3: Lokasi & Narahubung Resmi */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center space-x-3 pb-4 mb-4 border-b border-slate-100">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-sm text-slate-900">Lokasi & Kontak Resmi</h3>
-                    <p className="text-[11px] text-slate-400">Alamat fisik dan saluran komunikasi</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3.5 text-xs">
-                  <div>
-                    <span className="text-slate-400 block text-[11px] font-bold">Alamat Gedung:</span>
-                    <span className="font-semibold text-slate-900 leading-relaxed block mt-0.5">
-                      {formData.address || 'Jl. Desa Cinanggerang RT 03 RW 04'}
-                    </span>
-                    <span className="text-[11px] text-slate-500 font-medium">
-                      {formData.district}, {formData.regency_city}, {formData.province} ({formData.postal_code || '45262'})
-                    </span>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 space-y-2.5">
-                    <div className="flex items-center space-x-2.5 text-slate-700">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono font-bold text-[11px]">{formData.phone || '082118449525'}</span>
-                    </div>
-
-                    <div className="flex items-center space-x-2.5 text-slate-700">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono text-[11px] truncate text-brand-600 font-medium">
-                        {formData.email || 'sdncinanggerang1@gmail.com'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-2.5 text-slate-700">
-                      <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <a
-                        href={formData.website || '#'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-mono text-[11px] truncate text-brand-600 hover:underline flex items-center space-x-1"
-                      >
-                        <span>{formData.website || 'https://sdncinanggerang1.gosch.id'}</span>
-                        <ExternalLink className="w-3 h-3 text-slate-400" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Zona Waktu CBT:</span>
-                <span className="text-slate-700 font-mono font-bold">WIB (UTC+7)</span>
-              </div>
-            </div>
-
           </div>
 
-        </div>
+          {/* 2 Kolom: Pimpinan & Kontak Resmi */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Kolom Kiri: Pimpinan & Penanggung Jawab */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-6">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-5">
+                  Pimpinan & Penanggung Jawab
+                </h3>
+
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 rounded-full bg-[#0d4f3c] text-white font-bold text-2xl flex items-center justify-center shrink-0 shadow-xs">
+                    {formData.principal_name?.charAt(0) || 'A'}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-base sm:text-lg text-slate-900 leading-snug">
+                      {formData.principal_name || 'Aep Yayat, S.Pd.SD.'}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5 tracking-wider">
+                      NIP: {formData.principal_nip || '19720812 200003 2 004'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Callout Notice Hijau */}
+              <div className="p-4 rounded-2xl bg-[#eef8f4] border border-[#cbebe0] text-xs text-[#175240] flex items-start space-x-3">
+                <div className="w-5 h-5 rounded-full border border-[#2ea378] text-[#2ea378] flex items-center justify-center shrink-0 mt-0.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </div>
+                <p className="text-xs leading-relaxed font-medium">
+                  Nama dan NIP otomatis tercantum pada penerbitan Berita Acara Pelaksanaan (BAP) ruang ujian & Lembar Pengesahan Rekap & Leger Nilai.
+                </p>
+              </div>
+            </div>
+
+            {/* Kolom Kanan: Lokasi & Kontak Resmi */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-4">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4">
+                Lokasi & Kontak Resmi
+              </h3>
+
+              <div className="space-y-3.5 text-xs text-slate-700">
+                {/* Alamat Fisik */}
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    {formData.address || 'Jl. Desa Cinanggerang RT 03 RW 04'}, {formData.district || 'Kec. Pamulihan'}, {formData.regency_city || 'Kabupaten Sumedang'}, {formData.province || 'Jawa Barat'} ({formData.postal_code || '45265'})
+                  </span>
+                </div>
+
+                {/* Telepon */}
+                <div className="flex items-center space-x-3">
+                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="font-mono text-slate-800">{formData.phone || '082118449525'}</span>
+                </div>
+
+                {/* WhatsApp */}
+                <div className="flex items-center space-x-3">
+                  <MessageCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="font-mono text-slate-800">{formData.phone || '082118449525'}</span>
+                </div>
+
+                {/* Email */}
+                <div className="flex items-center space-x-3">
+                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                  <a 
+                    href={`mailto:${formData.email || 'sdncinanggerang1@gmail.com'}`}
+                    className="font-mono text-slate-800 hover:text-brand-600 hover:underline truncate"
+                  >
+                    {formData.email || 'sdncinanggerang1@gmail.com'}
+                  </a>
+                </div>
+
+                {/* Website */}
+                <div className="flex items-center space-x-3">
+                  <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+                  <a 
+                    href={formData.website?.startsWith('http') ? formData.website : `https://${formData.website || 'sdncinanggerang1.sch.id'}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-slate-800 hover:text-brand-600 hover:underline truncate"
+                  >
+                    {formData.website ? formData.website.replace(/^https?:\/\//, '') : 'sdncinanggerang1.sch.id'}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div></div>
       ) : (
         /* 3. MODE EDIT INTERAKTIF (FORM MODERN & TERORGANISIR) */
         <form onSubmit={handleSave} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-8 animate-fade-in">
