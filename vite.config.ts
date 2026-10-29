@@ -5,7 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    open: true
+    open: true,
+    watch: {
+      ignored: ['**/SASI_CBT_SERVER_PORTABLE/**', '**/*.rar', '**/*.zip', '**/dist/**']
+    }
   },
   build: {
     chunkSizeWarningLimit: 1000,
