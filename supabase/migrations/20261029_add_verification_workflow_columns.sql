@@ -39,6 +39,16 @@ ALTER TABLE public.question_writer_assignments
     ADD COLUMN IF NOT EXISTS reviewed_by UUID,
     ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
 
+-- Tambahkan assignment_id pada tabel butir soal dan kisi-kisi untuk isolasi ketat per paket penugasan
+ALTER TABLE public.question_bank
+    ADD COLUMN IF NOT EXISTS assignment_id UUID;
+
+ALTER TABLE public.blueprint_items
+    ADD COLUMN IF NOT EXISTS assignment_id UUID;
+
+CREATE INDEX IF NOT EXISTS idx_qb_assignment_id ON public.question_bank (assignment_id);
+CREATE INDEX IF NOT EXISTS idx_bpi_assignment_id ON public.blueprint_items (assignment_id);
+
 -- Kolom Alias Dwibahasa (Opsional untuk kompatibilitas query Bahasa Indonesia)
 DO $$
 BEGIN

@@ -237,10 +237,70 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             } catch (e) {}
           }
         } catch (subErr) {}
-        // 1. Sync Question Bank Items & Question Options first
-        const { data: cloudQuestions, error: qError } = await supabase
-          .from('question_bank')
-          .select('*, options:question_options(*)');
+        // 1. Ambil data blueprint items dan butir soal cloud secara serempak
+        const [itemsRes, questionsRes, writerMappings] = await Promise.all([
+          supabase
+            .from('blueprint_items')
+            .select('*, blueprint:blueprints(title, subject_id, level, phase, assessment_type, subject:subjects(name))')
+            .order('question_number', { ascending: true }),
+          supabase
+            .from('question_bank')
+            .select('*, options:question_options(*)'),
+          fetchBlueprintItemWritersFromCloud()
+        ]);
+
+        const rawCloudItems = itemsRes.data;
+        const itemsError = itemsRes.error;
+        const cloudQuestions = questionsRes.data;
+        const qError = questionsRes.error;
+
+        if (itemsError) {
+          console.warn('Supabase blueprint items load error:', itemsError);
+          setCloudStatus('error');
+          setCloudError(itemsError.message);
+        } else {
+          setCloudStatus('connected');
+          setCloudError(null);
+        }
+
+        // 2. Bentuk daftar blueprint items terstandardisasi
+        let cloudItems: BlueprintItem[] = [];
+        if (!itemsError && rawCloudItems) {
+          cloudItems = rawCloudItems.map((i: any) => {
+            const rawSubName = i.blueprint?.subject?.name || '';
+            const cleanSubName = rawSubName.replace(/\s*\(.*\)/, '').trim() || i.subject_name || 'Matematika';
+            const bpPhase = i.blueprint?.phase || 'B';
+            const bpTitle = i.blueprint?.title || '';
+
+            const gradeMatch = bpTitle.match(/Kelas\s*([0-9]+)/i);
+            let detectedGrade = '';
+            if (gradeMatch) {
+              detectedGrade = `Kelas ${gradeMatch[1]}`;
+            } else {
+              detectedGrade = bpPhase === 'D' ? 'Kelas 7' : bpPhase === 'C' ? 'Kelas 6' : bpPhase === 'A' ? 'Kelas 1' : 'Kelas 4';
+            }
+
+            const writerMeta = writerMappings[i.id];
+            const resolvedWriterId = i.writer_id || writerMeta?.writer_id || null;
+            const resolvedWriterName = writerMeta?.writer_name || i.writer_name || (resolvedWriterId ? 'Penulis Terdaftar' : undefined);
+
+            return {
+              ...i,
+              writer_id: resolvedWriterId,
+              writer_name: resolvedWriterName,
+              subject_name: i.subject_name || cleanSubName,
+              grade_class: i.grade_class || `${detectedGrade} (Fase ${bpPhase})`,
+              assessment_type: i.assessment_type || i.blueprint?.assessment_type || 'SAS',
+              level: i.level || i.blueprint?.level || 'SD',
+              phase: i.phase || bpPhase,
+              workflow_status: i.workflow_status || 'Draft'
+            };
+          });
+        }
+
+        // 3. Map question bank dan perkayakan metadata dari blueprint_item pasangannya
+        const itemsMap = new Map<string, BlueprintItem>();
+        cloudItems.forEach(it => itemsMap.set(it.id, it));
 
         const mappedQuestions: QuestionBankItem[] = (!qError && cloudQuestions)
           ? cloudQuestions.map((q: any) => {
@@ -249,7 +309,6 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
               let pos = q.stimulus_media_position;
               let caption = q.stimulus_media_caption;
 
-              // Ekstrak metadata ukuran, posisi, dan tata letak jika ada di stimulus_media_url (#meta:...)
               if (q.stimulus_media_url && q.stimulus_media_url.includes('#meta:')) {
                 const parts = q.stimulus_media_url.split('#meta:');
                 const params = new URLSearchParams(parts[1] || '');
@@ -259,8 +318,18 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                 if (params.get('c')) caption = decodeURIComponent(params.get('c')!);
               }
 
+              const linkedItem = q.blueprint_item_id ? itemsMap.get(q.blueprint_item_id) : undefined;
+
               return {
                 ...q,
+                subject_name: q.subject_name || linkedItem?.subject_name,
+                grade_class: q.grade_class || linkedItem?.grade_class,
+                level: q.level || linkedItem?.level || 'SD',
+                phase: q.phase || linkedItem?.phase || 'B',
+                writer_id: q.writer_id || linkedItem?.writer_id,
+                writer_name: q.writer_name || linkedItem?.writer_name,
+                assignment_id: q.assignment_id || (linkedItem as any)?.assignment_id,
+                blueprint_item: linkedItem || q.blueprint_item,
                 stimulus_media_width: width || '120px',
                 stimulus_media_align: align || 'left',
                 stimulus_media_position: pos || 'above',
@@ -272,90 +341,25 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             })
           : [];
 
-        if (!qError && cloudQuestions && isMounted) {
-          if (cloudQuestions.length === 0) {
-            setQuestionBank([]);
-            try {
-              localStorage.setItem(QUESTION_BANK_KEY, JSON.stringify([]));
-            } catch (e) {}
-          } else {
-            setQuestionBank(mappedQuestions);
-            try {
-              localStorage.setItem(QUESTION_BANK_KEY, JSON.stringify(mappedQuestions));
-            } catch (e) {}
-          }
-        }
-
-        // Set of blueprint_item_id whose question is marked 'Selesai' in cloud
+        // Tandai status Selesai pada item kisi-kisi jika ada butir selesai
         const finishedBpItemIds = new Set(
           mappedQuestions
             .filter(q => q.status === 'Selesai' && q.blueprint_item_id)
             .map(q => q.blueprint_item_id)
         );
 
-        // 1.5 Sync Item Writers metadata from context_presets (Universal Cross-Device Author Attribution)
-        const writerMappings = await fetchBlueprintItemWritersFromCloud();
+        const finalizedCloudItems = cloudItems.map(it => ({
+          ...it,
+          workflow_status: (finishedBpItemIds.has(it.id) ? 'Selesai' : it.workflow_status) || 'Draft'
+        }));
 
-        // 2. Sync Blueprint Items with joined blueprint and subject relation
-        const { data: rawCloudItems, error: itemsError } = await supabase
-          .from('blueprint_items')
-          .select('*, blueprint:blueprints(title, subject_id, level, phase, assessment_type, subject:subjects(name))')
-          .order('question_number', { ascending: true });
-
-        if (itemsError) {
-          console.warn('Supabase blueprint items load error:', itemsError);
-          setCloudStatus('error');
-          setCloudError(itemsError.message);
-        } else {
-          setCloudStatus('connected');
-          setCloudError(null);
-        }
-
-        if (!itemsError && rawCloudItems && isMounted) {
-          if (rawCloudItems.length === 0) {
-            setItems([]);
-            try {
-              localStorage.setItem(BLUEPRINT_ITEMS_KEY, JSON.stringify([]));
-            } catch (e) {}
-          } else {
-            const cloudItems: BlueprintItem[] = rawCloudItems.map((i: any) => {
-              const rawSubName = i.blueprint?.subject?.name || '';
-              const cleanSubName = rawSubName.replace(/\s*\(.*\)/, '').trim() || i.subject_name || 'Matematika';
-              const bpPhase = i.blueprint?.phase || 'B';
-              const bpTitle = i.blueprint?.title || '';
-
-              // Ekstrak nama kelas secara akurat dari title blueprint (misal "Kelas 6", "Kelas 5", "Kelas 4", dll.)
-              const gradeMatch = bpTitle.match(/Kelas\s*([0-9]+)/i);
-              let detectedGrade = '';
-              if (gradeMatch) {
-                detectedGrade = `Kelas ${gradeMatch[1]}`;
-              } else {
-                detectedGrade = bpPhase === 'D' ? 'Kelas 7' : bpPhase === 'C' ? 'Kelas 6' : bpPhase === 'A' ? 'Kelas 1' : 'Kelas 4';
-              }
-
-              const resolvedStatus = (finishedBpItemIds.has(i.id) ? 'Selesai' : i.workflow_status) || 'Draft';
-              const writerMeta = writerMappings[i.id];
-              const resolvedWriterId = i.writer_id || writerMeta?.writer_id || null;
-              const resolvedWriterName = writerMeta?.writer_name || i.writer_name || (resolvedWriterId ? 'Penulis Terdaftar' : undefined);
-
-              return {
-                ...i,
-                writer_id: resolvedWriterId,
-                writer_name: resolvedWriterName,
-                subject_name: i.subject_name || cleanSubName,
-                grade_class: i.grade_class || `${detectedGrade} (Fase ${bpPhase})`,
-                assessment_type: i.assessment_type || i.blueprint?.assessment_type || 'SAS',
-                level: i.level || i.blueprint?.level || 'SD',
-                phase: i.phase || bpPhase,
-                workflow_status: resolvedStatus
-              };
-            });
-
-            setItems(cloudItems);
-            try {
-              localStorage.setItem(BLUEPRINT_ITEMS_KEY, JSON.stringify(cloudItems));
-            } catch (e) {}
-          }
+        if (isMounted) {
+          setItems(finalizedCloudItems);
+          setQuestionBank(mappedQuestions);
+          try {
+            localStorage.setItem(BLUEPRINT_ITEMS_KEY, JSON.stringify(finalizedCloudItems));
+            localStorage.setItem(QUESTION_BANK_KEY, JSON.stringify(mappedQuestions));
+          } catch (e) {}
         }
       } catch (err: any) {
         console.warn('Supabase blueprint/questions sync fallback:', err);
@@ -645,38 +649,121 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     alert('Naskah soal penugasan ini berhasil diajukan ke Verifikator.');
   };
 
-  // Helper: Ambil data butir soal untuk penugasan tertentu
+  // Helper: Ekstraksi angka kelas secara tepat (misal "SD - Kelas 4" -> "4", "Kelas 6" -> "6")
+  const extractGradeNumber = (str?: string | null): string => {
+    if (!str) return '';
+    const match = str.match(/(?:kelas|grade|kls)?\s*([0-9]+)/i);
+    return match ? match[1] : '';
+  };
+
+  const normalizeCleanStr = (str?: string | null): string => {
+    return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  };
+
+  // Helper: Ambil data butir soal untuk penugasan tertentu dengan isolasi ketat per paket
   const getAssignmentQuestions = (asg: QuestionWriterAssignment) => {
-    const cleanAsgSubject = (asg.subject_name || '').toLowerCase().trim();
-    const cleanAsgGrade = (asg.grade_class || '').toLowerCase().trim();
-    const cleanAsgName = (asg.user_name || '').toLowerCase().trim();
-    const normAsgUserId = toValidUUID(asg.user_id);
+    if (!asg) {
+      return { items: [], questions: [], writtenCount: 0, target: 0 };
+    }
 
+    const asgId = asg.id ? toValidUUID(asg.id) : '';
+    const asgGradeNum = extractGradeNumber(asg.grade_class);
+    const asgSubKey = normalizeCleanStr(asg.subject_name);
+    const asgUserKey = normalizeCleanStr(asg.user_name);
+    const asgUserId = asg.user_id ? toValidUUID(asg.user_id) : '';
+    const asgLevel = asg.level || (asgGradeNum && Number(asgGradeNum) >= 7 ? 'SMP' : 'SD');
+
+    // 1. Filter Blueprint Items yang secara spesifik sesuai dengan penugasan ini
     const matchedItems = items.filter(item => {
-      const itemSubject = (item.subject_name || '').toLowerCase().trim();
-      const itemGrade = (item.grade_class || '').toLowerCase().trim();
-      const itemWriterId = item.writer_id;
-      const itemWriterName = (item.writer_name || '').toLowerCase().trim();
+      // a. Jika item memiliki assignment_id eksplisit
+      if ((item as any).assignment_id && asgId && (item as any).assignment_id === asgId) {
+        return true;
+      }
 
-      const matchSub = itemSubject.includes(cleanAsgSubject) || cleanAsgSubject.includes(itemSubject);
-      const matchGrd = itemGrade.includes(cleanAsgGrade) || cleanAsgGrade.includes(itemGrade);
-      const matchW = !asg.user_id || itemWriterId === asg.user_id || toValidUUID(itemWriterId) === normAsgUserId ||
-        (itemWriterName && (itemWriterName.includes(cleanAsgName) || cleanAsgName.includes(itemWriterName)));
+      // b. Match Jenjang (SD vs SMP)
+      const itemLevel = item.level || (extractGradeNumber(item.grade_class) && Number(extractGradeNumber(item.grade_class)) >= 7 ? 'SMP' : 'SD');
+      if (asgLevel && itemLevel && asgLevel !== itemLevel) {
+        return false;
+      }
 
-      return matchSub && matchGrd && (matchW || !itemWriterId);
+      // c. Match Mata Pelajaran (WAJIB COCOK)
+      const itemSubKey = normalizeCleanStr(item.subject_name);
+      if (!asgSubKey || !itemSubKey) return false;
+      if (!itemSubKey.includes(asgSubKey) && !asgSubKey.includes(itemSubKey)) return false;
+
+      // d. Match Kelas (WAJIB ANGKA KELAS SAMA PERSIS, misal Kelas 4 vs Kelas 4)
+      const itemGradeNum = extractGradeNumber(item.grade_class);
+      if (!asgGradeNum || !itemGradeNum || asgGradeNum !== itemGradeNum) {
+        return false;
+      }
+
+      // e. Match Penulis (Writer Attribution)
+      const itemWriterId = item.writer_id ? toValidUUID(item.writer_id) : '';
+      const itemWriterKey = normalizeCleanStr(item.writer_name);
+
+      // Jika item sudah di-assign ke penulis lain, jangan klaim!
+      if (itemWriterId && asgUserId && itemWriterId !== asgUserId) {
+        if (itemWriterKey && asgUserKey && (itemWriterKey.includes(asgUserKey) || asgUserKey.includes(itemWriterKey))) {
+          return true;
+        }
+        return false;
+      }
+
+      if (itemWriterKey && asgUserKey && !itemWriterKey.includes(asgUserKey) && !asgUserKey.includes(itemWriterKey)) {
+        return false;
+      }
+
+      return true;
     });
 
     const itemIds = new Set(matchedItems.map(i => i.id));
+
+    // 2. Filter Butir Soal di questionBank (Hanya yang benar-benar milik penugasan ini)
     const matchedQuestions = questionBank.filter(q => {
-      if (q.blueprint_item_id && itemIds.has(q.blueprint_item_id)) return true;
-      const qSub = (q.subject_name || '').toLowerCase().trim();
-      const qGrd = (q.grade_class || '').toLowerCase().trim();
-      return (qSub.includes(cleanAsgSubject) || cleanAsgSubject.includes(qSub)) &&
-             (qGrd.includes(cleanAsgGrade) || cleanAsgGrade.includes(qGrd));
+      // a. Match langsung via assignment_id
+      if ((q as any).assignment_id && asgId && (q as any).assignment_id === asgId) {
+        return true;
+      }
+
+      // b. Match via blueprint_item_id yang sudah terverifikasi cocok
+      if (q.blueprint_item_id && itemIds.has(q.blueprint_item_id)) {
+        return true;
+      }
+
+      // c. Match via metadata soal yang sudah diperkaya
+      const qGradeNum = extractGradeNumber(q.grade_class || q.blueprint_item?.grade_class);
+      const qSubKey = normalizeCleanStr(q.subject_name || q.blueprint_item?.subject_name);
+      const qLevel = q.level || q.blueprint_item?.level || 'SD';
+
+      // Jenjang harus sama
+      if (asgLevel && qLevel && asgLevel !== qLevel) return false;
+
+      // Subject harus cocok dan tidak boleh kosong
+      if (!asgSubKey || !qSubKey) return false;
+      if (!qSubKey.includes(asgSubKey) && !asgSubKey.includes(qSubKey)) return false;
+
+      // Kelas harus sama persis dan tidak boleh kosong
+      if (!asgGradeNum || !qGradeNum || asgGradeNum !== qGradeNum) return false;
+
+      // Penulis (jika tertera) harus cocok
+      const qWriterId = ((q as any).writer_id || q.blueprint_item?.writer_id) ? toValidUUID((q as any).writer_id || q.blueprint_item?.writer_id) : '';
+      const qWriterKey = normalizeCleanStr((q as any).writer_name || q.blueprint_item?.writer_name);
+      if (qWriterId && asgUserId && qWriterId !== asgUserId) {
+        if (qWriterKey && asgUserKey && (qWriterKey.includes(asgUserKey) || asgUserKey.includes(qWriterKey))) {
+          return true;
+        }
+        return false;
+      }
+
+      if (qWriterKey && asgUserKey && !qWriterKey.includes(asgUserKey) && !asgUserKey.includes(qWriterKey)) {
+        return false;
+      }
+
+      return true;
     });
 
     const writtenCount = matchedQuestions.filter(q => q.question_text?.trim()).length;
-    const target = asg.target_questions || matchedItems.length || 20;
+    const target = asg.target_questions || (matchedItems.length > 0 ? matchedItems.length : 5);
 
     return {
       items: matchedItems,
@@ -2245,9 +2332,16 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       ? formatOptionsForCloud(savedQuestion.options, validQId)
       : [];
 
+    const activeAsgId = initialScope?.assignment?.id || (currentBpItem as any)?.assignment_id;
+
     const normalizedQuestion: QuestionBankItem = {
       ...savedQuestion,
       id: validQId,
+      assignment_id: activeAsgId || (savedQuestion as any).assignment_id || undefined,
+      subject_name: savedQuestion.subject_name || currentBpItem?.subject_name || selectedSubject || initialScope?.subject || undefined,
+      grade_class: savedQuestion.grade_class || currentBpItem?.grade_class || selectedGrade || initialScope?.grade || undefined,
+      level: (savedQuestion.level || currentBpItem?.level || selectedLevel || initialScope?.level || 'SD') as SchoolLevel,
+      phase: (savedQuestion.phase || currentBpItem?.phase || (initialScope?.assignment?.phase) || 'B') as Phase,
       options: formattedOptions,
       blueprint_item_id: validBpId || undefined,
       status: updatedStatus
@@ -2268,7 +2362,11 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     if (currentBpItem) {
       const updatedItems = items.map(item =>
         item.id === currentBpItem.id
-          ? { ...item, workflow_status: updatedStatus }
+          ? { 
+              ...item, 
+              assignment_id: activeAsgId || item.assignment_id,
+              workflow_status: updatedStatus 
+            }
           : item
       );
       setItems(updatedItems);

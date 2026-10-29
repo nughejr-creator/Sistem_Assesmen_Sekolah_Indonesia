@@ -94,6 +94,7 @@ export interface Blueprint {
 // Tabel 6: blueprint_items
 export interface BlueprintItem {
   id: string;
+  assignment_id?: string | null;
   blueprint_id: string;
   question_number: number;
   element: string;
@@ -122,6 +123,7 @@ export interface BlueprintItem {
 // Tabel 7: question_bank
 export interface QuestionBankItem {
   id: string;
+  assignment_id?: string | null;
   blueprint_item_id?: string | null;
   blueprint_item?: BlueprintItem;
   subject_id: string;
