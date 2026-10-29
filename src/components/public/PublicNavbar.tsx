@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   GraduationCap, 
   BookOpen, 
@@ -49,6 +49,18 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileAccordion, setMobileAccordion] = useState<'wawasan' | 'bank' | 'kreativitas' | null>(null);
+
+  // Kunci scroll halaman belakang saat drawer mobile terbuka agar mulus & bebas loncatan layout
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   // ===========================================================================
   // SUB-MENU DEFINITIONS (Hanya Judul + Ikon 3D Berwarna)
@@ -197,7 +209,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 shadow-xs transition-all duration-300">
+    <header className="sticky top-0 z-50 bg-white lg:bg-white/95 lg:backdrop-blur-md border-b-2 border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 flex items-center justify-between gap-3">
         
         {/* =====================================================================
@@ -416,7 +428,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           5. MOBILE NAVIGATION DRAWER (CLEAN WHITE MODERN AKORDEON)
       ======================================================================= */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white text-slate-800 px-4 pt-3 pb-6 shadow-xl max-h-[calc(100vh-80px)] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="lg:hidden fixed inset-x-0 top-16 bg-white text-slate-800 px-4 pt-3 pb-8 shadow-2xl border-b-2 border-slate-200 max-h-[calc(100dvh-64px)] overflow-y-auto z-50 will-change-transform transform-gpu animate-in fade-in duration-100">
           <div className="space-y-2 mb-4">
             
             {/* Beranda */}

@@ -66,7 +66,9 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
       <section id="beranda" className="relative pt-4 pb-7 sm:pt-6 sm:pb-8 overflow-hidden bg-gradient-to-b from-[#071328] via-[#091d3c] to-[#040e1f] text-white border-b border-slate-800">
         
         {/* Background Decorative Blobs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-gradient-to-tr from-blue-600/20 via-sky-500/10 to-emerald-500/10 blur-3xl -z-10 rounded-full pointer-events-none" />
+        {/* Background Decorative Blobs - Ringan di Mobile, Mewah di Desktop */}
+        <div className="hidden sm:block absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-gradient-to-tr from-blue-600/20 via-sky-500/10 to-emerald-500/10 blur-3xl -z-10 rounded-full pointer-events-none" />
+        <div className="sm:hidden absolute top-0 left-1/2 -translate-x-1/2 w-72 h-36 bg-sky-500/10 blur-xl -z-10 rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -74,7 +76,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             
             {/* Official Badge Tag */}
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-[11px] font-bold shadow-xs">
-              <Sparkles className="w-3 h-3 text-sky-400 animate-spin" />
+              <Sparkles className="w-3 h-3 text-sky-400 animate-pulse" />
               <span>Platform Evaluasi Pendidikan Standar Nasional • Jenjang SD & SMP</span>
             </div>
 

@@ -1,4 +1,20 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+// Self-contained Vercel Serverless Function Types (Zero External Dependency)
+interface VercelRequest {
+  method?: string;
+  body?: any;
+  query?: Record<string, string | string[]>;
+}
+
+interface VercelResponse {
+  status: (statusCode: number) => VercelResponse;
+  json: (body: any) => void;
+  send: (body: any) => void;
+}
+
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -7,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { schoolId, shardUrl, shardAnonKey } = req.body;
+    const { schoolId, shardUrl, shardAnonKey } = req.body || {};
 
     if (!schoolId || !shardUrl || !shardAnonKey) {
       return res.status(400).json({
@@ -48,46 +64,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const shardByUsername = new Map(shardUsers.map(u => [(u.username || '').toLowerCase().trim(), u]));
 
     let matchedStudents = 0;
-    let matchedProctors = 0;
-    let credMismatches = 0;
-    const missing: string[] = [];
+    let mismatchedStudents = 0;
+    const discrepancies: any[] = [];
 
-    const mStudents = masterUsers.filter(u => u.role === 'student');
-    const mProctors = masterUsers.filter(u => u.role === 'proctor');
-    const sStudents = shardUsers.filter(u => u.role === 'student');
-    const sProctors = shardUsers.filter(u => u.role === 'proctor');
+    for (const mUser of masterUsers) {
+      const match = shardById.get(mUser.id) || shardByUsername.get((mUser.username || '').toLowerCase().trim());
 
-    for (const mu of masterUsers) {
-      const uName = (mu.username || '').toLowerCase().trim();
-      const su = shardById.get(mu.id) || shardByUsername.get(uName);
-      if (!su) {
-        missing.push(mu.username);
+      if (!match) {
+        mismatchedStudents++;
+        discrepancies.push({
+          userId: mUser.id,
+          username: mUser.username,
+          name: mUser.full_name,
+          issue: 'Data akun siswa ada di Master Cloud tetapi belum tersinkronisasi di Shard Node lokal.'
+        });
         continue;
       }
-      if (mu.role === 'student') matchedStudents++;
-      if (mu.role === 'proctor') matchedProctors++;
 
-      if ((mu.exam_card_password || '') !== (su.exam_card_password || '') || (mu.password || '') !== (su.password || '')) {
-        credMismatches++;
+      // Check parity on password/hash
+      const passParity = (mUser.password === match.password) || (mUser.exam_card_password === match.exam_card_password);
+      if (!passParity) {
+        mismatchedStudents++;
+        discrepancies.push({
+          userId: mUser.id,
+          username: mUser.username,
+          name: mUser.full_name,
+          issue: 'Kredensial / Password kartu ujian siswa di Shard tidak identik dengan Master Hub.'
+        });
+      } else {
+        matchedStudents++;
       }
     }
 
-    const isValid = mStudents.length === sStudents.length && mProctors.length === sProctors.length && missing.length === 0 && credMismatches === 0;
+    const totalStudents = masterUsers.length;
+    const isHealthy = mismatchedStudents === 0 && totalStudents > 0;
 
     return res.status(200).json({
-      status: isValid ? 'VALID_READY_FOR_CBT' : 'MISMATCH_DETECTED',
+      success: true,
       schoolId,
-      summary: {
-        students: { master: mStudents.length, shard: sStudents.length, matched: matchedStudents, missing: mStudents.length - matchedStudents },
-        proctors: { master: mProctors.length, shard: sProctors.length, matched: matchedProctors, missing: mProctors.length - matchedProctors },
-        credentialMismatches: credMismatches
+      healthy: isHealthy,
+      audit: {
+        totalMaster: totalStudents,
+        totalShard: shardUsers.length,
+        matchedStudents,
+        mismatchedStudents,
+        discrepancies: discrepancies.slice(0, 15) // Top 15 samples
       },
-      diagnostics: {
-        missingUsernames: missing
-      },
-      auditedAt: new Date().toISOString()
+      checkedAt: new Date().toISOString()
     });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message || 'Internal audit error' });
+
+  } catch (error: any) {
+    return res.status(500).json({
+      error: 'Terjadi kesalahan sistem saat validasi partisi kluster.',
+      details: error.message
+    });
   }
 }
