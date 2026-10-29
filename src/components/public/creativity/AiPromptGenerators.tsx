@@ -303,7 +303,7 @@ export const AiPromptGenerators: React.FC<AiPromptGeneratorsProps> = ({
 5. Mendengarkan saat guru atau teman sedang berbicara`);
   const [atrTemaVisual, setAtrTemaVisual] = useState('Ceria & Penuh Warna');
   const [atrUkuran, setAtrUkuran] = useState('Poster Tegak A3/A4 (Portrait)');
-  const [atrFormatLuaran, setAtrFormatLuaran] = useState<'ChatGPT' | 'Claude' | 'Gemini' | 'Canva'>('ChatGPT');
+  const [atrFormatLuaran, setAtrFormatLuaran] = useState<'ChatGPT' | 'Claude' | 'Gemini' | 'Canva' | 'ImageAI'>('ChatGPT');
 
   // Handler Perubahan Fase Cascading untuk Atribut Kelas
   const handleAtrFaseChange = (newFase: 'Fase A' | 'Fase B' | 'Fase C' | 'Fase D') => {
@@ -797,40 +797,68 @@ Sajikan dalam bahasa Indonesia yang santun, elegan, mendidik, dan langsung siap 
           ? 'Gunakan pendekatan visual remaja Fase D (SMP): desain modern, tipografi bersih estetis (clean sans-serif), infografis edukatif yang berkelas, layout proporsional dewasa, dan hindari elemen kekanak-kanakan.'
           : `Gunakan pendekatan visual ramah anak ${atrFase} (SD): ilustrasi ramah anak yang ceria, kontras warna hangat yang nyaman di mata, tipografi besar dan jelas terbaca dari jarak 3-5 meter, serta tata letak sederhana yang minim teks panjang berbelit.`;
 
-        // Target AI & Format Luaran Desain (ChatGPT, Claude, Gemini, Canva)
-        let instruksiFormat = '';
+        // Target AI & Format Luaran Desain (ChatGPT, Claude, Gemini, Canva, ImageAI)
+        if (atrFormatLuaran === 'ImageAI') {
+          return `Create a charming, high-resolution educational classroom display poster for Indonesian elementary school:
+
+1. POSTER HEADER & IDENTITY:
+- Main Title at the top (bold, playful, clear font): "${atrJudul}"
+- Sub-title / School Badge: "${atrSekolah} • Kelas ${atrKelas}"
+
+2. MAIN VISUAL SCENE:
+- Adorable 2D cartoon illustration of cheerful Indonesian elementary school boys and girls wearing red and white school uniform (seragam merah putih SD / hijab untuk siswi).
+- The students are happily practicing:
+${atrKonten ? atrKonten.split('\n').filter(Boolean).map(line => `  * ${line.replace(/^\d+[\.\)]\s*/, '')}`).join('\n') : '  * Saling menghargai, menjaga kebersihan kelas, berbicara sopan, berani mencoba hal baru, dan mendengarkan guru'}
+
+3. ART STYLE & COMPOSITION:
+- Style: Clean 2D modern children's book illustration, flat vector style, vibrant friendly colors (${atrTemaVisual}).
+- Background: Cheerful elementary classroom interior with wooden board, blue sky outside window, sun, books, potted plants, and warm ambient light.
+- Layout: ${atrUkuran.includes('Portrait') ? 'Vertical poster portrait layout (3:4 aspect ratio)' : atrUkuran.includes('Landscape') ? 'Horizontal banner layout (16:9)' : 'Square layout (1:1)'}.
+
+4. CRITICAL NEGATIVE CONSTRAINTS (STRICT):
+- ONLY render the clean, finished educational poster artwork.
+- DO NOT render any color palette swatches or HEX code tables on the image.
+- DO NOT draw any technical documentation, guidelines, or prompt instructions on the poster.
+- NO spelling errors, NO distorted hands, NO blurry faces, clean text on header.`;
+        }
+
+        let instruksiTargetAi = '';
         if (atrFormatLuaran === 'ChatGPT') {
-          instruksiFormat = `FORMAT OPTIMAL UNTUK OPENAI CHATGPT (GPT-4o):
-Instruksikan ChatGPT untuk menyajikan:
-1. TABEL PANDUAN WARNA: Kode HEX, nama warna, dan filosofi psikologi warna ruang kelas ramah anak (${atrTemaVisual}).
-2. TIPOGRAFI RAMAH ANAK: Pasangan font Google Fonts / Canva yang jelas terbaca dari jarak pandang kelas 3–5 meter.
+          instruksiTargetAi = `TARGET ENGINE: OPENAI CHATGPT (GPT-4o)
+Sajikan seluruh hasil dalam format DOKUMEN TEKS MARKDOWN yang rapi:
+1. TABEL PANDUAN WARNA: 3–4 Kode HEX, nama warna, dan filosofi psikologi warna ruang kelas (${atrTemaVisual}) untuk disalin ke Canva.
+2. TIPOGRAFI RAMAH ANAK: Pasangan font Google Fonts / Canva yang jelas terbaca dari jarak 3–5 meter.
 3. COPYWRITING REDAKSI LENGKAP: Teks display bernada positif, inspiratif, dan mudah dipahami siswa ${atrFase}.
 4. HIERARKI TATA LETAK GRID: Struktur 3 bagian (Header, Konten Utama, Footer) dengan panduan ruang kosong (white space).
-5. PROMPT DALL-E / AI IMAGE OPSIONAL: 1 prompt bahasa Inggris siap salin jika guru ingin meng-generate ilustrasi pendukung.`;
+5. REKOMENDASI BAHAN CETAK: Ukuran kertas ${atrUkuran}, jenis kertas ekonomis (Art Carton laminasi doff/glossy), dan tips penempelan di dinding kelas.`;
         } else if (atrFormatLuaran === 'Claude') {
-          instruksiFormat = `FORMAT OPTIMAL UNTUK CLAUDE (ANTHROPIC):
-Instruksikan Claude untuk menyajikan:
+          instruksiTargetAi = `TARGET ENGINE: CLAUDE (ANTHROPIC)
+Sajikan seluruh hasil dalam format DOKUMEN TEKS MARKDOWN bernalar pedagogis mendalam:
 1. ANALISIS KELAYAKAN VISUAL & ERGONOMI KELAS: Kesesuaian tata letak dengan rentang perhatian dan tinggi pandang anak ${atrFase}.
 2. DESAIN SISTEM INTERAKTIF SISWA: Mekanisme pelibatan aktif siswa (kantong nama gantung, jepitan jemuran mini karya anak, stiker velcro check-in perasaan, kartu saku lepas-pasang).
 3. FORMULASI TEKS PEMBIASAAN: Kalimat afirmasi yang menumbuhkan motivasi intrinsik dan rasa memiliki (sense of belonging) di kelas.
 4. SPESIFIKASI PRODUKSI PRAKTIS: Panduan cetak ${atrUkuran} dan ketinggian gantung ramah anak (eye-level).`;
         } else if (atrFormatLuaran === 'Gemini') {
-          instruksiFormat = `FORMAT OPTIMAL UNTUK GOOGLE GEMINI:
-Instruksikan Google Gemini untuk menyajikan:
+          instruksiTargetAi = `TARGET ENGINE: GOOGLE GEMINI
+Sajikan seluruh hasil dalam format DOKUMEN TEKS MARKDOWN visual dinamis:
 1. STRUKTUR DISPLAY MODULAR: Konsep tata letak berbasis modul visual yang fleksibel dan mudah diganti secara berkala.
 2. INTEGRASI GOOGLE WORKSPACE FOR EDUCATION: Saran pembuatan display menggunakan Google Slides / Canva for Education.
 3. PALET WARNA & SARAN ILUSTRASI: Palet warna harmonis berstandar desain ramah anak dengan rekomendasi keyword pencarian ikon/vektor.
 4. AKTIVITAS PERESMIAN DISPLAY: 1 aktivitas ice-breaking peresmian display ini bersama murid agar anak merasa memiliki ruang belajarnya.`;
         } else {
-          instruksiFormat = `FORMAT EKSEKUSI DI CANVA & APLIKASI DESAIN:
-Instruksikan langkah operasional pembuatan langsung di aplikasi Canva:
+          instruksiTargetAi = `TARGET ENGINE: CANVA & APLIKASI DESAIN
+Sajikan langkah operasional pembuatan langsung di aplikasi Canva:
 1. SPESIFIKASI KANVAS: Ukuran presisi kanvas (${atrUkuran}) dalam piksel/sentimeter dengan margin aman cetak.
 2. KEYWORDS ELEMEN CANVA: Kata kunci pencarian elemen grafis dan ilustrasi di Canva (bahasa Indonesia & Inggris).
 3. KOMBINASI FONT CANVA GRATIS: Rekomendasi font judul dan isi yang tersedia di akun Canva reguler maupun Canva for Education.
 4. PANDUAN UNDUH & CETAK: Panduan export format PDF Print (CMYK) siap bawa ke percetakan.`;
         }
 
-        return `Bertindaklah sebagai seorang ${roleLabel}. Rancanglah konsep tata letak display visual, atribut dekorasi kelas interaktif, dan panduan grafis lingkungan belajar dengan spesifikasi berikut:
+        return `[INSTRUKSI FORMAT UTAMA - SANGAT PENTING]:
+Jawablah HANYA DALAM BENTUK TEKS DOKUMEN MARKDOWN TERTULIS.
+DILARANG KERAS MENGHASILKAN GAMBAR / DILARANG MEMANGGIL TOOL DALL-E ATAU IMAGE GENERATOR. Tugas Anda adalah memberikan dokumen teks panduan konseptual, tabel warna, rekomendasi font, dan naskah copywriting display kelas berikut agar guru dapat langsung mengaplikasikannya di Canva atau ruang kelas:
+
+Bertindaklah sebagai seorang ${roleLabel}. Rancanglah konsep tata letak display visual, atribut dekorasi kelas interaktif, dan panduan grafis lingkungan belajar dengan spesifikasi berikut:
 
 1. IDENTITAS DISPLAY KELAS
 - Satuan Pendidikan & Ruang: ${atrSekolah}
@@ -839,7 +867,7 @@ Instruksikan langkah operasional pembuatan langsung di aplikasi Canva:
 - Judul Display: "${atrJudul}"
 - Nuansa / Tema Visual: ${atrTemaVisual}
 - Ukuran & Rasio Cetak: ${atrUkuran}
-- Target Engine & Format: ${atrFormatLuaran === 'Canva' ? 'Panduan Layout & Skema Warna Canva' : `Instruksi Prompt Siap Pakai untuk ${atrFormatLuaran}`}
+- Target Format: Dokumen Panduan Teks Tertulis untuk ${atrFormatLuaran}
 
 2. KONTEN & BUTIR TEKS DISPLAY
 ${atrKonten ? atrKonten : '(Buatkan rumusan poin-poin redaksional yang inspiratif dan tepat untuk kategori ini)'}
@@ -848,21 +876,21 @@ ${atrKonten ? atrKonten : '(Buatkan rumusan poin-poin redaksional yang inspirati
 - Karakter Visual: ${penyesuaianUsia}
 - Harmoni Nuansa: Tema "${atrTemaVisual}" harus mencerminkan suasana belajar yang positif, merangsang konsentrasi tanpa membuat indra penglihatan anak lelah.
 
-4. FORMAT OUTPUT WAJIB YANG HARUS DISAJIKAN:
+4. FORMAT DOKUMEN TEKS YANG WAJIB DISAJIKAN:
 A. SPESIFIKASI PALET WARNA (COLOR PALETTE):
-   - 3–4 Kode Warna HEX spesifik (Warna Dominan, Warna Pendukung, dan Warna Aksen/Highlight) beserta penjelasan psikologi warna dan peruntukan elemennya.
+   - 3–4 Kode Warna HEX spesifik (Warna Dominan, Warna Pendukung, dan Warna Aksen/Highlight) beserta penjelasan psikologi warna dan peruntukan elemennya (sajikan dalam tabel markdown).
 B. HIERARKI TATA LETAK & GRID LAYOUT:
    - Bagian Header (Judul Display): Ukuran font, posisi penempatan, dan gaya visual.
    - Bagian Body (Kartu / Kotak Konten): Tata letak grid atau alur pandang (Z-pattern / F-pattern), pembagian ruang kosong (white space), dan penataan ikon/vektor pendukung.
    - Bagian Footer / Identitas: Penempatan logo sekolah, nama kelas, atau afirmasi penutup.
 C. FITUR INTERAKTIVITAS SISWA:
    - Rekomendasi mekanisme keterlibatan aktif siswa (misal: kantong nama gantung, jepitan jemuran mini untuk karya, stiker velcro untuk check-in perasaan, pin pohon prestasi, atau kartu saku lepas-pasang).
-D. ${instruksiFormat}
+D. ${instruksiTargetAi}
 E. TIPS PEMASANGAN DINDING & BAHAN CETAK:
    - Rekomendasi ketinggian pasang setinggi mata anak (eye-level) sesuai rata-rata tinggi badan siswa ${atrFase}.
    - Saran bahan cetak ekonomis namun tahan lama (misal: Art Carton 260/310 gsm, laminasi doff/glossy ramah spidol wipe-and-clean, atau albatros/fleksi).
 
-Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan langsung siap dieksekusi oleh guru maupun tim tata ruang sekolah.`;
+PENTING: Jangan buat gambar grafis! Sajikan seluruh panduan di atas sebagai TEKS DOKUMEN MARKDOWN yang terstruktur rapi, lengkap, dan siap disalin oleh guru.`;
       }
     }
   ];
@@ -1243,9 +1271,8 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
                       ))}
                     </div>
                   </div>
+                  </div>
                 </div>
-
-              </div>
 
             </div>
           )}
@@ -1474,6 +1501,8 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
                       </label>
                     ))}
                   </div>
+
+
                 </div>
 
               </div>
@@ -2336,12 +2365,13 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
                   <label className="block font-bold text-slate-700 mb-1.5 text-[11px]">
                     Target AI & Format Luaran Desain
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                     {[
-                      { id: 'ChatGPT', label: 'ChatGPT', sub: 'GPT-4o / Plus', icon: '🤖' },
-                      { id: 'Claude', label: 'Claude', sub: '3.5 Sonnet', icon: '🧠' },
-                      { id: 'Gemini', label: 'Gemini', sub: 'Google AI', icon: '✨' },
-                      { id: 'Canva', label: 'Canva', sub: 'Layout Grafis', icon: '🎨' }
+                      { id: 'ChatGPT', label: 'ChatGPT', sub: 'Teks Panduan (GPT-4o)', icon: '🤖' },
+                      { id: 'Claude', label: 'Claude', sub: 'Teks Panduan (Sonnet)', icon: '🧠' },
+                      { id: 'Gemini', label: 'Gemini', sub: 'Teks Panduan (Google)', icon: '✨' },
+                      { id: 'Canva', label: 'Canva', sub: 'Langkah Desain Kanvas', icon: '🎨' },
+                      { id: 'ImageAI', label: 'DALL-E 3', sub: 'Buat Gambar Poster', icon: '🖼️' }
                     ].map((opt) => (
                       <label 
                         key={opt.id}
@@ -2366,6 +2396,18 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
                       </label>
                     ))}
                   </div>
+
+                  {atrFormatLuaran === 'ImageAI' ? (
+                    <div className="mt-2.5 p-2.5 rounded-xl bg-violet-50 border border-violet-200 text-[11px] text-violet-900 flex items-start gap-2 shadow-2xs">
+                      <span className="text-sm shrink-0">🖼️</span>
+                      <span><strong>Mode Buat Gambar Poster:</strong> Salin prompt ini dan tempelkan ke <strong>ChatGPT Plus (DALL-E 3)</strong> atau AI Image Generator. AI akan langsung menggambar poster display bersih yang cantik <em>tanpa menambahkan tabel teks instruksi di dalam gambar</em>.</span>
+                    </div>
+                  ) : (
+                    <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2 shadow-2xs">
+                      <span className="text-sm shrink-0">📝</span>
+                      <span><strong>Mode Dokumen Teks:</strong> Prompt ini menyertakan perintah tegas agar AI menyajikan teks tertulis (copywriting, tabel kode warna HEX, dan font) untuk Anda salin ke Canva (AI dicegah memanggil generator gambar).</span>
+                    </div>
+                  )}
                 </div>
 
               </div>
