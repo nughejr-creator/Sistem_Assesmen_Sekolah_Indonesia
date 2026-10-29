@@ -37,7 +37,8 @@ import {
   Loader2,
   Lock,
   Download,
-  FileJson
+  FileJson,
+  WifiOff
 } from 'lucide-react';
 
 // Evaluator Standar ANBK Terpadu: Hitung skor butir soal secara real-time
@@ -179,6 +180,18 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   const [examScore, setExamScore] = useState<number | null>(null);
   const [isTerminatedByProctor, setIsTerminatedByProctor] = useState(false);
   const isSelfSubmittingRef = React.useRef(false);
+  const [isOffline, setIsOffline] = useState<boolean>(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Resolusi ID Sekolah Siswa secara konsisten di seluruh siklus pengerjaan asesmen
   const schoolIdResolved = React.useMemo(() => {
@@ -1596,6 +1609,14 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
 
         </div>
       </header>
+
+      {/* Offline Notice Banner - Hanya muncul jika internet terputus */}
+      {isOffline && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold flex items-center justify-center space-x-2 shadow-sm animate-slide-down">
+          <WifiOff className="w-4 h-4 shrink-0" />
+          <span>Koneksi internet terputus sementara. Jangan khawatir, jawaban adik-adik tetap tersimpan aman di HP.</span>
+        </div>
+      )}
 
       {/* CBT Body Arena - Fullscreen edge-to-edge */}
       <main className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col lg:flex-row gap-6">

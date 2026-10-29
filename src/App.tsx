@@ -138,7 +138,7 @@ export const App: React.FC = () => {
     );
   }
 
-  // 2. If user is a student, direct them immediately to the CBT Exam Arena
+  // 2. If user is a student, direct them immediately to the CBT Exam Arena (Layar bersih tanpa icon melayang)
   if (currentUser.role === 'student') {
     return (
       <div className="relative">
@@ -147,7 +147,6 @@ export const App: React.FC = () => {
           initialToken={initialExamToken}
           onLogout={handleLogout}
         />
-        <NetworkStatusIndicator />
       </div>
     );
   }
