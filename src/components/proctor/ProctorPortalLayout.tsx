@@ -11,6 +11,7 @@ import { ProctorSupervisorView } from './ProctorSupervisorView';
 import { ProctorAttendanceView } from './ProctorAttendanceView';
 import { ExamBapView } from './ExamBapView';
 import { ExamScoreRecapView } from './ExamScoreRecapView';
+import { ProctorServerDownloadView } from './ProctorServerDownloadView';
 import { UserProfileMenu } from '../common/RoleSwitcher';
 import {
   Activity,
@@ -35,7 +36,8 @@ import {
   Maximize2,
   Minimize2,
   Sparkles,
-  School as SchoolIcon
+  School as SchoolIcon,
+  Server
 } from 'lucide-react';
 
 interface ProctorPortalLayoutProps {
@@ -53,7 +55,8 @@ export type ProctorTab =
   | 'students'
   | 'supervisors'
   | 'grades'
-  | 'print-reports';
+  | 'print-reports'
+  | 'server-download';
 
 export const ProctorPortalLayout: React.FC<ProctorPortalLayoutProps> = ({
   currentUser,
@@ -187,6 +190,18 @@ export const ProctorPortalLayout: React.FC<ProctorPortalLayoutProps> = ({
           id: 'print-reports' as ProctorTab,
           label: 'Cetak Nilai & Leger',
           icon: Printer
+        }
+      ]
+    },
+    {
+      groupTitle: 'SERVER & APLIKASI',
+      items: [
+        {
+          id: 'server-download' as ProctorTab,
+          label: 'Server CBT Portable',
+          icon: Server,
+          badge: 'Semi-Online',
+          badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
         }
       ]
     }
@@ -486,6 +501,11 @@ export const ProctorPortalLayout: React.FC<ProctorPortalLayoutProps> = ({
               <ExamScoreRecapView school={school} defaultPrintMode={true} />
             )}
 
+            {/* 10. Tab: Server Proktor Portable (Semi-Online) */}
+            {activeTab === 'server-download' && (
+              <ProctorServerDownloadView />
+            )}
+
           </div>
         </main>
 
@@ -569,7 +589,30 @@ export const ProctorPortalLayout: React.FC<ProctorPortalLayoutProps> = ({
               </div>
             </div>
 
-            {/* 4. Quick Help Box */}
+            {/* 4. Server Semi-Online Widget */}
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-3.5 border border-slate-700 space-y-2.5 text-xs shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[11px] text-emerald-400 flex items-center space-x-1.5">
+                  <Server className="w-3.5 h-3.5" />
+                  <span>Server Semi-Online</span>
+                </span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30">
+                  2.68 MB
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Ujian tanpa internet di lab dengan laptop proktor sebagai server lokal.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('server-download')}
+                className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-xl shadow-xs flex items-center justify-center space-x-1 transition-all"
+              >
+                <span>Buka Pusat Unduhan</span>
+              </button>
+            </div>
+
+            {/* 5. Quick Help Box */}
             <div className="p-3 bg-brand-50 border border-brand-200 rounded-xl text-brand-900 text-xs">
               <div className="flex items-center space-x-1.5 font-bold mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-brand-600" />

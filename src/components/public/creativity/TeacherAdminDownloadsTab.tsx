@@ -1,8 +1,18 @@
 import React from 'react';
-import { FileSpreadsheet, Download, FileText, CheckCircle2, Calendar, Users, ClipboardCheck } from 'lucide-react';
+import { FileSpreadsheet, Download, FileText, CheckCircle2, Calendar, Users, ClipboardCheck, Server } from 'lucide-react';
 
 export const TeacherAdminDownloadsTab: React.FC = () => {
   const adminTemplates = [
+    {
+      id: 'adm-server',
+      title: 'SASI CBT - Paket Server Proktor Portable (Moda Semi-Online Ruang Ujian)',
+      format: 'ZIP (Server Windows)',
+      size: '2.68 MB',
+      downloads: 840,
+      description: 'Paket server mini lokal untuk proktor. Tampilan web disajikan lewat jaringan WiFi lokal sekolah tanpa kuota internet siswa (0 MB kuota), aman dari sinyal lemot, dan tahan mati lampu.',
+      badge: 'Aplikasi Proktor',
+      url: '/downloads/SASI_CBT_SERVER_PORTABLE.zip'
+    },
     {
       id: 'adm-1',
       title: 'Buku Nilai Siswa & Format Rekap Otomatis Rapor Kurikulum Merdeka',
@@ -52,10 +62,10 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
       <div className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-black text-slate-900">
-            Pusat Template Administrasi Guru Sekolah Dasar
+            Pusat Template Administrasi Guru & Aplikasi Ujian
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Unduh berkas siap pakai format Word & Excel (DOCX/XLSX) yang sudah dilengkapi rumus otomatis untuk meringankan beban administrasi Anda.
+            Unduh berkas siap pakai format Word & Excel (DOCX/XLSX) serta aplikasi server CBT semi-online untuk meringankan beban administrasi Anda.
           </p>
         </div>
 
@@ -69,15 +79,27 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
         {adminTemplates.map(item => (
           <div 
             key={item.id}
-            className="bg-white p-6 rounded-3xl border-2 border-slate-300 hover:border-emerald-500 hover:shadow-lg transition-all flex flex-col justify-between"
+            className={`bg-white p-6 rounded-3xl border-2 transition-all flex flex-col justify-between ${
+              item.id === 'adm-server' 
+                ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/30' 
+                : 'border-slate-300 hover:border-emerald-500 hover:shadow-lg'
+            }`}
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border-2 border-emerald-200">
+                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border-2 ${
+                  item.id === 'adm-server'
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}>
                   {item.badge}
                 </span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                  item.format.includes('XLSX') ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-sky-100 border-sky-300 text-sky-900'
+                  item.format.includes('ZIP')
+                    ? 'bg-amber-100 border-amber-300 text-amber-900'
+                    : item.format.includes('XLSX') 
+                      ? 'bg-emerald-100 border-emerald-300 text-emerald-900' 
+                      : 'bg-sky-100 border-sky-300 text-sky-900'
                 }`}>
                   {item.format}
                 </span>
@@ -94,20 +116,26 @@ export const TeacherAdminDownloadsTab: React.FC = () => {
               <div className="flex items-center space-x-2 text-[11px] text-slate-400">
                 <span>Ukuran: {item.size}</span>
                 <span>•</span>
-                <span>{item.downloads}x diunduh oleh guru</span>
+                <span>{item.downloads}x diunduh</span>
               </div>
             </div>
 
             <div className="pt-4 mt-4 border-t-2 border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500 italic">Format Standar Nasional</span>
+              <span className="text-[11px] text-slate-500 italic">
+                {item.id === 'adm-server' ? 'Windows 7/8/10/11' : 'Format Standar Nasional'}
+              </span>
 
               <a
                 href={item.url}
                 download
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold border-2 border-slate-700 hover:border-slate-600 shadow-2xs flex items-center space-x-1.5 transition-colors"
+                className={`px-4 py-2 rounded-xl text-xs font-bold border-2 shadow-2xs flex items-center space-x-1.5 transition-colors ${
+                  item.id === 'adm-server'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-700 hover:border-slate-600'
+                }`}
               >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Unduh Template</span>
+                <Download className={`w-3.5 h-3.5 ${item.id === 'adm-server' ? 'text-white' : 'text-emerald-400'}`} />
+                <span>{item.id === 'adm-server' ? 'Unduh Paket (.ZIP)' : 'Unduh Template'}</span>
               </a>
             </div>
           </div>
