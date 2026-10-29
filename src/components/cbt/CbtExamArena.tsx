@@ -20,6 +20,8 @@ import {
   Type, 
   HelpCircle, 
   CheckCircle, 
+  CheckCircle2,
+  Award,
   AlertCircle, 
   ChevronLeft, 
   ChevronRight, 
@@ -176,6 +178,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [examScore, setExamScore] = useState<number | null>(null);
   const [isTerminatedByProctor, setIsTerminatedByProctor] = useState(false);
+  const isSelfSubmittingRef = React.useRef(false);
 
   // Resolusi ID Sekolah Siswa secara konsisten di seluruh siklus pengerjaan asesmen
   const schoolIdResolved = React.useMemo(() => {
@@ -730,6 +733,12 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   // Handler Intervensi Proktor (Force Submit / Selesai Sepihak)
   const handleForceComplete = React.useCallback((newPayload: any) => {
     if (!newPayload) return;
+    // Guard: Jika siswa sendiri yang mengumpulkan secara mandiri, abaikan intervensi proktor
+    if (isSelfSubmittingRef.current) {
+      console.log('[CBT Arena] Mengabaikan event forceComplete karena siswa mengumpulkan secara mandiri.');
+      return;
+    }
+
     if (newPayload.status === 'completed') {
       console.log('[CBT Arena] Sesi pengerjaan telah diselesaikan oleh Proktor (Push WebSocket / Action Intercept).', newPayload);
       setIsTerminatedByProctor(true);
@@ -796,7 +805,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
         .select('status, final_score')
         .maybeSingle();
 
-      if (updatedAttempt && updatedAttempt.status === 'completed') {
+      if (updatedAttempt && updatedAttempt.status === 'completed' && !isSelfSubmittingRef.current) {
         handleForceComplete(updatedAttempt);
       }
     } catch (e) {
@@ -830,7 +839,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
     const clusterClient = getSupabaseClientForSchool(student.school_id);
 
     const onForceReceived = (payload: any) => {
-      if (!isMounted || !payload) return;
+      if (!isMounted || !payload || isSelfSubmittingRef.current) return;
       handleForceComplete(payload);
     };
 
@@ -980,6 +989,8 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   // Submit & Scoring Selesai Ujian (Smart Hybrid Evaluator & Atomic Batch Submission)
   const handleFinishExam = async () => {
     if (isSubmittingExam) return;
+    isSelfSubmittingRef.current = true;
+    setIsTerminatedByProctor(false);
     setIsSubmittingExam(true);
 
     try {
@@ -1109,6 +1120,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
         }
       } catch (e) {}
 
+      setIsTerminatedByProctor(false);
       setShowFinishConfirm(false);
       setPhase('completed');
     } catch (err) {
@@ -1383,31 +1395,41 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   // =========================================================================
   if (phase === 'completed') {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-xl border border-slate-200 text-center space-y-4 animate-scale-up">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 animate-fade-in">
+        <div className="bg-white rounded-3xl max-w-md w-full p-7 sm:p-8 shadow-xl border border-slate-200 text-center space-y-4 animate-scale-up">
           {isTerminatedByProctor ? (
             <>
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 mx-auto shadow-xs">
-                <ShieldAlert className="w-10 h-10" />
+              {/* TAMPILAN 1: DIAKHIRI SEPIHAK OLEH PROKTOR */}
+              <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-amber-700 mx-auto shadow-xs border-2 border-amber-200">
+                <ShieldAlert className="w-9 h-9" />
               </div>
-              <h2 className="text-xl font-black text-slate-900">Ujian Telah Diakhiri oleh Proktor</h2>
+
+              <div>
+                <span className="px-3 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-300 inline-block mb-2">
+                  Intervensi Pengawas Ruangan
+                </span>
+                <h2 className="text-xl font-black text-slate-900">Ujian Telah Diakhiri oleh Proktor</h2>
+              </div>
+
               <p className="text-xs text-slate-600 leading-relaxed">
-                Halo <strong>{student.full_name}</strong>, sesi asesmen Anda telah diselesaikan dan dikumpulkan secara resmi dari meja <strong>Proktor / Pengawas Ruangan</strong>.
+                Halo <strong>{student.full_name}</strong>, sesi asesmen Anda telah diselesaikan dan ditarik secara resmi dari meja <strong>Proktor / Pengawas Ruangan</strong>.
               </p>
 
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 space-y-1.5 text-left">
-                <div className="flex justify-between">
-                  <span>Jumlah Soal Terjawab:</span>
-                  <strong className="text-emerald-700">{answeredCount} dari {questions.length} Soal</strong>
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-700 space-y-2 text-left">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Jumlah Soal Terjawab:</span>
+                  <strong className="text-slate-900">{answeredCount} dari {questions.length} Soal</strong>
                 </div>
-                <div className="flex justify-between">
-                  <span>Status Asesmen:</span>
-                  <strong className="text-amber-800 font-bold">Diakhiri Sepihak oleh Proktor</strong>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Status Asesmen:</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold border border-amber-300">
+                    Diakhiri Sepihak oleh Proktor
+                  </span>
                 </div>
               </div>
 
               {examScore !== null && (
-                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-700">Skor / Nilai Asesmen:</span>
                     <span className="text-xl font-black text-amber-900">{examScore} / 100</span>
@@ -1421,7 +1443,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center space-x-2 mt-4"
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center space-x-2 mt-4"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Selesai dan Kembali ke Halaman Login</span>
@@ -1429,33 +1451,43 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
             </>
           ) : (
             <>
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mx-auto shadow-xs">
-                <CheckCircle className="w-10 h-10" />
+              {/* TAMPILAN 2: SELESAI SECARA NORMAL OLEH SISWA */}
+              <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 mx-auto shadow-xs border-2 border-emerald-200">
+                <CheckCircle2 className="w-9 h-9" />
               </div>
-              <h2 className="text-xl font-black text-slate-900">Ujian Telah Selesai!</h2>
+
+              <div>
+                <span className="px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200 inline-block mb-2">
+                  Pengumpulan Mandiri Berhasil
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Asesmen Telah Selesai!</h2>
+              </div>
+
               <p className="text-xs text-slate-600 leading-relaxed">
-                Terima kasih, <strong>{student.full_name}</strong>. Seluruh jawaban Anda telah berhasil disimpan dan diserahkan ke server asesmen nasional.
+                Selamat, <strong>{student.full_name}</strong>! Seluruh lembar jawaban Anda telah berhasil disimpan dan diserahkan secara resmi ke server asesmen.
               </p>
 
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 space-y-1.5 text-left">
-                <div className="flex justify-between">
-                  <span>Jumlah Soal Terjawab:</span>
-                  <strong className="text-emerald-700">{answeredCount} dari {questions.length} Soal</strong>
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-700 space-y-2 text-left">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Jumlah Soal Terjawab:</span>
+                  <strong className="text-emerald-700 font-black">{answeredCount} dari {questions.length} Soal</strong>
                 </div>
-                <div className="flex justify-between">
-                  <span>Status Asesmen:</span>
-                  <strong className="text-brand-700">Tersubmit (Terkunci)</strong>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Status Asesmen:</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300">
+                    Selesai Mandiri (Terkumpul Resmi)
+                  </span>
                 </div>
               </div>
 
               {examScore !== null && (
-                <div className="p-3.5 bg-brand-50 border border-brand-200 rounded-xl text-xs space-y-1">
+                <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl text-xs space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-700">Skor / Nilai Asesmen:</span>
-                    <span className="text-xl font-black text-brand-700">{examScore} / 100</span>
+                    <span className="font-bold text-emerald-950">Skor / Nilai Asesmen:</span>
+                    <span className="text-2xl font-black text-emerald-700">{examScore} / 100</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 text-left">
-                    * Nilai dihitung otomatis untuk butir soal objektif.
+                  <p className="text-[10px] text-emerald-700/80 text-left">
+                    * Nilai telah tercatat permanen di database dan siap direkap oleh Guru & Proktor.
                   </p>
                 </div>
               )}
@@ -1463,10 +1495,10 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center space-x-2 mt-4"
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold rounded-2xl shadow-md shadow-emerald-600/25 transition-all active:scale-95 flex items-center justify-center space-x-2 mt-4"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Selesai dan Keluar</span>
+                <span>Selesai dan Kembali ke Halaman Login</span>
               </button>
             </>
           )}
