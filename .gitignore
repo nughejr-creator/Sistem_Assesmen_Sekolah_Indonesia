@@ -38,3 +38,5 @@ powershell.bat
 *.mjs
 SASI_CBT_SERVER_PORTABLE/
 *.zip
+*.rar
+src-server/*.exe
