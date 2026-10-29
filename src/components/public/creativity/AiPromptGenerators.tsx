@@ -303,7 +303,7 @@ export const AiPromptGenerators: React.FC<AiPromptGeneratorsProps> = ({
 5. Mendengarkan saat guru atau teman sedang berbicara`);
   const [atrTemaVisual, setAtrTemaVisual] = useState('Ceria & Penuh Warna');
   const [atrUkuran, setAtrUkuran] = useState('Poster Tegak A3/A4 (Portrait)');
-  const [atrFormatLuaran, setAtrFormatLuaran] = useState<'Canva' | 'ImageAI'>('Canva');
+  const [atrFormatLuaran, setAtrFormatLuaran] = useState<'ChatGPT' | 'Claude' | 'Gemini' | 'Canva'>('ChatGPT');
 
   // Handler Perubahan Fase Cascading untuk Atribut Kelas
   const handleAtrFaseChange = (newFase: 'Fase A' | 'Fase B' | 'Fase C' | 'Fase D') => {
@@ -321,9 +321,10 @@ export const AiPromptGenerators: React.FC<AiPromptGeneratorsProps> = ({
       id: 0,
       pilar: 'Pilar 1: Modul Ajar',
       name: 'Generator Modul Ajar (RPP Berdiferensiasi)',
+      shortTitle: 'Modul Ajar RPP',
       icon: BookOpen,
       color: 'sky',
-      badge: 'Berdiferensiasi',
+      badge: 'Diferensiasi',
       buildPrompt: () => {
         const isSmp = maFase === 'Fase D';
         const jenjangLabel = isSmp ? 'Sekolah Menengah Pertama (SMP)' : 'Sekolah Dasar (SD)';
@@ -625,6 +626,37 @@ B. TEMPLATE NARASI RAPOR OTOMATIS:
           asesmenInstruksi.push('C. RUBRIK PENILAIAN HASIL AKSI NYATA / PRODUK: Kriteria evaluasi keaslian ide, manfaat nyata untuk lingkungan/sekolah, kerja sama kelompok, dan kualitas pameran/presentasi karya.');
         }
 
+        // Redaksi Mendalam Khusus Tema G7KAIH & SRL Kabupaten Sumedang
+        let panduanTemaKhusus = '';
+        if (kokuTema.includes('G7KAIH') || kokuTema.includes('Gerakan 7 Kebiasaan')) {
+          panduanTemaKhusus = `
+PANDUAN KHUSUS TEMA G7KAIH (GERAKAN 7 KEBIASAAN ANAK INDONESIA HEBAT):
+Wajib integrasikan secara eksplisit internalisasi 7 Kebiasaan Emas Anak Indonesia Hebat ke dalam seluruh tahapan alur projek:
+1. Bangun pagi dengan kesadaran diri dan penuh semangat.
+2. Beribadah taat dan bersyukur kepada Tuhan YME sesuai agama masing-masing.
+3. Berolahraga teratur dan memelihara kebugaran jasmani ceria.
+4. Gemar membaca buku, gemar belajar, dan mengasah daya nalar kritis.
+5. Makan makanan sehat, bergizi seimbang ("Isi Piringku"), dan higienis.
+6. Bermasyarakat, bergotong royong, santun, dan peduli sesama warga sekolah.
+7. Istirahat dan tidur tepat waktu (disiplin manajemen waktu malam).
+Kebutuhan Wajib di Output:
+- "Jurnal Habit Tracker 21 Hari Kebiasaan Hebat" (Lembar ceklis mandiri bergambar untuk siswa).
+- Panduan Kolaborasi Tri-Sentra (Sinergi Guru Kelas, Pendampingan Orang Tua di Rumah, dan Lingkungan Sosial).
+- Skenario Selebrasi & Penganugerahan Pin/Sertifikat "Duta Karakter Anak Indonesia Hebat".`;
+        } else if (kokuTema.includes('SRL') || kokuTema.includes('Sekolah Ramah Lingkungan')) {
+          panduanTemaKhusus = `
+PANDUAN KHUSUS TEMA SRL (SEKOLAH RAMAH LINGKUNGAN - MUATAN WAJIB KABUPATEN SUMEDANG):
+Wajib integrasikan secara komprehensif kebijakan unggulan Dinas Pendidikan Kabupaten Sumedang berlandaskan 5 Pilar Utama SRL:
+1. PILAR PENGELOLAAN & PEMILAHAN SAMPAH: Gerakan zero-waste, pemisahan sampah organik/anorganik, pembuatan pupuk kompos/eco-enzyme dari sisa kantin, operasional bank sampah sekolah, dan pelarangan kemasan plastik sekali pakai.
+2. PILAR KONSERVASI AIR: Pembuatan lubang biopori di halaman sekolah, penampungan air hujan (rainwater harvesting), dan kampanye hemat air wudhu/toilet.
+3. PILAR KONSERVASI ENERGI: Budaya hemat listrik (matikan sakelar kelas saat terang), pemanfaatan ventilasi dan pencahayaan alami matahari.
+4. PILAR PENGHIJAUAN & APOTEK HIDUP: Penanaman warung/apotek hidup, vertikultur sayuran ramah anak, dan konservasi tanaman lokal khas Sumedang.
+5. PILAR KEARIFAN LOKAL SUNDA SUMEDANG TENTANG ALAM: Angkat falsafah luhur leluhur Sumedang: "Leuweung ruksak, cai beak, manusa balangsak" serta aksi gotong royong warga sekolah ("Saber - Sapu Bersih Lingkungan").
+Kebutuhan Wajib di Output:
+- Format "Green Audit / Audit Sampah Sekolah" sederhana yang dilakukan langsung oleh tim penyelidik cilik siswa.
+- Lembar Deklarasi Komitmen Warga Sekolah Ramah Lingkungan dan Panduan Pembentukan "Duta Hijau SRL Sumedang".`;
+        }
+
         return `Sebagai seorang ${roleLabel}, rancanglah Modul Projek Kokurikuler Sekolah (${jenjangLabel}) berbasis Deep Learning dan Penguatan Karakter Profil Pelajar yang memenuhi standar format baku operasional berikut:
 
 1. IDENTITAS & SASARAN PROJEK
@@ -656,6 +688,7 @@ D. TAHAP REFLEKSI & TINDAK LANJUT (Evaluation & Impact):
 
 4. PANDUAN DIFERENSIASI PERAN SISWA INKLUSIF
 Rancang panduan pembagian peran kelompok yang inklusif agar seluruh murid (baik yang bertipe visual/analitis/kreatif/sosial, maupun yang membutuhkan bimbingan intensif) mendapatkan peran nyata dan berpartisipasi aktif dalam keberhasilan projek.
+${panduanTemaKhusus ? `\n${panduanTemaKhusus}\n` : ''}
 
 ${asesmenInstruksi.length > 0 ? `5. INSTRUMEN ASESMEN & EVALUASI PERKEMBANGAN
 ${asesmenInstruksi.join('\n')}` : ''}
@@ -673,9 +706,10 @@ ${panduanFormat}
       id: 5,
       pilar: 'Pilar 6: Refleksi Guru',
       name: 'Generator Refleksi & Umpan Balik Guru',
+      shortTitle: 'Refleksi Guru',
       icon: HeartHandshake,
       color: 'indigo',
-      badge: 'Konstruktif & Hangat',
+      badge: 'Reflektif',
       buildPrompt: () => {
         const isSmp = fbFase === 'Fase D';
         const jenjangLabel = isSmp ? 'Sekolah Menengah Pertama (SMP)' : 'Sekolah Dasar (SD)';
@@ -763,18 +797,38 @@ Sajikan dalam bahasa Indonesia yang santun, elegan, mendidik, dan langsung siap 
           ? 'Gunakan pendekatan visual remaja Fase D (SMP): desain modern, tipografi bersih estetis (clean sans-serif), infografis edukatif yang berkelas, layout proporsional dewasa, dan hindari elemen kekanak-kanakan.'
           : `Gunakan pendekatan visual ramah anak ${atrFase} (SD): ilustrasi ramah anak yang ceria, kontras warna hangat yang nyaman di mata, tipografi besar dan jelas terbaca dari jarak 3-5 meter, serta tata letak sederhana yang minim teks panjang berbelit.`;
 
-        // Format Luaran Desain
-        const instruksiFormat = atrFormatLuaran === 'ImageAI'
-          ? `PANDUAN PROMPT AI TEXT-TO-IMAGE (MIDJOURNEY / DALL-E / RECRAFT):
-Sajikan prompt siap pakai dalam bahasa Inggris formal untuk di-generate di engine Text-to-Image AI dengan parameter:
-- Prompt Lengkap (Subject, educational classroom display illustration, artistic medium, color palette, lighting, composition, aspect ratio).
-- Negative Prompt: (text distortion, messy typo, blurry, realistic photograph, ugly face, watermark).
-- Saran Aspek Rasio: (${atrUkuran.includes('Portrait') ? '--ar 3:4 atau --ar 4:5' : atrUkuran.includes('Landscape') ? '--ar 16:9 atau --ar 3:2' : '--ar 1:1'}).`
-          : `PANDUAN PENYUSUNAN DI CANVA / DESAIN GRAFIS:
-- Berikan instruksi langkah demi langkah penataan kanvas di Canva atau aplikasi desain grafis:
-  1. Ukuran kanvas yang disarankan (misal: A3 3508 x 4960 px atau Banner Dinding 200 x 80 cm).
-  2. Elemen grafis/vektor kunci yang perlu dicari di kolom elemen (keywords rekomendasi).
-  3. Tata letak font judul (Headings), sub-judul, dan butir isi agar hierarki visual seimbang.`;
+        // Target AI & Format Luaran Desain (ChatGPT, Claude, Gemini, Canva)
+        let instruksiFormat = '';
+        if (atrFormatLuaran === 'ChatGPT') {
+          instruksiFormat = `FORMAT OPTIMAL UNTUK OPENAI CHATGPT (GPT-4o):
+Instruksikan ChatGPT untuk menyajikan:
+1. TABEL PANDUAN WARNA: Kode HEX, nama warna, dan filosofi psikologi warna ruang kelas ramah anak (${atrTemaVisual}).
+2. TIPOGRAFI RAMAH ANAK: Pasangan font Google Fonts / Canva yang jelas terbaca dari jarak pandang kelas 3–5 meter.
+3. COPYWRITING REDAKSI LENGKAP: Teks display bernada positif, inspiratif, dan mudah dipahami siswa ${atrFase}.
+4. HIERARKI TATA LETAK GRID: Struktur 3 bagian (Header, Konten Utama, Footer) dengan panduan ruang kosong (white space).
+5. PROMPT DALL-E / AI IMAGE OPSIONAL: 1 prompt bahasa Inggris siap salin jika guru ingin meng-generate ilustrasi pendukung.`;
+        } else if (atrFormatLuaran === 'Claude') {
+          instruksiFormat = `FORMAT OPTIMAL UNTUK CLAUDE (ANTHROPIC):
+Instruksikan Claude untuk menyajikan:
+1. ANALISIS KELAYAKAN VISUAL & ERGONOMI KELAS: Kesesuaian tata letak dengan rentang perhatian dan tinggi pandang anak ${atrFase}.
+2. DESAIN SISTEM INTERAKTIF SISWA: Mekanisme pelibatan aktif siswa (kantong nama gantung, jepitan jemuran mini karya anak, stiker velcro check-in perasaan, kartu saku lepas-pasang).
+3. FORMULASI TEKS PEMBIASAAN: Kalimat afirmasi yang menumbuhkan motivasi intrinsik dan rasa memiliki (sense of belonging) di kelas.
+4. SPESIFIKASI PRODUKSI PRAKTIS: Panduan cetak ${atrUkuran} dan ketinggian gantung ramah anak (eye-level).`;
+        } else if (atrFormatLuaran === 'Gemini') {
+          instruksiFormat = `FORMAT OPTIMAL UNTUK GOOGLE GEMINI:
+Instruksikan Google Gemini untuk menyajikan:
+1. STRUKTUR DISPLAY MODULAR: Konsep tata letak berbasis modul visual yang fleksibel dan mudah diganti secara berkala.
+2. INTEGRASI GOOGLE WORKSPACE FOR EDUCATION: Saran pembuatan display menggunakan Google Slides / Canva for Education.
+3. PALET WARNA & SARAN ILUSTRASI: Palet warna harmonis berstandar desain ramah anak dengan rekomendasi keyword pencarian ikon/vektor.
+4. AKTIVITAS PERESMIAN DISPLAY: 1 aktivitas ice-breaking peresmian display ini bersama murid agar anak merasa memiliki ruang belajarnya.`;
+        } else {
+          instruksiFormat = `FORMAT EKSEKUSI DI CANVA & APLIKASI DESAIN:
+Instruksikan langkah operasional pembuatan langsung di aplikasi Canva:
+1. SPESIFIKASI KANVAS: Ukuran presisi kanvas (${atrUkuran}) dalam piksel/sentimeter dengan margin aman cetak.
+2. KEYWORDS ELEMEN CANVA: Kata kunci pencarian elemen grafis dan ilustrasi di Canva (bahasa Indonesia & Inggris).
+3. KOMBINASI FONT CANVA GRATIS: Rekomendasi font judul dan isi yang tersedia di akun Canva reguler maupun Canva for Education.
+4. PANDUAN UNDUH & CETAK: Panduan export format PDF Print (CMYK) siap bawa ke percetakan.`;
+        }
 
         return `Bertindaklah sebagai seorang ${roleLabel}. Rancanglah konsep tata letak display visual, atribut dekorasi kelas interaktif, dan panduan grafis lingkungan belajar dengan spesifikasi berikut:
 
@@ -785,7 +839,7 @@ Sajikan prompt siap pakai dalam bahasa Inggris formal untuk di-generate di engin
 - Judul Display: "${atrJudul}"
 - Nuansa / Tema Visual: ${atrTemaVisual}
 - Ukuran & Rasio Cetak: ${atrUkuran}
-- Target Format Output: ${atrFormatLuaran === 'Canva' ? 'Panduan Layout & Skema Warna Canva' : 'Prompt AI Text-to-Image'}
+- Target Engine & Format: ${atrFormatLuaran === 'Canva' ? 'Panduan Layout & Skema Warna Canva' : `Instruksi Prompt Siap Pakai untuk ${atrFormatLuaran}`}
 
 2. KONTEN & BUTIR TEKS DISPLAY
 ${atrKonten ? atrKonten : '(Buatkan rumusan poin-poin redaksional yang inspiratif dan tepat untuk kategori ini)'}
@@ -829,8 +883,8 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
   return (
     <div className="space-y-8">
       
-      {/* 6 Selector Tabs / Pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2.5">
+      {/* 7 Selector Tabs / Pills - Anti-Overflow & Proporsional */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-2.5">
         {generatorList.map((gen, idx) => {
           const IconComp = gen.icon;
           const isSelected = selectedGenerator === idx;
@@ -839,25 +893,33 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
               key={gen.id}
               type="button"
               onClick={() => setSelectedGenerator(idx)}
-              className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+              className={`p-3 rounded-2xl border-2 text-left transition-all flex flex-col justify-between min-w-0 overflow-hidden relative group ${
                 isSelected 
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-amber-400/40' 
-                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-lg ring-2 ring-amber-400/40' 
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-50 shadow-2xs'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-xl ${isSelected ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
-                  <IconComp className="w-4 h-4" />
-                </div>
-                <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
-                  isSelected ? 'bg-white/10 text-amber-300' : 'bg-slate-100 text-slate-500 border border-slate-200'
+              <div className="flex items-center justify-between gap-1 mb-2.5 min-w-0 w-full">
+                <div className={`p-1.5 rounded-xl shrink-0 transition-transform group-hover:scale-105 ${
+                  isSelected ? 'bg-amber-400 text-slate-950 font-black shadow-xs' : 'bg-slate-100 text-slate-600 border border-slate-200'
                 }`}>
+                  <IconComp className="w-3.5 h-3.5" />
+                </div>
+                <span className={`text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-md truncate max-w-[65%] text-right transition-colors ${
+                  isSelected ? 'bg-white/15 text-amber-300' : 'bg-slate-100 text-slate-500 border border-slate-200'
+                }`} title={gen.badge}>
                   {gen.badge}
                 </span>
               </div>
-              <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{gen.pilar}</div>
-                <div className="text-xs font-black truncate">{gen.name.replace('Generator ', '')}</div>
+              <div className="min-w-0 w-full">
+                <div className={`text-[9.5px] font-black uppercase tracking-wider truncate mb-0.5 ${
+                  isSelected ? 'text-amber-400' : 'text-slate-400'
+                }`}>
+                  {gen.pilar.split(':')[0]}
+                </div>
+                <div className="text-xs font-black leading-tight line-clamp-2" title={gen.name}>
+                  {gen.shortTitle || gen.name.replace('Generator ', '')}
+                </div>
               </div>
             </button>
           );
@@ -1774,13 +1836,19 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
                   onChange={(e) => setKokuTema(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 shadow-2xs"
                 >
-                  <option value="Gaya Hidup Berkelanjutan">Gaya Hidup Berkelanjutan</option>
-                  <option value="Kearifan Lokal">Kearifan Lokal</option>
-                  <option value="Bhinneka Tunggal Ika">Bhinneka Tunggal Ika</option>
-                  <option value="Rekayasa & Teknologi">Rekayasa & Teknologi</option>
-                  <option value="Kewirausahaan">Kewirausahaan</option>
-                  <option value="Suara Demokrasi">Suara Demokrasi</option>
-                  <option value="Bangunlah Jiwa dan Raganya">Bangunlah Jiwa dan Raganya</option>
+                  <optgroup label="⭐ TEMA KHUSUS & MUATAN WAJIB DAERAH">
+                    <option value="G7KAIH (Gerakan 7 Kebiasaan Anak Indonesia Hebat)">G7KAIH (Gerakan 7 Kebiasaan Anak Indonesia Hebat)</option>
+                    <option value="SRL - Sekolah Ramah Lingkungan (Wajib Kab. Sumedang)">SRL - Sekolah Ramah Lingkungan (Wajib Kab. Sumedang)</option>
+                  </optgroup>
+                  <optgroup label="📚 TEMA UMUM STANDAR KURIKULUM MERDEKA">
+                    <option value="Gaya Hidup Berkelanjutan">Gaya Hidup Berkelanjutan</option>
+                    <option value="Kearifan Lokal">Kearifan Lokal</option>
+                    <option value="Bhinneka Tunggal Ika">Bhinneka Tunggal Ika</option>
+                    <option value="Rekayasa & Teknologi">Rekayasa & Teknologi</option>
+                    <option value="Kewirausahaan">Kewirausahaan</option>
+                    <option value="Suara Demokrasi">Suara Demokrasi</option>
+                    <option value="Bangunlah Jiwa dan Raganya">Bangunlah Jiwa dan Raganya</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -2266,29 +2334,35 @@ Sajikan dalam bahasa Indonesia yang terstruktur rapi, kreatif, aplikatif, dan la
 
                 <div className="pt-1 border-t border-amber-200/60">
                   <label className="block font-bold text-slate-700 mb-1.5 text-[11px]">
-                    Format Luaran Desain
+                    Target AI & Format Luaran Desain
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      { id: 'Canva', label: 'Panduan Layout & Warna (Canva)', icon: '🎨' },
-                      { id: 'ImageAI', label: 'Prompt AI Text-to-Image (Midjourney/DALL-E)', icon: '✨' }
+                      { id: 'ChatGPT', label: 'ChatGPT', sub: 'GPT-4o / Plus', icon: '🤖' },
+                      { id: 'Claude', label: 'Claude', sub: '3.5 Sonnet', icon: '🧠' },
+                      { id: 'Gemini', label: 'Gemini', sub: 'Google AI', icon: '✨' },
+                      { id: 'Canva', label: 'Canva', sub: 'Layout Grafis', icon: '🎨' }
                     ].map((opt) => (
                       <label 
                         key={opt.id}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border cursor-pointer text-[11px] transition-all ${
+                        className={`flex flex-col items-start gap-1 p-2 rounded-xl border cursor-pointer transition-all ${
                           atrFormatLuaran === opt.id
-                            ? 'bg-amber-100 border-amber-400 font-bold text-amber-950 shadow-2xs'
-                            : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                            ? 'bg-amber-100 border-amber-500 font-bold text-amber-950 shadow-2xs ring-2 ring-amber-400/40'
+                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                         }`}
                       >
-                        <input 
-                          type="radio" 
-                          name="atrFormatLuaran"
-                          checked={atrFormatLuaran === opt.id}
-                          onChange={() => setAtrFormatLuaran(opt.id as 'Canva' | 'ImageAI')}
-                          className="text-amber-600 focus:ring-amber-500"
-                        />
-                        <span>{opt.icon} {opt.label}</span>
+                        <div className="flex items-center gap-1.5 w-full">
+                          <input 
+                            type="radio" 
+                            name="atrFormatLuaran"
+                            checked={atrFormatLuaran === opt.id}
+                            onChange={() => setAtrFormatLuaran(opt.id as any)}
+                            className="text-amber-600 focus:ring-amber-500 text-xs"
+                          />
+                          <span className="text-xs">{opt.icon}</span>
+                          <span className="text-xs font-bold truncate">{opt.label}</span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-medium pl-5 truncate w-full">{opt.sub}</span>
                       </label>
                     ))}
                   </div>
