@@ -2261,7 +2261,10 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
         const matchId = Boolean(curId && itemWriterId && (itemWriterId === curId || toValidUUID(itemWriterId) === toValidUUID(curId)));
         const matchName = Boolean(curName && itemWriterName && (itemWriterName === curName || itemWriterName.includes(curName) || curName.includes(itemWriterName)));
-        const matchSlot = Boolean(initialScope?.isLocked);
+
+        // Jangan izinkan matchSlot jika butir sudah memiliki penulis lain (penulis lama/berbeda).
+        // Setiap guru penulis baru harus memiliki lembar kerja masing-masing tanpa tercampur data penulis lain!
+        const matchSlot = Boolean(initialScope?.isLocked && !itemWriterId);
 
         if (!matchId && !matchName && !matchSlot) return false;
       } else if (filterWriter && filterWriter !== 'ALL') {
