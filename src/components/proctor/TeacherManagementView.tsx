@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { School, UserProfile } from '../../types/database';
 import { MOCK_USERS } from '../../lib/mockData';
 import { supabase } from '../../lib/supabase';
@@ -64,9 +64,30 @@ const DEFAULT_MAPEL_KHUSUS = [
   'Pendidikan Agama Katolik dan Budi Pekerti',
   'Pendidikan Agama Hindu dan Budi Pekerti',
   'Pendidikan Agama Buddha dan Budi Pekerti',
+  'Pendidikan Agama Khonghucu dan Budi Pekerti',
   'Bahasa Inggris',
+  'Bahasa Indonesia',
+  'Matematika',
+  'Ilmu Pengetahuan Alam (IPA)',
+  'Ilmu Pengetahuan Sosial (IPS)',
+  'Informatika',
+  'Pendidikan Pancasila',
+  'Seni Musik',
+  'Seni Rupa',
+  'Seni Tari',
+  'Seni Teater',
+  'Prakarya',
   'Bahasa Daerah / Mulok'
 ];
+
+const PARALLEL_OPTIONS = {
+  'C': ['A', 'B', 'C'],
+  'E': ['A', 'B', 'C', 'D', 'E'],
+  'H': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+  'K': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
+} as const;
+
+type ParallelKey = keyof typeof PARALLEL_OPTIONS;
 
 export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ school }) => {
   const schoolId = school.id || '1e6e1bbb-05cb-49a8-8ab0-e166336c9222';
@@ -138,8 +159,29 @@ export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ sc
     password: 'guru123'
   });
 
+  const isSmp = (school?.level || '').toUpperCase() === 'SMP' || (school?.name || '').toLowerCase().includes('smp');
+  const [maxParallelLetter, setMaxParallelLetter] = useState<ParallelKey>(isSmp ? 'K' : 'E');
+
+  const activeGradeList = useMemo(() => {
+    if (isSmp) {
+      return [
+        { num: '7', label: 'Kelas 7' },
+        { num: '8', label: 'Kelas 8' },
+        { num: '9', label: 'Kelas 9' }
+      ];
+    }
+    return [
+      { num: '1', label: 'Kelas 1' },
+      { num: '2', label: 'Kelas 2' },
+      { num: '3', label: 'Kelas 3' },
+      { num: '4', label: 'Kelas 4' },
+      { num: '5', label: 'Kelas 5' },
+      { num: '6', label: 'Kelas 6' }
+    ];
+  }, [isSmp]);
+
   // State untuk Dropdown Rombel Bertingkat
-  const [selectedGradeLevel, setSelectedGradeLevel] = useState('Kelas 6');
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState(isSmp ? 'Kelas 7' : 'Kelas 6');
   const [selectedSection, setSelectedSection] = useState('A');
   const [customRombelInput, setCustomRombelInput] = useState('');
 
@@ -602,20 +644,91 @@ export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ sc
     }
   };
 
+  const activeLetters = PARALLEL_OPTIONS[maxParallelLetter];
+
+  const handleToggleRombel = (rombelKey: string) => {
+    const cur = formData.assigned_classes || [];
+    if (cur.includes(rombelKey)) {
+      setFormData(p => ({ ...p, assigned_classes: cur.filter(c => c !== rombelKey) }));
+    } else {
+      setFormData(p => ({ ...p, assigned_classes: [...cur, rombelKey] }));
+    }
+  };
+
+  const handleToggleGrade = (gNum: string) => {
+    const cur = formData.assigned_classes || [];
+    const gradeRombels = activeLetters.map(l => `${gNum}-${l}`);
+    const isAllGradeSelected = gradeRombels.every(r => cur.includes(r));
+    if (isAllGradeSelected) {
+      setFormData(p => ({
+        ...p,
+        assigned_classes: cur.filter(r => !gradeRombels.includes(r))
+      }));
+    } else {
+      const combined = Array.from(new Set([...cur, ...gradeRombels]));
+      setFormData(p => ({
+        ...p,
+        assigned_classes: combined
+      }));
+    }
+  };
+
+  const handleToggleSelectAll = () => {
+    const cur = formData.assigned_classes || [];
+    const allPossible: string[] = [];
+    activeGradeList.forEach(g => {
+      activeLetters.forEach(l => {
+        allPossible.push(`${g.num}-${l}`);
+      });
+    });
+    const isAll = allPossible.length > 0 && allPossible.every(r => cur.includes(r));
+    if (isAll) {
+      setFormData(p => ({ ...p, assigned_classes: [] }));
+    } else {
+      setFormData(p => ({ ...p, assigned_classes: allPossible }));
+    }
+  };
+
+  const handleSelectPhase = (phaseGradeNums: string[]) => {
+    const cur = formData.assigned_classes || [];
+    const phaseRombels: string[] = [];
+    phaseGradeNums.forEach(g => {
+      activeLetters.forEach(l => {
+        phaseRombels.push(`${g}-${l}`);
+      });
+    });
+    const isAllPhase = phaseRombels.every(r => cur.includes(r));
+    if (isAllPhase) {
+      setFormData(p => ({
+        ...p,
+        assigned_classes: cur.filter(r => !phaseRombels.includes(r))
+      }));
+    } else {
+      setFormData(p => ({
+        ...p,
+        assigned_classes: Array.from(new Set([...cur, ...phaseRombels]))
+      }));
+    }
+  };
+
   // Open Modal Tambah
   const handleOpenAddModal = () => {
     setEditingTeacher(null);
-    setSelectedGradeLevel('Kelas 6');
+    const defaultGrade = isSmp ? 'Kelas 7' : 'Kelas 6';
+    const defaultRombel = isSmp ? 'Kelas 7-A' : 'Kelas 6-A';
+    const defaultAssigned = isSmp ? ['7-A', '7-B'] : ['6-A', '6-B'];
+    setSelectedGradeLevel(defaultGrade);
     setSelectedSection('A');
+    setMaxParallelLetter(isSmp ? 'K' : 'E');
     setCustomRombelInput('');
     setFormData({
       nip_nuptk: '',
       full_name: '',
       gender: 'L',
       teacher_type: 'guru_kelas',
-      homeroom_class: 'Kelas 6-A',
-      assigned_classes: ['6-A', '6-B'],
-      subject_specialty: 'Semua Mapel SD (Kecuali PJOK & PAI)',
+      homeroom_class: defaultRombel,
+      assigned_classes: defaultAssigned,
+      subject_specialty: isSmp ? 'Bahasa Indonesia' : 'Semua Mapel SD (Kecuali PJOK & PAI)',
       employment_status: 'PNS',
       phone_number: '',
       email: '',
@@ -627,35 +740,47 @@ export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ sc
   // Open Modal Edit
   const handleOpenEditModal = (t: TeacherRecord) => {
     setEditingTeacher(t);
-    const rawRombel = t.homeroom_class || 'Kelas 6-A';
+    const rawRombel = t.homeroom_class || (isSmp ? 'Kelas 7-A' : 'Kelas 6-A');
     
-    // Parse Grade Level (1..6)
-    let grade = 'Kelas 6';
-    for (let i = 1; i <= 6; i++) {
-      if (rawRombel.includes(String(i))) {
-        grade = `Kelas ${i}`;
-        break;
-      }
+    // Parse Grade Level (1..9)
+    let grade = isSmp ? 'Kelas 7' : 'Kelas 6';
+    const gradeMatch = rawRombel.match(/(?:Kelas\s*)?([1-9])/i);
+    if (gradeMatch) {
+      grade = `Kelas ${gradeMatch[1]}`;
     }
 
-    // Parse Section (A..E, TUNGGAL, CUSTOM)
+    // Parse Section (A..K, TUNGGAL, CUSTOM)
     let sec = 'A';
-    if (rawRombel.includes('-A') || rawRombel.endsWith('A')) sec = 'A';
-    else if (rawRombel.includes('-B') || rawRombel.endsWith('B')) sec = 'B';
-    else if (rawRombel.includes('-C') || rawRombel.endsWith('C')) sec = 'C';
-    else if (rawRombel.includes('-D') || rawRombel.endsWith('D')) sec = 'D';
-    else if (!rawRombel.includes('-')) sec = 'TUNGGAL';
-    else {
+    const secMatch = rawRombel.match(/[-_\s]([A-K])$/i) || rawRombel.match(/([A-K])$/i);
+    if (secMatch) {
+      sec = secMatch[1].toUpperCase();
+    } else if (!rawRombel.includes('-')) {
+      sec = 'TUNGGAL';
+    } else {
       sec = 'CUSTOM';
       setCustomRombelInput(rawRombel);
     }
 
+    // Auto expand maxParallelLetter if existing assigned classes have letters beyond current
+    const assigned = t.assigned_classes || (isSmp ? ['7-A', '7-B'] : ['6-A', '6-B']);
+    let neededLetter: ParallelKey = isSmp ? 'K' : 'E';
+    assigned.forEach(r => {
+      const match = r.match(/[-_\s]?([A-K])$/i);
+      if (match) {
+        const letter = match[1].toUpperCase();
+        if (letter > 'H') neededLetter = 'K';
+        else if (letter > 'E' && neededLetter !== 'K') neededLetter = 'H';
+        else if (letter > 'C' && neededLetter === 'C') neededLetter = 'E';
+      }
+    });
+
     setSelectedGradeLevel(grade);
     setSelectedSection(sec);
+    setMaxParallelLetter(neededLetter);
 
     setFormData({
       ...t,
-      assigned_classes: t.assigned_classes || ['6-A', '6-B']
+      assigned_classes: assigned
     });
     setIsModalOpen(true);
   };
@@ -1415,12 +1540,22 @@ export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ sc
                           onChange={(e) => handleRombelChange(e.target.value, selectedSection)}
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500"
                         >
-                          <option value="Kelas 1">Kelas 1 (Fase A)</option>
-                          <option value="Kelas 2">Kelas 2 (Fase A)</option>
-                          <option value="Kelas 3">Kelas 3 (Fase B)</option>
-                          <option value="Kelas 4">Kelas 4 (Fase B)</option>
-                          <option value="Kelas 5">Kelas 5 (Fase C)</option>
-                          <option value="Kelas 6">Kelas 6 (Fase C)</option>
+                          {isSmp ? (
+                            <>
+                              <option value="Kelas 7">Kelas 7 (Fase D)</option>
+                              <option value="Kelas 8">Kelas 8 (Fase D)</option>
+                              <option value="Kelas 9">Kelas 9 (Fase D)</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Kelas 1">Kelas 1 (Fase A)</option>
+                              <option value="Kelas 2">Kelas 2 (Fase A)</option>
+                              <option value="Kelas 3">Kelas 3 (Fase B)</option>
+                              <option value="Kelas 4">Kelas 4 (Fase B)</option>
+                              <option value="Kelas 5">Kelas 5 (Fase C)</option>
+                              <option value="Kelas 6">Kelas 6 (Fase C)</option>
+                            </>
+                          )}
                         </select>
                       </div>
 
@@ -1433,11 +1568,9 @@ export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ sc
                           onChange={(e) => handleRombelChange(selectedGradeLevel, e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500"
                         >
-                          <option value="A">Rombel A</option>
-                          <option value="B">Rombel B</option>
-                          <option value="C">Rombel C</option>
-                          <option value="D">Rombel D</option>
-                          <option value="E">Rombel E</option>
+                          {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'].map(sec => (
+                            <option key={sec} value={sec}>Rombel {sec}</option>
+                          ))}
                           <option value="TUNGGAL">Tanpa Paralel (Kelas Tunggal)</option>
                           <option value="CUSTOM">Lainnya (Ketik Manual)</option>
                         </select>
@@ -1488,61 +1621,161 @@ export const TeacherManagementView: React.FC<TeacherManagementViewProps> = ({ sc
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="block text-slate-700 font-bold">
-                          Rombel yang Diajar (CBT akan menampilkan nilai rombel-rombel ini):
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const allRombels = [
-                              '1-A', '1-B', '2-A', '2-B', '3-A', '3-B',
-                              '4-A', '4-B', '5-A', '5-B', '6-A', '6-B', '6-C'
-                            ];
-                            const cur = formData.assigned_classes || [];
-                            if (cur.length === allRombels.length) {
-                              setFormData(p => ({ ...p, assigned_classes: [] }));
-                            } else {
-                              setFormData(p => ({ ...p, assigned_classes: allRombels }));
-                            }
-                          }}
-                          className="text-[10px] text-blue-700 font-bold hover:underline"
-                        >
-                          {formData.assigned_classes?.length === 13 ? 'Batal Pilih Semua' : 'Pilih Semua Rombel (1-6)'}
-                        </button>
+                      {/* Header with Title and Controls */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <div>
+                          <label className="block text-slate-800 font-bold text-xs">
+                            Rombel yang Diajar (CBT akan menampilkan nilai rombel-rombel ini):
+                          </label>
+                          <span className="text-[11px] text-slate-500">
+                            Pilih huruf rombel paralel. Klik [+ Semua] untuk memilih 1 tingkat kelas.
+                          </span>
+                        </div>
+
+                        {/* Controls: Batas Paralel + Pintasan */}
+                        <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                          {/* Filter Batas Paralel */}
+                          <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
+                            <span className="text-slate-500 font-bold px-1.5">Batas:</span>
+                            {(['C', 'E', 'H', 'K'] as const).map(p => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setMaxParallelLetter(p)}
+                                className={`px-1.5 py-0.5 rounded font-black transition-all ${
+                                  maxParallelLetter === p 
+                                    ? 'bg-blue-600 text-white shadow-2xs' 
+                                    : 'text-slate-600 hover:text-slate-900'
+                                }`}
+                                title={`Tampilkan paralel rombel A s.d. ${p}`}
+                              >
+                                s/d {p}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Tombol Pilih Semua / Kosongkan */}
+                          <button
+                            type="button"
+                            onClick={handleToggleSelectAll}
+                            className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-black transition-all"
+                          >
+                            {(activeGradeList.flatMap(g => activeLetters.map(l => `${g.num}-${l}`)).every(r => (formData.assigned_classes || []).includes(r)))
+                              ? 'Kosongkan'
+                              : 'Pilih Semua'}
+                          </button>
+                        </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                        {[
-                          '1-A', '1-B',
-                          '2-A', '2-B',
-                          '3-A', '3-B',
-                          '4-A', '4-B',
-                          '5-A', '5-B',
-                          '6-A', '6-B', '6-C'
-                        ].map((k) => {
-                          const isChecked = formData.assigned_classes?.includes(k);
+
+                      {/* Pintasan Khusus Fase untuk SD */}
+                      {!isSmp && (
+                        <div className="flex items-center space-x-1.5 mb-2 text-[10px]">
+                          <span className="text-slate-400 font-bold">Pintasan Fase:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectPhase(['1', '2'])}
+                            className="px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold transition-all"
+                            title="Pilih seluruh rombel Kelas 1 dan Kelas 2"
+                          >
+                            Fase A (1–2)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectPhase(['3', '4'])}
+                            className="px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold transition-all"
+                            title="Pilih seluruh rombel Kelas 3 dan Kelas 4"
+                          >
+                            Fase B (3–4)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectPhase(['5', '6'])}
+                            className="px-2 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 font-bold transition-all"
+                            title="Pilih seluruh rombel Kelas 5 dan Kelas 6"
+                          >
+                            Fase C (5–6)
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Horizontal Matrix Chip Selector */}
+                      <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-200 space-y-1.5">
+                        {activeGradeList.map(gradeObj => {
+                          const gNum = gradeObj.num;
+                          const gLabel = gradeObj.label;
+                          const gradeRombels = activeLetters.map(l => `${gNum}-${l}`);
+                          const isGradeAllSelected = gradeRombels.every(r => (formData.assigned_classes || []).includes(r));
+
                           return (
-                            <label key={k} className={`flex items-center space-x-1.5 p-1.5 rounded-lg border text-xs cursor-pointer transition-colors ${
-                              isChecked ? 'bg-blue-50 border-blue-400 font-bold text-blue-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                            }`}>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  const cur = formData.assigned_classes || [];
-                                  if (e.target.checked) {
-                                    setFormData(p => ({ ...p, assigned_classes: [...cur, k] }));
-                                  } else {
-                                    setFormData(p => ({ ...p, assigned_classes: cur.filter(c => c !== k) }));
-                                  }
-                                }}
-                                className="rounded text-blue-600"
-                              />
-                              <span>Kelas {k}</span>
-                            </label>
+                            <div key={gNum} className="flex items-center space-x-2 py-1 px-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-slate-300 transition-all shadow-2xs">
+                              {/* Tingkat Kelas Label & Tombol +Semua */}
+                              <div className="flex items-center space-x-1.5 w-24 shrink-0">
+                                <span className="text-xs font-black text-slate-800">{gLabel}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleGrade(gNum)}
+                                  className={`text-[9px] px-1.5 py-0.5 rounded font-black transition-all ${
+                                    isGradeAllSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                                  }`}
+                                  title={`Pilih semua rombel ${gLabel}`}
+                                >
+                                  {isGradeAllSelected ? 'Semua ✓' : '+Semua'}
+                                </button>
+                              </div>
+
+                              {/* Chips Huruf Paralel [A] [B] [C] ... */}
+                              <div className="flex flex-wrap items-center gap-1 flex-1">
+                                {activeLetters.map(letter => {
+                                  const rombelKey = `${gNum}-${letter}`;
+                                  const isChecked = (formData.assigned_classes || []).includes(rombelKey);
+                                  return (
+                                    <button
+                                      key={rombelKey}
+                                      type="button"
+                                      onClick={() => handleToggleRombel(rombelKey)}
+                                      className={`w-7 h-7 sm:w-8 sm:h-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                                        isChecked
+                                          ? 'bg-blue-600 text-white shadow-2xs font-black scale-105 ring-2 ring-blue-400'
+                                          : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700'
+                                      }`}
+                                      title={`Pilih Kelas ${rombelKey}`}
+                                    >
+                                      {letter}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           );
                         })}
+                      </div>
+
+                      {/* Summary Badges Rombel Terpilih */}
+                      <div className="pt-2 flex flex-col sm:flex-row sm:items-start gap-1.5 border-t border-slate-100 mt-2">
+                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider shrink-0 mt-0.5">
+                          Rombel Terpilih ({(formData.assigned_classes || []).length}):
+                        </span>
+                        <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                          {(formData.assigned_classes || []).length === 0 ? (
+                            <span className="text-[11px] text-amber-600 font-semibold italic">Belum ada rombel dipilih</span>
+                          ) : (
+                            (formData.assigned_classes || []).map(r => (
+                              <span key={r} className="inline-flex items-center space-x-1 px-1.5 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-md text-[10px] font-bold">
+                                <span>Kelas {r}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleRombel(r)}
+                                  className="text-blue-400 hover:text-rose-600 font-black ml-0.5"
+                                  title={`Hapus Kelas ${r}`}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
