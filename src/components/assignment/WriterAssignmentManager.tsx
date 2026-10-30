@@ -333,7 +333,14 @@ export const WriterAssignmentManager: React.FC<WriterAssignmentManagerProps> = (
         alert('Silakan pilih guru terlebih dahulu.');
         return;
       }
-      finalUserId = matchedTeacher.id;
+      
+      // Sinkronisasi ID: Utamakan ID auth dari user_profiles agar konsisten dengan sesi login
+      const matchedUserProfile = allUsers.find(u => 
+        (matchedTeacher.username && u.username?.toLowerCase() === matchedTeacher.username.toLowerCase()) ||
+        (matchedTeacher.full_name && u.full_name?.toLowerCase() === matchedTeacher.full_name.toLowerCase())
+      );
+
+      finalUserId = matchedUserProfile?.id || matchedTeacher.id;
       finalUserName = matchedTeacher.full_name;
       finalUserEmail = matchedTeacher.username || '';
       finalInstitution = matchedTeacher.school?.name || 'SD Negeri Cinanggerang I';

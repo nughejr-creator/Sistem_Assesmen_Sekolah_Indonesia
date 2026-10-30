@@ -114,6 +114,9 @@ export const SUBJECT_MAP: Record<string, string> = {
   'bin-d': 'a0000001-0000-0000-0000-000000000008',
   'bin-smp': 'a0000001-0000-0000-0000-000000000008',
   'pendidikan agama dan budi pekerti': 'a0000001-0000-0000-0000-000000000011',
+  'pendidikan agama islam dan budi pekerti': 'a0000001-0000-0000-0000-000000000011',
+  'pendidikan agama islam': 'a0000001-0000-0000-0000-000000000011',
+  'pai': 'a0000001-0000-0000-0000-000000000011',
   'pab-sd': 'a0000001-0000-0000-0000-000000000011',
   'pab-smp': 'a0000001-0000-0000-0000-000000000021',
   'pendidikan pancasila': 'a0000001-0000-0000-0000-000000000012',
@@ -121,14 +124,21 @@ export const SUBJECT_MAP: Record<string, string> = {
   'pp-smp': 'a0000001-0000-0000-0000-000000000022',
   'ipas': 'a0000001-0000-0000-0000-000000000013',
   'ipas (ilmu pengetahuan alam dan sosial)': 'a0000001-0000-0000-0000-000000000013',
+  'ilmu pengetahuan alam dan sosial (ipas)': 'a0000001-0000-0000-0000-000000000013',
   'ipas-sd': 'a0000001-0000-0000-0000-000000000013',
+  'seni rupa': '00000000-0000-4000-8000-0000416a00ed',
+  'seni musik': 'b0d4849a-35f9-4543-b1e8-a0707a5db93f',
+  'seni tari': 'ae2bc7bf-49fa-470a-9940-2e539bcf48be',
   'seni dan budaya': 'a0000001-0000-0000-0000-000000000014',
   'seni dan budaya (seni rupa/musik/teater/tari)': 'a0000001-0000-0000-0000-000000000014',
   'snb-sd': 'a0000001-0000-0000-0000-000000000014',
   'pjok': 'a0000001-0000-0000-0000-000000000015',
   'pendidikan jasmani, olahraga, dan kesehatan (pjok)': 'a0000001-0000-0000-0000-000000000015',
+  'pendidikan jasmani, olahraga dan kesehatan': 'a0000001-0000-0000-0000-000000000015',
   'pjk-sd': 'a0000001-0000-0000-0000-000000000015',
   'pjk-smp': 'a0000001-0000-0000-0000-000000000028',
+  'bahasa sunda': '00000000-0000-4000-8000-0000416a00eb',
+  'muatan lokal (bahasa sunda)': '00000000-0000-4000-8000-0000416a00eb',
   'muatan lokal': 'a0000001-0000-0000-0000-000000000016',
   'muatan lokal (bahasa daerah)': 'a0000001-0000-0000-0000-000000000016',
   'mul-sd': 'a0000001-0000-0000-0000-000000000016',
@@ -139,7 +149,9 @@ export const SUBJECT_MAP: Record<string, string> = {
   'ips': 'a0000001-0000-0000-0000-000000000024',
   'ilmu pengetahuan sosial (ips)': 'a0000001-0000-0000-0000-000000000024',
   'ips-smp': 'a0000001-0000-0000-0000-000000000024',
-  'bahasa inggris': 'a0000001-0000-0000-0000-000000000025',
+  'bahasa inggris': '0c121e42-8e70-42a4-ab0c-8094a7dcb1e7',
+  'bahasa inggris sd': '0c121e42-8e70-42a4-ab0c-8094a7dcb1e7',
+  'bahasa inggris smp': 'a0000001-0000-0000-0000-000000000025',
   'big-smp': 'a0000001-0000-0000-0000-000000000025',
   'informatika': 'a0000001-0000-0000-0000-000000000026',
   'inf-smp': 'a0000001-0000-0000-0000-000000000026',
@@ -209,7 +221,7 @@ export async function getOrCreateBlueprintId(
   assessmentType: string = 'SAS',
   gradeClass?: string
 ): Promise<string> {
-  const subjectId = resolveSubjectUUID(subjectName, level);
+  let subjectId = resolveSubjectUUID(subjectName, level);
 
   // Normalisasi nama kelas (misal: "Kelas 6", "Kelas 5", "Kelas 4", dsb.)
   let cleanGrade = gradeClass ? gradeClass.trim() : '';
@@ -232,6 +244,23 @@ export async function getOrCreateBlueprintId(
   const expectedTitle = `Kisi-Kisi ${assessmentType} ${subjectName} ${level} ${cleanGrade} (Fase ${resolvedPhase})`;
 
   try {
+    // 0. Resolusi Cerdas dari tabel `subjects` database jika belum tepat
+    try {
+      const { data: dbSubs } = await supabase
+        .from('subjects')
+        .select('id, name, level');
+      if (dbSubs && dbSubs.length > 0) {
+        const cleanReq = subjectName.trim().toLowerCase();
+        const matchedDbSub = dbSubs.find(s => 
+          (s.level === level || !level) &&
+          (s.name.toLowerCase() === cleanReq || s.name.toLowerCase().includes(cleanReq) || cleanReq.includes(s.name.toLowerCase()))
+        );
+        if (matchedDbSub) {
+          subjectId = matchedDbSub.id;
+        }
+      }
+    } catch (subDbErr) {}
+
     // 1. Cari blueprint yang cocok dengan subject, level, assessment_type, dan phase yang tepat
     const { data, error } = await supabase
       .from('blueprints')
@@ -284,9 +313,14 @@ export async function getOrCreateBlueprintId(
     console.warn('Fallback getting blueprint id:', e);
   }
 
-  // 3. Fallback: Cari blueprint yang sudah ada di database untuk mencegah pelanggaran foreign key
+  // 3. Fallback: Cari blueprint yang memiliki subjek yang sama
   try {
-    const { data: existingBp } = await supabase.from('blueprints').select('id').limit(1).single();
+    const { data: existingBp } = await supabase
+      .from('blueprints')
+      .select('id')
+      .eq('subject_id', subjectId)
+      .limit(1)
+      .single();
     if (existingBp && existingBp.id) {
       return existingBp.id;
     }

@@ -1584,15 +1584,12 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       localStorage.setItem(BLUEPRINT_ITEMS_KEY, JSON.stringify(itemsWithBpId));
 
       // Asynchronous background sync to Supabase if available via safe upsert
-      try {
-        const rowsToInsert = itemsWithBpId.map(item => formatBlueprintItemForCloud(item, bpId));
-        await safeSupabaseUpsert('blueprint_items', rowsToInsert);
-        for (const item of itemsWithBpId) {
-          if (item.writer_id || item.writer_name) {
-            await saveBlueprintItemWriterToCloud(item.id, item.writer_id, item.writer_name);
-          }
-        }
-      } catch (dbErr) {}
+      const rowsToInsert = itemsWithBpId.map(item => formatBlueprintItemForCloud(item, bpId));
+      const upsertRes = await safeSupabaseUpsert('blueprint_items', rowsToInsert);
+      if (!upsertRes.success) {
+        throw new Error(upsertRes.error?.message || 'Gagal menyimpan data butir kisi-kisi ke database');
+      }
+      await saveBlueprintItemWritersBatchToCloud(itemsWithBpId);
 
       setExcelFeedback({
         type: 'success',
