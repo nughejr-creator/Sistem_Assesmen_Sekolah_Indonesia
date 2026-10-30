@@ -1439,6 +1439,21 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       });
       setTimeout(() => setExcelFeedback(null), 4000);
       setEditingItem(null);
+
+      // Tampilkan Pop-Up Notifikasi Berhasil Simpan Kisi-Kisi di Layar Saat Ini (Current Viewport)
+      setSaveSuccessNotification({
+        isOpen: true,
+        type: 'blueprint',
+        title: 'Kisi-Kisi Berhasil Disimpan!',
+        description: 'Perubahan butir kisi-kisi telah sukses disimpan secara permanen ke database SASI.',
+        questionNumber: editingItem.question_number,
+        element: editingItem.element,
+        questionType: editingItem.question_type,
+        cognitiveLevel: editingItem.cognitive_level,
+        indicator: editingItem.indicator,
+        isCloudSynced: true,
+        blueprintItem: itemToSave
+      });
     } catch (saveErr: any) {
       console.error('Error saat menyimpan butir kisi-kisi:', saveErr);
       setExcelFeedback({
@@ -1455,13 +1470,18 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
   const [selectedQuestionForEditor, setSelectedQuestionForEditor] = useState<QuestionBankItem | null>(null);
   const [selectedVariantNumber, setSelectedVariantNumber] = useState<number>(1);
 
-  // Popup Pemberitahuan Berhasil Simpan Soal ke Database (Permintaan User)
+  // Popup Pemberitahuan Berhasil Simpan Soal & Kisi-Kisi ke Database (Permintaan User)
   const [saveSuccessNotification, setSaveSuccessNotification] = useState<{
     isOpen: boolean;
+    type?: 'question' | 'blueprint';
+    title?: string;
+    description?: string;
     questionNumber?: number;
     variantNumber?: number;
     questionType?: string;
     element?: string;
+    cognitiveLevel?: string;
+    indicator?: string;
     isCloudSynced: boolean;
     savedQuestion?: QuestionBankItem;
     blueprintItem?: BlueprintItem;
@@ -2198,6 +2218,21 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       message: `Butir Kisi-Kisi No #${newItem.question_number} (${newItem.element} • ${newItem.assessment_type}) berhasil ditambahkan & tersimpan ke Cloud Database!`
     });
     setTimeout(() => setExcelFeedback(null), 5000);
+
+    // Tampilkan Pop-Up Notifikasi Berhasil Simpan Kisi-Kisi Baru di Layar Saat Ini (Current Viewport)
+    setSaveSuccessNotification({
+      isOpen: true,
+      type: 'blueprint',
+      title: 'Butir Kisi-Kisi Berhasil Dibuat!',
+      description: 'Butir kisi-kisi baru telah sukses ditambahkan dan disimpan secara permanen ke database SASI.',
+      questionNumber: newItem.question_number,
+      element: newItem.element,
+      questionType: newItem.question_type,
+      cognitiveLevel: newItem.cognitive_level,
+      indicator: newItem.indicator,
+      isCloudSynced: true,
+      blueprintItem: newItem
+    });
   };
 
   // Filter & Sort Logic (Tersinkronisasi dengan Hierarchical Stepped Filter)
@@ -5188,10 +5223,13 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         )
       )}
 
-      {/* Modal Buat Butir Kisi-Kisi Baru Secara Manual (Permintaan User) */}
-      {showCreateManualModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-5 my-8 max-h-[90vh] overflow-y-auto">
+      {/* Modal Buat Butir Kisi-Kisi Baru Secara Manual (True Viewport Center via createPortal document.body) */}
+      {showCreateManualModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+          style={{ zIndex: 9999 }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-5 my-auto max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center space-x-3">
@@ -5450,7 +5488,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Pusat Impor & Personalisasi Unduh Template Excel (Permintaan User) */}
@@ -5960,10 +5999,12 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                 {saveSuccessNotification.isCloudSynced ? 'Database Cloud Supabase Terhubung' : 'Penyimpanan Database Aktif'}
               </span>
               <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                Soal Berhasil Disimpan!
+                {saveSuccessNotification.title || (saveSuccessNotification.type === 'blueprint' ? 'Kisi-Kisi Berhasil Disimpan!' : 'Soal Berhasil Disimpan!')}
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Data butir soal, stimulus, dan kunci jawaban telah sukses disimpan secara permanen ke database SASI.
+                {saveSuccessNotification.description || (saveSuccessNotification.type === 'blueprint' 
+                  ? 'Data butir kisi-kisi telah sukses disimpan secara permanen ke database SASI.' 
+                  : 'Data butir soal, stimulus, dan kunci jawaban telah sukses disimpan secara permanen ke database SASI.')}
               </p>
             </div>
 
@@ -5975,12 +6016,33 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                   Butir #{saveSuccessNotification.questionNumber}
                 </span>
               </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                <span className="text-slate-500 font-bold">Varian Soal:</span>
-                <span className="font-black text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
-                  Varian #{saveSuccessNotification.variantNumber || 1}
-                </span>
-              </div>
+              {saveSuccessNotification.type === 'blueprint' ? (
+                <>
+                  {saveSuccessNotification.element && (
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                      <span className="text-slate-500 font-bold">Elemen / Materi:</span>
+                      <span className="font-black text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 text-right line-clamp-1 max-w-[200px]">
+                        {saveSuccessNotification.element}
+                      </span>
+                    </div>
+                  )}
+                  {saveSuccessNotification.cognitiveLevel && (
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                      <span className="text-slate-500 font-bold">Level Kognitif:</span>
+                      <span className="font-bold text-slate-800">
+                        {saveSuccessNotification.cognitiveLevel}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-bold">Varian Soal:</span>
+                  <span className="font-black text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                    Varian #{saveSuccessNotification.variantNumber || 1}
+                  </span>
+                </div>
+              )}
               {saveSuccessNotification.questionType && (
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
                   <span className="text-slate-500 font-bold">Bentuk Soal:</span>
@@ -6000,7 +6062,21 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
             {/* Tombol Aksi */}
             <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
-              {saveSuccessNotification.blueprintItem && saveSuccessNotification.savedQuestion && (
+              {saveSuccessNotification.type === 'blueprint' && saveSuccessNotification.blueprintItem && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const bp = saveSuccessNotification.blueprintItem!;
+                    setSaveSuccessNotification(null);
+                    handleOpenEditorForVariant(bp);
+                  }}
+                  className="w-full sm:w-auto flex-1 px-4 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-colors border border-brand-200"
+                >
+                  <Edit3 className="w-4 h-4 text-brand-600" />
+                  <span>Tulis Soal Ini</span>
+                </button>
+              )}
+              {saveSuccessNotification.type !== 'blueprint' && saveSuccessNotification.blueprintItem && saveSuccessNotification.savedQuestion && (
                 <button
                   type="button"
                   onClick={() => {
@@ -6419,10 +6495,13 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         document.body
       )}
 
-      {/* Modal 1: Pratinjau Lengkap Butir Kisi-Kisi (Permintaan User: Gambar Mata) */}
-      {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-6 my-8 max-h-[92vh] overflow-y-auto">
+      {/* Modal 1: Pratinjau Lengkap Butir Kisi-Kisi (True Viewport Center via createPortal document.body) */}
+      {previewItem && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+          style={{ zIndex: 9999 }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-6 my-auto max-h-[92vh] overflow-y-auto">
             
             {/* Header Pratinjau */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -6576,13 +6655,17 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Modal 2: Edit & Simpan Butir Kisi-Kisi (Permintaan User: Edit & Simpan) */}
-      {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-5 my-8 max-h-[92vh] overflow-y-auto">
+      {/* Modal 2: Edit & Simpan Butir Kisi-Kisi (True Viewport Center via createPortal document.body) */}
+      {editingItem && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+          style={{ zIndex: 9999 }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-5 my-auto max-h-[92vh] overflow-y-auto">
             
             {/* Header Modal */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -6891,7 +6974,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Konfirmasi Bersihkan Lembar Kerja Penugasan (Solusi B) */}
