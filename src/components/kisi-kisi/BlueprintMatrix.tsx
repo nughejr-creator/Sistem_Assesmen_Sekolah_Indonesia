@@ -2442,9 +2442,17 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     }
 
     // 4. Resolve Subject UUID and Persist question_bank to Supabase
+    const targetSub = 
+      savedQuestion.subject_id ||
+      (currentBpItem as any)?.blueprint?.subject_id ||
+      (currentBpItem as any)?.blueprint_item?.blueprint?.subject_id ||
+      currentBpItem?.subject_name ||
+      selectedSubject ||
+      initialScope?.subject;
+
     const resolvedSubId = resolveSubjectUUID(
-      savedQuestion.subject_id || currentBpItem?.subject_name,
-      savedQuestion.level || currentBpItem?.level || 'SD'
+      targetSub,
+      savedQuestion.level || currentBpItem?.level || selectedLevel || initialScope?.level || 'SD'
     );
 
     const qbPayload = formatQuestionForCloud(

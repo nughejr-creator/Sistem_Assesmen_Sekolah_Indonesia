@@ -183,9 +183,15 @@ export const SUBJECT_MAP: Record<string, string> = {
  */
 export function resolveSubjectUUID(subjectNameOrId: string | null | undefined, level?: string): string {
   if (!subjectNameOrId) return 'a0000001-0000-0000-0000-000000000001';
+
+  // 0. If already a valid UUID, preserve and return it directly
+  if (isValidUUID(subjectNameOrId)) {
+    return subjectNameOrId;
+  }
+
   const clean = subjectNameOrId.trim().toLowerCase();
 
-  // 1. Direct match
+  // 1. Direct match in SUBJECT_MAP dictionary
   if (SUBJECT_MAP[clean]) return SUBJECT_MAP[clean];
 
   // 2. Partial search in keys
@@ -202,12 +208,7 @@ export function resolveSubjectUUID(subjectNameOrId: string | null | undefined, l
     }
   }
 
-  // 3. If already valid UUID, verify or return
-  if (isValidUUID(subjectNameOrId)) {
-    return subjectNameOrId;
-  }
-
-  // 4. Default fallback: Matematika SD
+  // 3. Fallback to default
   return 'a0000001-0000-0000-0000-000000000001';
 }
 

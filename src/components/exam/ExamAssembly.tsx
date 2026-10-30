@@ -457,14 +457,39 @@ export const ExamAssembly: React.FC<ExamAssemblyProps> = ({ currentUser, initial
 
     // Check subject matching by subject_id or subject_name or initialScope
     const selectedSub = availableSubjects.find(s => s.id === newSubjectId);
-    const subName = (selectedSub?.name || initialScope?.subject || '').toLowerCase();
+    const subName = (selectedSub?.name || initialScope?.subject || '').toLowerCase().trim();
 
-    const matchSubject = !q.subject_id || q.subject_id === newSubjectId ||
-      (subName && (
-        (q.subject_name && q.subject_name.toLowerCase().includes(subName)) ||
-        (q.blueprint_item?.subject_name && q.blueprint_item.subject_name.toLowerCase().includes(subName)) ||
-        (q.subject?.name && q.subject.name.toLowerCase().includes(subName))
-      ));
+    // Single Source of Truth: Determine effective subject ID & names from question or parent blueprint
+    const effectiveSubjectId = (
+      q.blueprint_item?.blueprint?.subject_id ||
+      q.subject_id ||
+      (q.blueprint_item as any)?.subject_id
+    );
+
+    const effectiveSubNames = [
+      q.blueprint_item?.blueprint?.subject?.name,
+      q.blueprint_item?.subject_name,
+      q.subject_name,
+      q.subject?.name
+    ].filter(Boolean).map(s => (s as string).toLowerCase().trim());
+
+    // Strict subject match: Must match either the subject ID or exact normalized subject name
+    // Never allow permissive empty match (!q.subject_id) to prevent cross-subject contamination
+    let matchSubject = false;
+    if (newSubjectId && effectiveSubjectId) {
+      matchSubject = (
+        effectiveSubjectId === newSubjectId ||
+        toValidUUID(effectiveSubjectId) === toValidUUID(newSubjectId)
+      );
+    }
+
+    if (!matchSubject && subName && effectiveSubNames.length > 0) {
+      matchSubject = effectiveSubNames.some(name => {
+        if (name === subName) return true;
+        const norm = (s: string) => s.replace(/[\(\)\-\/]/g, ' ').replace(/\s+/g, ' ').trim();
+        return norm(name) === norm(subName);
+      });
+    }
 
     // Match Grade if question has grade_class
     const matchGrade = !q.grade_class || !newGrade || 
