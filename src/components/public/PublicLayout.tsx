@@ -23,35 +23,57 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   initialRoute = 'beranda',
   onOpenLogin
 }) => {
-  // Sync router with window.location.hash if present
-  const getRouteFromHash = (): PublicNavRoute => {
+  const validRoutes: PublicNavRoute[] = [
+    'beranda',
+    'wawasan-asesmen',
+    'bank-soal',
+    'ruang-kreativitas',
+    'profil-pengembang',
+    'privacy-policy',
+    'terms',
+    'about-contact'
+  ];
+
+  // Resolve current route from pathname first (Clean Path SEO), with fallback to legacy hash
+  const getRouteFromUrl = (): PublicNavRoute => {
     try {
-      const hash = window.location.hash.replace(/^#\/?/, '');
+      // 1. Check clean pathname (e.g. "/wawasan-asesmen", "/bank-soal", "/about", "/contact")
+      const pathname = window.location.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+      if (pathname === 'about' || pathname === 'contact') {
+        return 'about-contact';
+      }
+      if (validRoutes.includes(pathname as PublicNavRoute)) {
+        return pathname as PublicNavRoute;
+      }
+      for (const r of validRoutes) {
+        if (pathname.startsWith(r)) {
+          return r;
+        }
+      }
+
+      // 2. Backward compatibility fallback: check hash if present (e.g. "#/wawasan-asesmen")
+      const hash = window.location.hash.replace(/^#\/?/, '').replace(/\/+$/, '');
       if (hash === 'about' || hash === 'contact') {
         return 'about-contact';
       }
-      const validRoutes: PublicNavRoute[] = [
-        'beranda',
-        'wawasan-asesmen',
-        'bank-soal',
-        'ruang-kreativitas',
-        'profil-pengembang',
-        'privacy-policy',
-        'terms',
-        'about-contact'
-      ];
       if (validRoutes.includes(hash as PublicNavRoute)) {
         return hash as PublicNavRoute;
+      }
+      for (const r of validRoutes) {
+        if (hash.startsWith(r)) {
+          return r;
+        }
       }
     } catch (e) {}
     return initialRoute;
   };
 
-  const [currentRoute, setCurrentRoute] = useState<PublicNavRoute>(getRouteFromHash);
-  const getInitialOptionsFromHash = () => {
+  const [currentRoute, setCurrentRoute] = useState<PublicNavRoute>(getRouteFromUrl);
+
+  const getInitialOptionsFromUrl = () => {
     try {
-      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-      if (hash.includes('desain-atribut-kelas') || hash.includes('atribut-kelas')) {
+      const fullUrl = (window.location.pathname + window.location.hash + window.location.search).toLowerCase();
+      if (fullUrl.includes('desain-atribut-kelas') || fullUrl.includes('atribut-kelas')) {
         return { tab: 'ai' as const, generatorIndex: 6 };
       }
     } catch (e) {}
@@ -62,7 +84,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     category?: string;
     tab?: 'ai' | 'kontribusi' | 'perangkat' | 'lkpd' | 'administrasi';
     generatorIndex?: number;
-  }>(getInitialOptionsFromHash);
+  }>(getInitialOptionsFromUrl);
 
   // Layout-level Sidebar Aggregate Cache State
   const [sidebarAggregate, setSidebarAggregate] = useState<PublicSidebarAggregatePayload | null>(null);
@@ -96,17 +118,31 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   }, []);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-      if (hash.includes('desain-atribut-kelas') || hash.includes('atribut-kelas')) {
+    // If entered with legacy hash (e.g. #/wawasan-asesmen), upgrade address bar to clean path
+    if (window.location.hash) {
+      const legacyRoute = getRouteFromUrl();
+      const cleanPath = legacyRoute === 'beranda' ? '/' : `/${legacyRoute}`;
+      try {
+        window.history.replaceState(null, '', cleanPath);
+      } catch (e) {}
+    }
+
+    const handleUrlChange = () => {
+      const fullUrl = (window.location.pathname + window.location.hash).toLowerCase();
+      if (fullUrl.includes('desain-atribut-kelas') || fullUrl.includes('atribut-kelas')) {
         setCurrentRoute('ruang-kreativitas');
         setNavOptions({ tab: 'ai', generatorIndex: 6 });
         return;
       }
-      setCurrentRoute(getRouteFromHash());
+      setCurrentRoute(getRouteFromUrl());
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
   }, []);
 
   const handleNavigate = (
@@ -127,10 +163,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       setNavOptions({});
     }
     try {
-      if (route === 'ruang-kreativitas' && options?.generatorIndex === 6) {
-        window.location.hash = '#/ruang-kreativitas-guru/asisten-guru-ai/desain-atribut-kelas';
-      } else {
-        window.location.hash = `#/${route}`;
+      const targetPath = route === 'beranda' ? '/' : `/${route}`;
+      if (window.location.pathname !== targetPath || window.location.hash) {
+        window.history.pushState(null, '', targetPath);
       }
     } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -141,7 +176,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     setSelectedArticle(article);
     setCurrentRoute('wawasan-asesmen');
     try {
-      window.location.hash = '#/wawasan-asesmen';
+      const targetPath = article.slug 
+        ? `/wawasan-asesmen/${article.slug}`
+        : '/wawasan-asesmen';
+      if (window.location.pathname !== targetPath || window.location.hash) {
+        window.history.pushState(null, '', targetPath);
+      }
     } catch (e) {}
     window.scrollTo({ top: 250, behavior: 'smooth' });
   };
@@ -151,7 +191,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     setSelectedArticle(null);
     setCurrentRoute('wawasan-asesmen');
     try {
-      window.location.hash = '#/wawasan-asesmen';
+      if (window.location.pathname !== '/wawasan-asesmen' || window.location.hash) {
+        window.history.pushState(null, '', '/wawasan-asesmen');
+      }
     } catch (e) {}
     window.scrollTo({ top: 250, behavior: 'smooth' });
   };
