@@ -42,4 +42,3 @@ Disallow: /*?*password=*
 
 # Tautan Peta Situs (Sitemap Resmi Canonical)
 Sitemap: https://www.sasipedia.my.id/sitemap.xml
-Sitemap: https://sasipedia.my.id/sitemap.xml
