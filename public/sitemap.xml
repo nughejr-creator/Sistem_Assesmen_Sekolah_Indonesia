@@ -1,24 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- =======================================================================
-       1. HALAMAN BERANDA UTAMA (CANONICAL & APEX)
-  ======================================================================= -->
+  <!-- 1. HALAMAN UTAMA / BERANDA (CANONICAL) -->
   <url>
     <loc>https://www.sasipedia.my.id/</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  <url>
-    <loc>https://sasipedia.my.id/</loc>
-    <lastmod>2026-10-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
 
-  <!-- =======================================================================
-       2. WAWASAN SOAL & ASESMEN (INDUK & ARTIKEL PEDAGOGIS)
-  ======================================================================= -->
+  <!-- 2. WAWASAN SOAL & ASESMEN -->
   <url>
     <loc>https://www.sasipedia.my.id/wawasan-asesmen</loc>
     <lastmod>2026-10-27</lastmod>
@@ -56,9 +46,7 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- =======================================================================
-       3. KISI-KISI & BANK SOAL
-  ======================================================================= -->
+  <!-- 3. KISI-KISI & BANK SOAL -->
   <url>
     <loc>https://www.sasipedia.my.id/bank-soal</loc>
     <lastmod>2026-10-27</lastmod>
@@ -66,9 +54,7 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- =======================================================================
-       4. RUANG KREATIVITAS GURU & ASISTEN AI
-  ======================================================================= -->
+  <!-- 4. RUANG KREATIVITAS GURU -->
   <url>
     <loc>https://www.sasipedia.my.id/ruang-kreativitas</loc>
     <lastmod>2026-10-27</lastmod>
@@ -76,9 +62,7 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- =======================================================================
-       5. STANDAR E-E-A-T & PROFIL PENGEMBANG
-  ======================================================================= -->
+  <!-- 5. PROFIL PENGEMBANG -->
   <url>
     <loc>https://www.sasipedia.my.id/profil-pengembang</loc>
     <lastmod>2026-10-27</lastmod>
@@ -86,19 +70,7 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- =======================================================================
-       6. PORTAL LOGIN CBT
-  ======================================================================= -->
-  <url>
-    <loc>https://www.sasipedia.my.id/login</loc>
-    <lastmod>2026-10-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- =======================================================================
-       7. KEPATUHAN LEGALITAS & GOOGLE ADSENSE
-  ======================================================================= -->
+  <!-- 6. LEGALITAS & ADSENSE -->
   <url>
     <loc>https://www.sasipedia.my.id/privacy-policy</loc>
     <lastmod>2026-10-27</lastmod>
