@@ -932,9 +932,9 @@ export function decodeWriterAssignmentFromPipe(id: string, text: string): Questi
 }
 
 /**
- * Deduplikasi daftar QuestionWriterAssignment berdasarkan kunci unik logis
- * (user_id/user_name + subject_name + grade_class).
- * Memberikan prioritas pada item dari Cloud (UUID valid) dibanding ID lokal statis lama ('asg-001', dst).
+ * Deduplikasi daftar QuestionWriterAssignment berdasarkan identitas logis guru
+ * (user_id valid UUID / email / nama + subject_name + grade_class).
+ * Kebal terhadap perubahan nama guru dan selalu memprioritaskan penugasan resmi dari Cloud (UUID valid).
  */
 export function deduplicateWriterAssignments(
   items: QuestionWriterAssignment[]
@@ -946,50 +946,90 @@ export function deduplicateWriterAssignments(
     a => a && a.id !== 'asg-003' && a.id !== 'asg-004' && a.id !== 'asg-005' && a.id !== 'asg-006'
   );
 
-  const resultMap = new Map<string, QuestionWriterAssignment>();
+  const cleanStr = (s?: string | null) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const resultList: QuestionWriterAssignment[] = [];
 
   for (const item of cleanList) {
-    const teacherKey = (item.user_name || item.user_id || '').trim().toLowerCase();
-    const subjectKey = (item.subject_name || '').trim().toLowerCase();
-    const gradeKey = (item.grade_class || '').trim().toLowerCase();
-    const uniqueKey = `${teacherKey}_${subjectKey}_${gradeKey}`;
+    const itemUserId = item.user_id ? toValidUUID(item.user_id) : '';
+    const itemUserName = cleanStr(item.user_name);
+    const itemSubject = cleanStr(item.subject_name);
+    const itemGrade = cleanStr(item.grade_class);
 
-    if (!resultMap.has(uniqueKey)) {
-      resultMap.set(uniqueKey, item);
+    // Cari apakah sudah ada item yang setara (berdasarkan user_id sama ATAU nama saling substring, untuk mapel & kelas yang sama)
+    const existingIndex = resultList.findIndex(existing => {
+      const exSubject = cleanStr(existing.subject_name);
+      const exGrade = cleanStr(existing.grade_class);
+      if (exSubject !== itemSubject || exGrade !== itemGrade) return false;
+
+      const exUserId = existing.user_id ? toValidUUID(existing.user_id) : '';
+      const exUserName = cleanStr(existing.user_name);
+
+      // 1. Cocok berdasarkan User ID (identitas permanen guru yang kebal perubahan nama)
+      if (itemUserId && exUserId && itemUserId === exUserId) return true;
+
+      // 2. Cocok jika email / username sama
+      if (item.user_email && existing.user_email && cleanStr(item.user_email) === cleanStr(existing.user_email)) return true;
+
+      // 3. Cocok jika nama saling mengandung (misal "Natalius Pigai" dan "Stevanus Natalius Pigai")
+      if (itemUserName && exUserName && (itemUserName.includes(exUserName) || exUserName.includes(itemUserName))) return true;
+
+      return false;
+    });
+
+    if (existingIndex === -1) {
+      resultList.push(item);
     } else {
-      const existing = resultMap.get(uniqueKey)!;
+      const existing = resultList[existingIndex];
       const itemIsUUID = isValidUUID(item.id);
       const existingIsUUID = isValidUUID(existing.id);
 
+      // Prioritas 1: Item resmi dari Cloud (UUID valid) selalu menimpa draft lokal lama
       if (itemIsUUID && !existingIsUUID) {
-        // Prioritaskan ID UUID dari Cloud
-        resultMap.set(uniqueKey, item);
-      } else if (itemIsUUID === existingIsUUID) {
-        const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
-        const itemTime = new Date(item.updated_at || item.created_at || 0).getTime();
-        if (itemTime > existingTime) {
-          resultMap.set(uniqueKey, item);
+        resultList[existingIndex] = item;
+      } else if (!itemIsUUID && existingIsUUID) {
+        // Pertahankan existing cloud item
+      } else {
+        // Prioritas 2: Item dengan status resmi non-Draft ('Dalam Penulisan', 'Menunggu Verifikasi', 'Terverifikasi')
+        const itemStatus = (item.status || '').toLowerCase();
+        const existingStatus = (existing.status || '').toLowerCase();
+        const isItemActive = itemStatus !== 'draft';
+        const isExistingActive = existingStatus !== 'draft';
+
+        if (isItemActive && !isExistingActive) {
+          resultList[existingIndex] = item;
+        } else if (!isItemActive && isExistingActive) {
+          // Pertahankan existing active item
+        } else {
+          // Prioritas 3: Waktu pembaruan terbaru
+          const existingTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+          const itemTime = new Date(item.updated_at || item.created_at || 0).getTime();
+          if (itemTime > existingTime) {
+            resultList[existingIndex] = item;
+          }
         }
       }
     }
   }
 
-  return Array.from(resultMap.values());
+  return resultList;
 }
 
 /**
  * Sinkronisasi Penugasan Penulis Soal ke Supabase Cloud (Dual Engine: Dedicated Table + context_presets namespace)
  */
 export async function fetchWriterAssignmentsFromCloud(): Promise<QuestionWriterAssignment[]> {
+  const combined: QuestionWriterAssignment[] = [];
+
   try {
-    // 1. Coba baca dari dedicated table jika tersedia di Supabase Cloud
+    // 1. Baca dari dedicated table jika tersedia di Supabase Cloud
     const { data: dedicatedData, error: dedicatedErr } = await supabase
       .from('question_writer_assignments')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (!dedicatedErr && dedicatedData && Array.isArray(dedicatedData) && dedicatedData.length > 0) {
-      return dedicatedData as QuestionWriterAssignment[];
+      combined.push(...(dedicatedData as QuestionWriterAssignment[]));
     }
   } catch (e) {}
 
@@ -1001,19 +1041,18 @@ export async function fetchWriterAssignmentsFromCloud(): Promise<QuestionWriterA
       .eq('subject_name', '__SASI_WRITER_ASSIGNMENT__');
 
     if (!error && data && data.length > 0) {
-      const parsed: QuestionWriterAssignment[] = [];
       data.forEach(row => {
         const item = decodeWriterAssignmentFromPipe(row.id, row.context_text);
         if (item) {
-          parsed.push(item);
+          combined.push(item);
         }
       });
-      return parsed;
     }
   } catch (e) {
     console.warn('Fetch writer assignments fallback:', e);
   }
-  return [];
+
+  return deduplicateWriterAssignments(combined);
 }
 
 export async function saveWriterAssignmentToCloud(assignment: QuestionWriterAssignment) {
