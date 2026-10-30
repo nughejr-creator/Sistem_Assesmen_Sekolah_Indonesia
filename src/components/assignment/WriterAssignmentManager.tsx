@@ -508,7 +508,14 @@ export const WriterAssignmentManager: React.FC<WriterAssignmentManagerProps> = (
 
       const matchGrade = filterGrade === 'ALL' || item.grade_class === filterGrade;
       const matchAssessment = filterAssessment === 'ALL' || item.assessment_types.includes(filterAssessment as AssessmentType);
-      const matchStatus = filterStatus === 'ALL' || item.status === filterStatus;
+      const matchStatus = filterStatus === 'ALL' || (() => {
+        const s = (item.status || '').toLowerCase().trim();
+        if (filterStatus === 'Selesai') return s === 'selesai' || s === 'terverifikasi' || s === 'approved' || s === 'selesai (terverifikasi)';
+        if (filterStatus === 'Menunggu Riviu') return s === 'menunggu riviu' || s === 'menunggu verifikasi' || s === 'pending_review';
+        if (filterStatus === 'Dalam Penulisan') return s === 'dalam penulisan' || s === 'proses penulisan' || s === 'in_progress';
+        if (filterStatus === 'Draft') return s === 'draft';
+        return item.status === filterStatus;
+      })();
 
       return matchSearch && matchGrade && matchAssessment && matchStatus;
     });
@@ -520,7 +527,10 @@ export const WriterAssignmentManager: React.FC<WriterAssignmentManagerProps> = (
     const internalTeachers = assignments.filter(a => a.user_type !== 'mitra_eksternal').length;
     const externalExperts = assignments.filter(a => a.user_type === 'mitra_eksternal').length;
     const sasPackages = assignments.filter(a => a.assessment_types.includes('SAS')).length;
-    const completedPackages = assignments.filter(a => a.status === 'Selesai').length;
+    const completedPackages = assignments.filter(a => {
+      const s = (a.status || '').toLowerCase().trim();
+      return s === 'selesai' || s === 'terverifikasi' || s === 'approved' || s === 'selesai (terverifikasi)';
+    }).length;
 
     return { total, internalTeachers, externalExperts, sasPackages, completedPackages };
   }, [assignments]);
@@ -858,14 +868,47 @@ export const WriterAssignmentManager: React.FC<WriterAssignmentManagerProps> = (
 
                     {/* 7. Status */}
                     <td className="py-2 px-3 text-center whitespace-nowrap">
-                      <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                        item.status === 'Selesai' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                        item.status === 'Menunggu Riviu' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                        item.status === 'Dalam Penulisan' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                        'bg-slate-100 text-slate-600 border-slate-200'
-                      }`}>
-                        {item.status}
-                      </span>
+                      {(() => {
+                        const s = (item.status || '').toLowerCase().trim();
+                        const isDone = s === 'selesai' || s === 'terverifikasi' || s === 'approved' || s === 'selesai (terverifikasi)';
+                        const isReview = s === 'menunggu riviu' || s === 'menunggu verifikasi' || s === 'pending_review';
+                        const isWriting = s === 'dalam penulisan' || s === 'proses penulisan' || s === 'in_progress';
+                        const isRevision = s === 'perlu revisi' || s === 'needs_revision' || s === 'revisi';
+
+                        if (isDone) {
+                          return (
+                            <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-black border bg-emerald-50 text-emerald-700 border-emerald-200">
+                              Selesai
+                            </span>
+                          );
+                        }
+                        if (isReview) {
+                          return (
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border bg-amber-50 text-amber-700 border-amber-200">
+                              Menunggu Verifikasi
+                            </span>
+                          );
+                        }
+                        if (isRevision) {
+                          return (
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200">
+                              Perlu Revisi
+                            </span>
+                          );
+                        }
+                        if (isWriting) {
+                          return (
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border bg-blue-50 text-blue-700 border-blue-200">
+                              Dalam Penulisan
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border bg-slate-100 text-slate-600 border-slate-200">
+                            {item.status || 'Draft'}
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* 8. Aksi */}

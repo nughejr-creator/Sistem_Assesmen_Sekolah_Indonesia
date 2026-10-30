@@ -515,7 +515,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     const reviewerName = currentUser?.full_name || currentUser?.name || (currentUser?.role === 'assistant_admin' ? 'Asisten Admin' : currentUser?.role === 'super_admin' ? 'Super Admin' : 'Administrator');
     const updatedAsg: QuestionWriterAssignment = {
       ...asg,
-      status: 'Terverifikasi',
+      status: 'Selesai',
       reviewed_by: reviewerName,
       reviewed_at: new Date().toISOString()
     };
@@ -560,7 +560,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     setPreviewAssignment(null);
     setIsRevisionFormOpen(false);
     setRevisionNotesInput('');
-    alert(`Paket soal "${asg.subject_name} - ${asg.grade_class}" berhasil Disetujui & Terverifikasi ke Bank Soal!`);
+    alert(`Paket soal "${asg.subject_name} - ${asg.grade_class}" berhasil Disetujui (Status Selesai) dan terverifikasi ke Bank Soal!`);
   };
 
   // Handler: Kembalikan untuk Perbaikan / Revisi
@@ -3158,7 +3158,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                       </div>
                       <div>
                         <h4 className="font-black text-sm text-emerald-900">
-                          Status: Selesai (Terverifikasi)
+                          Status: Selesai
                         </h4>
                         <p className="text-xs text-emerald-800">
                           Paket soal ini telah disetujui verifikator dan masuk Bank Soal. Lembar kerja berada dalam mode <strong>hanya-baca (read-only)</strong>.
