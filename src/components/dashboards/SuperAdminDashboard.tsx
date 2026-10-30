@@ -26,6 +26,7 @@ import { MOCK_SCHOOLS, MOCK_USERS } from '../../lib/mockData';
 import { UserRole, School, UserProfile } from '../../types/database';
 import { supabase } from '../../lib/supabase';
 import { getClusterNodes, getClientForNode } from '../../lib/clusterManager';
+import { HourglassLoader } from '../common/HourglassLoader';
 import { isPackageArchived, getCleanPackageTitle, isSessionArchived, getCleanSessionName } from '../../lib/archiveHelper';
 
 interface SuperAdminDashboardProps {
@@ -79,6 +80,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   // Function to load 100% Realtime Data from Supabase
   const fetchRealtimeDashboardData = async (manual = false) => {
@@ -189,6 +191,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
       console.warn('Realtime dashboard data sync error:', err);
     } finally {
       if (manual) setIsRefreshing(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -489,6 +492,16 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onNavi
           </button>
         </div>
       </div>
+
+      {/* Hourglass Loading Notice saat Inisialisasi Sinkronisasi Database */}
+      {isLoadingData && (
+        <HourglassLoader
+          compact
+          title="Sedang Menyinkronkan Statistik Cloud Supabase..."
+          subtitle="Mengambil pembaruan data sekolah, pengguna, butir kisi-kisi, bank soal, dan kartu sesi CBT dari database pusat..."
+          badgeText="SINKRONISASI PUSAT"
+        />
+      )}
 
       {/* 4 KPI Cards Super Admin (100% Real dari Database) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">

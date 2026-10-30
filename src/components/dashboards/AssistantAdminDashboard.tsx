@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage } from '../../types/database';
 import { supabase } from '../../lib/supabase';
+import { HourglassLoader } from '../common/HourglassLoader';
 import { isBlueprintArchived, getCleanBlueprintTitle, archiveBlueprintInDb, restoreBlueprintInDb } from '../../lib/archiveHelper';
 
 interface AssistantAdminDashboardProps {
@@ -75,6 +76,7 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [blueprintArchiveTab, setBlueprintArchiveTab] = useState<'active' | 'archived'>('active');
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   const handleArchiveBlueprint = async (bp: Blueprint) => {
     const clean = getCleanBlueprintTitle(bp.title);
@@ -157,6 +159,7 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
       setIsLiveConnected(false);
     } finally {
       if (manual) setIsRefreshing(false);
+      setIsLoadingData(false);
     }
   }, []);
 
@@ -716,7 +719,15 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
           </div>
         </div>
 
-        {displayedBlueprints.length === 0 ? (
+        {isLoadingData ? (
+          <div className="p-8 bg-white rounded-2xl border border-slate-200">
+            <HourglassLoader
+              title="Sedang Memuat Dokumen Kisi-Kisi..."
+              subtitle="Menghubungkan ke cloud database Supabase untuk menyinkronkan seluruh daftar kisi-kisi dan status penulisan butir soal."
+              badgeText="MEMUAT DOKUMEN DARI SUPABASE"
+            />
+          </div>
+        ) : displayedBlueprints.length === 0 ? (
           <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <FileSpreadsheet className="w-10 h-10 text-slate-300 mx-auto mb-2" />
             <p className="text-sm font-bold text-slate-600">

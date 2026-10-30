@@ -39,6 +39,7 @@ import { CreatableCombobox } from './CreatableCombobox';
 import { QuestionEditorModal } from './QuestionEditorModal';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
 import { RichMathText } from '../common/RichMathText';
+import { HourglassLoader } from '../common/HourglassLoader';
 import { 
   exportBlueprintToExcel, 
   downloadBlueprintTemplate, 
@@ -214,12 +215,14 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
   // Cloud Database Connection State
   const [cloudStatus, setCloudStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('checking');
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   // Fetch Blueprint Items & Question Bank from Supabase Cloud on mount & Sync Bidirectional
   useEffect(() => {
     let isMounted = true;
 
     const syncBlueprintFromCloud = async () => {
+      setIsLoadingData(true);
       setCloudStatus('checking');
       try {
         // 0. Sync Subjects from Supabase Cloud (bersihkan data obsolete)
@@ -386,6 +389,10 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         console.warn('Supabase blueprint/questions sync fallback:', err);
         setCloudStatus('error');
         setCloudError(err?.message || 'Gagal sinkronisasi cloud');
+      } finally {
+        if (isMounted) {
+          setIsLoadingData(false);
+        }
       }
     };
 
@@ -4375,7 +4382,17 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                     </td>
                   </tr>
                 ))}
-                {filteredItems.length === 0 && (
+                {isLoadingData ? (
+                  <tr>
+                    <td colSpan={12} className="py-12 px-4 bg-white">
+                      <HourglassLoader
+                        title="Sedang Memuat Data Kisi-Kisi..."
+                        subtitle={`Menghubungkan ke database cloud SASI untuk ${selectedSubject || 'Mata Pelajaran'} (${selectedGrade || ''}). Mohon tunggu sejenak, data kisi-kisi dan indikator Anda sedang disinkronkan secara aman.`}
+                        badgeText="MEMUAT KISI-KISI DARI SUPABASE"
+                      />
+                    </td>
+                  </tr>
+                ) : filteredItems.length === 0 && (
                   <tr>
                     <td colSpan={12} className="py-14 text-center text-slate-400 bg-slate-50/40">
                       <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-3 border border-brand-200">
@@ -4541,7 +4558,17 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredItems.length === 0 ? (
+                {isLoadingData ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 px-4 bg-white">
+                      <HourglassLoader
+                        title="Sedang Memuat Lembar Kerja Penulisan Soal..."
+                        subtitle={`Menghubungkan ke database cloud SASI untuk butir soal ${selectedSubject || 'Mata Pelajaran'} (${selectedGrade || ''}). Mohon tunggu sejenak, naskah stimulus dan opsi jawaban Anda sedang disinkronkan.`}
+                        badgeText="MEMUAT BANK SOAL DARI SUPABASE"
+                      />
+                    </td>
+                  </tr>
+                ) : filteredItems.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-400 bg-slate-50/30">
                       <div className="max-w-md mx-auto space-y-2">
@@ -4776,7 +4803,15 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
       {/* VIEW 3: BANK SOAL TERVERIFIKASI (FILTER SELECTION + TRIGGER BUTTON) */}
       {activeSubMode === 'bank-soal' && Boolean(selectedLevel && selectedGrade && selectedSubject && selectedAssessment) && (
-        (isScopedFilter ? items.filter(isItemInCurrentScope).length === 0 : items.length === 0) ? (
+        isLoadingData ? (
+          <div className="bg-white rounded-3xl p-10 border border-slate-200">
+            <HourglassLoader
+              title="Sedang Memuat Katalog Bank Soal..."
+              subtitle="Menarik butir-butir soal yang telah disetujui dari cloud database SASI..."
+              badgeText="MEMUAT KATALOG SOAL"
+            />
+          </div>
+        ) : (isScopedFilter ? items.filter(isItemInCurrentScope).length === 0 : items.length === 0) ? (
           <div className="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center shadow-sm space-y-4 animate-fade-in">
             <div className="w-16 h-16 rounded-3xl bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center mx-auto">
               <Lock className="w-8 h-8" />
