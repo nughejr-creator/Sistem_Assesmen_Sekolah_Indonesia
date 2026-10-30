@@ -1467,6 +1467,21 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     blueprintItem?: BlueprintItem;
   } | null>(null);
 
+  // Aksesibilitas Keyboard (Enter / Escape) untuk menutup pop-up notifikasi simpan
+  useEffect(() => {
+    if (!saveSuccessNotification?.isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        e.preventDefault();
+        setSaveSuccessNotification(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saveSuccessNotification?.isOpen]);
+
   const handleOpenEditorForVariant = (item: BlueprintItem, existingQ?: QuestionBankItem | null, variantNum: number = 1) => {
     setSelectedItemForEditor(item);
     setSelectedQuestionForEditor(existingQ || null);
@@ -5920,11 +5935,21 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         />
       )}
 
-      {/* POPUP PEMBERITAHUAN: SOAL BERHASIL DISIMPAN KE DATABASE (Permintaan Khusus User) */}
-      {saveSuccessNotification?.isOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200 space-y-5 animate-scale-up text-center">
-            
+      {/* POPUP PEMBERITAHUAN: SOAL BERHASIL DISIMPAN KE DATABASE (Tampil True Center via createPortal document.body) */}
+      {saveSuccessNotification?.isOpen && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fade-in select-none"
+          style={{ zIndex: 10000 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSaveSuccessNotification(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200 space-y-5 animate-scale-up text-center my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Animasi Ikon Centang Hijau */}
             <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <CheckCircle2 className="w-9 h-9 stroke-[2.5]" />
@@ -5992,6 +6017,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
               )}
               <button
                 type="button"
+                autoFocus
                 onClick={() => setSaveSuccessNotification(null)}
                 className="w-full sm:w-auto flex-1 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-1.5 active:scale-95 transition-all"
               >
@@ -6001,7 +6027,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Pratinjau Komparasi 2 Panel TRUE FULLSCREEN (createPortal z-[9999] menutupi seluruh layar & sidebar) */}
