@@ -33,11 +33,14 @@ import {
   ArrowUp,
   ArrowDown,
   Columns,
-  Edit3
+  Edit3,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { WordEquationToolbar } from './WordEquationToolbar';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
 import { VisualFormulaEditor } from '../common/VisualFormulaEditor';
+import { compressImageFile, CompressionResult, formatBytes, HARD_SIZE_LIMIT_BYTES } from '../../lib/imageCompressor';
 
 export type EditorViewMode = 'split' | 'editor-focus' | 'preview-focus';
 
@@ -99,6 +102,9 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
   const [imageModalAlign, setImageModalAlign] = useState<'left' | 'center' | 'right' | 'float-left'>('center');
   const [imageModalWidth, setImageModalWidth] = useState('200px');
   const [imageModalCaption, setImageModalCaption] = useState('');
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const [imageCompressionStats, setImageCompressionStats] = useState<CompressionResult | null>(null);
+  const [imageCompressWarning, setImageCompressWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form Fields
@@ -359,23 +365,39 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
     setShowFractionModal(false);
   };
 
-  // Image Upload Handler from File Picker
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image Upload Handler from File Picker with Automatic Client-Side Compression
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setImageModalUrl(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setIsCompressingImage(true);
+    setImageCompressWarning(null);
+    setImageCompressionStats(null);
+
+    try {
+      const res = await compressImageFile(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.75,
+        maxSizeBytes: HARD_SIZE_LIMIT_BYTES
+      });
+      setImageModalUrl(res.dataUrl);
+      setImageCompressionStats(res);
+      if (res.warning) {
+        setImageCompressWarning(res.warning);
+      }
+    } catch (err: any) {
+      console.error('Gagal mengompres gambar:', err);
+      alert('Gagal memproses gambar: ' + (err.message || 'Format tidak didukung'));
+    } finally {
+      setIsCompressingImage(false);
+      if (e.target) e.target.value = '';
     }
   };
 
   // Image Inserter Action: Applies to Stimulus media or inserts inline markdown image with precise width & align
   const handleConfirmInsertImage = () => {
-    if (!imageModalUrl) return;
+    if (!imageModalUrl || isCompressingImage) return;
 
     const safeWidth = imageModalWidth || (activeField?.startsWith('option-') ? '120px' : '200px');
     const safeAlign = imageModalAlign || 'center';
@@ -396,6 +418,16 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
     setShowImageModal(false);
     setImageModalUrl('');
     setImageModalCaption('');
+    setImageCompressionStats(null);
+    setImageCompressWarning(null);
+  };
+
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setImageModalUrl('');
+    setImageModalCaption('');
+    setImageCompressionStats(null);
+    setImageCompressWarning(null);
   };
 
   // Options Handlers (Selalu menjaga keteraturan alfabetis A, B, C, D, E, ...)
@@ -1748,7 +1780,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setShowImageModal(false)}
+                onClick={handleCloseImageModal}
                 className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
@@ -1770,27 +1802,95 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
               <div className="flex space-x-2">
                 <button
                   type="button"
+                  disabled={isCompressingImage}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center space-x-2 transition-all active:scale-95"
+                  className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center space-x-2 transition-all active:scale-95"
                 >
-                  <FolderOpen className="w-4 h-4" />
-                  <span>Pilih Gambar Dari Komputer (Laptop/PC)</span>
+                  {isCompressingImage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mengompres Gambar...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FolderOpen className="w-4 h-4" />
+                      <span>Pilih Gambar Dari Komputer (Laptop/PC)</span>
+                    </>
+                  )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setImageModalUrl('https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=60')}
-                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl border border-slate-300"
+                  disabled={isCompressingImage}
+                  onClick={() => {
+                    setImageModalUrl('https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=60');
+                    setImageCompressionStats(null);
+                    setImageCompressWarning(null);
+                  }}
+                  className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-semibold text-xs rounded-xl border border-slate-300"
                 >
                   Contoh Foto
                 </button>
               </div>
 
+              {/* Status Kompresi Gambar */}
+              {isCompressingImage && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center space-x-2.5 text-xs text-amber-800 animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-bold block">Sedang Mengompres Gambar Otomatis...</span>
+                    <span className="text-[11px] text-amber-700">Menyesuaikan resolusi dan kualitas agar hemat kuota server SASI (target &lt; 60 KB).</span>
+                  </div>
+                </div>
+              )}
+
+              {imageCompressionStats && !isCompressingImage && (
+                <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${
+                  imageCompressionStats.exceedsLimit
+                    ? 'bg-rose-50 border-rose-200 text-rose-800'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold flex items-center space-x-1.5">
+                      {imageCompressionStats.exceedsLimit ? (
+                        <>
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Gambar Ditolak: Melebihi Batas Maksimal 100 KB</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Kompresi Otomatis Sukses (Sangat Hemat Kuota)</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full font-black text-[10px] bg-white/80 border">
+                      Hemat {imageCompressionStats.compressionRatioPercent}%
+                    </span>
+                  </div>
+                  <div className="text-[11px] opacity-90 flex flex-wrap gap-x-3 gap-y-0.5">
+                    <span>Ukuran Asli: <strong>{imageCompressionStats.originalSizeKb} KB</strong></span>
+                    <span>➔ Terkompresi: <strong className={imageCompressionStats.exceedsLimit ? 'text-rose-700' : 'text-emerald-700'}>{imageCompressionStats.fileSizeKb} KB</strong></span>
+                    <span>Dimensi: <strong>{imageCompressionStats.width} × {imageCompressionStats.height} px</strong></span>
+                    <span>Format: <strong>{imageCompressionStats.format.replace('image/', '').toUpperCase()}</strong></span>
+                  </div>
+                  {imageCompressionStats.exceedsLimit ? (
+                    <p className="text-[11px] text-rose-700 font-bold mt-1 bg-white/60 p-1.5 rounded-lg border border-rose-200">
+                      Ukuran gambar setelah kompresi agresif masih {imageCompressionStats.fileSizeKb} KB (batas maks 100 KB). Untuk melindungi kuota server, silakan potong/crop gambar di laptop Anda terlebih dahulu.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
               <div>
                 <input
                   type="text"
                   value={imageModalUrl}
-                  onChange={(e) => setImageModalUrl(e.target.value)}
+                  onChange={(e) => {
+                    setImageModalUrl(e.target.value);
+                    setImageCompressionStats(null);
+                    setImageCompressWarning(null);
+                  }}
                   placeholder="Atau tempel tautan URL gambar (https://...)..."
                   className="w-full text-xs px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-emerald-500"
                 />
@@ -1905,18 +2005,19 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
             <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => setShowImageModal(false)}
+                onClick={handleCloseImageModal}
                 className="flex-1 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
               >
                 Batal
               </button>
               <button
                 type="button"
-                disabled={!imageModalUrl}
+                disabled={!imageModalUrl || isCompressingImage || (imageCompressionStats?.exceedsLimit ?? false)}
                 onClick={handleConfirmInsertImage}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-95"
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:bg-slate-400 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-95"
+                title={imageCompressionStats?.exceedsLimit ? 'Gambar ditolak karena melebihi batas 100 KB' : 'Sisipkan gambar ke dalam soal'}
               >
-                Sisipkan Gambar Sekarang
+                {imageCompressionStats?.exceedsLimit ? 'Gambar Melebihi 100 KB' : 'Sisipkan Gambar Sekarang'}
               </button>
             </div>
 

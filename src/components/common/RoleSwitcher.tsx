@@ -17,6 +17,7 @@ import {
   Image as ImageIcon 
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { compressImageFile } from '../../lib/imageCompressor';
 
 interface RoleSwitcherProps {
   currentUser: UserProfile;
@@ -83,22 +84,24 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ currentUser, onSelec
   };
 
   // Handle Photo Selection & Conversion
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran foto maksimal 2MB.');
-      return;
+    try {
+      const res = await compressImageFile(file, {
+        maxWidth: 240,
+        maxHeight: 240,
+        quality: 0.8,
+        maxSizeBytes: 40 * 1024
+      });
+      setEditPhotoUrl(res.dataUrl);
+    } catch (err: any) {
+      console.error('Gagal memproses foto profil:', err);
+      alert('Gagal memproses foto: ' + (err.message || 'Format tidak didukung'));
+    } finally {
+      if (e.target) e.target.value = '';
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setEditPhotoUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   // Save Profile Changes

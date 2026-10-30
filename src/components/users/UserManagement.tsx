@@ -3,6 +3,7 @@ import { UserProfile, UserRole, SchoolLevel, School, Phase } from '../../types/d
 import { MOCK_USERS, MOCK_SCHOOLS } from '../../lib/mockData';
 import { exportStudentsToExcel, generateStudentPin } from '../../lib/excelHelper';
 import { supabase } from '../../lib/supabase';
+import { compressImageFile } from '../../lib/imageCompressor';
 import { getClusterNodes, getClientForNode } from '../../lib/clusterManager';
 import { 
   generateValidUUID, 
@@ -242,22 +243,24 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
     setTargetResetUser(null);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran foto maksimal 2MB.');
-      return;
+    try {
+      const res = await compressImageFile(file, {
+        maxWidth: 240,
+        maxHeight: 240,
+        quality: 0.8,
+        maxSizeBytes: 40 * 1024
+      });
+      setPhotoUrl(res.dataUrl);
+    } catch (err: any) {
+      console.error('Gagal memproses foto user:', err);
+      alert('Gagal memproses foto: ' + (err.message || 'Format tidak didukung'));
+    } finally {
+      if (e.target) e.target.value = '';
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setPhotoUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   // Helper to persist users to cache
