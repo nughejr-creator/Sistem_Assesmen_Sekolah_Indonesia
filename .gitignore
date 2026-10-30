@@ -39,4 +39,5 @@ powershell.bat
 SASI_CBT_SERVER_PORTABLE/
 *.zip
 *.rar
+!public/downloads/*.zip
 src-server/*.exe
