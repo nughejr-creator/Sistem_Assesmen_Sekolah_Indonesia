@@ -2006,8 +2006,11 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     );
 
     const getEffectiveStatus = (item: BlueprintItem): WorkflowStatus => {
-      if (item.workflow_status === 'Selesai' || finishedBpSet.has(item.id)) return 'Selesai';
-      return item.workflow_status || 'Draft';
+      // Pada tab penulisan soal, butir kisi-kisi berstatus Selesai jika soal di question_bank sudah berstatus Selesai
+      if (finishedBpSet.has(item.id)) return 'Selesai';
+      const hasQuestions = questionBank.some(q => q.blueprint_item_id === item.id);
+      if (hasQuestions) return 'Dalam Penulisan';
+      return 'Draft';
     };
 
     const filteredByHeader = items.filter(item => {
@@ -2643,6 +2646,52 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
           <span>Selesai</span>
         </span>;
     }
+  };
+
+  // Badge Status Khusus Tab Penulisan Soal (Akurat berdasarkan ada/tidaknya soal di Bank Soal)
+  const getQuestionStatusBadge = (totalVariants: number, variants: QuestionBankItem[]) => {
+    if (totalVariants === 0) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-300 inline-flex items-center space-x-1.5 whitespace-nowrap" title="Belum ada butir soal yang ditulis untuk kisi-kisi ini">
+          <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+          <span>Belum Ditulis</span>
+        </span>
+      );
+    }
+
+    const allFinished = variants.every(q => q.status === 'Selesai');
+    if (allFinished) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center space-x-1 whitespace-nowrap" title="Seluruh varian soal sudah selesai dan siap terbit">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Selesai</span>
+        </span>
+      );
+    }
+
+    const hasReview = variants.some(q => q.status === 'Menunggu Riviu');
+    if (hasReview) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300 inline-flex items-center space-x-1 whitespace-nowrap" title="Menunggu penelaahan reviewer">
+          <span>Menunggu Riviu</span>
+        </span>
+      );
+    }
+
+    const hasInWriting = variants.some(q => q.status === 'Dalam Penulisan');
+    if (hasInWriting) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center space-x-1 whitespace-nowrap" title="Soal sedang dalam proses penulisan">
+          <span>Dalam Penulisan</span>
+        </span>
+      );
+    }
+
+    return (
+      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-300 inline-flex items-center space-x-1 whitespace-nowrap" title="Soal masih berstatus Draft">
+        <span>Draft</span>
+      </span>
+    );
   };
 
   // List of approved / finished questions for Bank Soal view (Tersinkronisasi Hierarchical Stepped Filter)
@@ -4686,9 +4735,9 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                         </span>
                       </td>
 
-                      {/* Status */}
+                      {/* Status Penulisan Soal Riil (Bukan Status Kisi-Kisi) */}
                       <td className="py-3.5 px-4">
-                        {getStatusBadge(item.workflow_status)}
+                        {getQuestionStatusBadge(totalVariants, itemVariants)}
                       </td>
 
                       {/* Tombol Aksi Cepat Penulisan */}
