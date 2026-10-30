@@ -28,6 +28,7 @@ import {
   isObsoleteSubject,
   fetchBlueprintItemWritersFromCloud,
   saveBlueprintItemWriterToCloud,
+  saveBlueprintItemWritersBatchToCloud,
   deleteBlueprintItemWriterFromCloud,
   fetchWriterAssignmentsFromCloud,
   saveWriterAssignmentToCloud,
@@ -289,7 +290,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
               writer_id: resolvedWriterId,
               writer_name: resolvedWriterName,
               subject_name: i.subject_name || cleanSubName,
-              grade_class: i.grade_class || `${detectedGrade} (Fase ${bpPhase})`,
+              grade_class: i.grade_class || detectedGrade,
               assessment_type: i.assessment_type || i.blueprint?.assessment_type || 'SAS',
               level: i.level || i.blueprint?.level || 'SD',
               phase: i.phase || bpPhase,
@@ -1166,8 +1167,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
           grade_class: metadata.grade_class,
           subject_name: metadata.subject_name,
           assessment_type: metadata.assessment_type as any,
-          writer_id: it.writer_id || currentWriterId,
-          writer_name: it.writer_name || currentWriterName
+          writer_id: currentWriterId || it.writer_id,
+          writer_name: currentWriterName || it.writer_name
         }));
 
         // Simpan hanya butir-butir baru ke Supabase
@@ -1177,12 +1178,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
           throw new Error(upsertRes.error?.message || 'Gagal menyimpan butir baru ke database');
         }
 
-        // Sinkronisasi metadata penulis ke context_presets untuk persistensi lintas perangkat
-        for (const item of itemsWithBpId) {
-          if (item.writer_id || item.writer_name) {
-            await saveBlueprintItemWriterToCloud(item.id, item.writer_id, item.writer_name);
-          }
-        }
+        // Sinkronisasi metadata penulis secara batch atomik ke context_presets
+        await saveBlueprintItemWritersBatchToCloud(itemsWithBpId);
 
         // Gabungkan butir lama modul ini dengan butir baru
         const existingForThisModule = items.filter(
@@ -1236,8 +1233,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             grade_class: metadata.grade_class,
             subject_name: metadata.subject_name,
             assessment_type: metadata.assessment_type as any,
-            writer_id: it.writer_id || currentWriterId,
-            writer_name: it.writer_name || currentWriterName
+            writer_id: currentWriterId || it.writer_id,
+            writer_name: currentWriterName || it.writer_name
           };
         });
 
@@ -1257,12 +1254,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
           throw new Error(upsertRes.error?.message || 'Gagal menyimpan ke database Supabase');
         }
 
-        // Sinkronisasi metadata penulis ke context_presets untuk persistensi lintas perangkat
-        for (const item of itemsWithBpId) {
-          if (item.writer_id || item.writer_name) {
-            await saveBlueprintItemWriterToCloud(item.id, item.writer_id, item.writer_name);
-          }
-        }
+        // Sinkronisasi metadata penulis secara batch atomik ke context_presets
+        await saveBlueprintItemWritersBatchToCloud(itemsWithBpId);
 
         const otherItems = items.filter(
           i => !(
@@ -1494,10 +1487,22 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
   const handleDownloadTemplate = () => {
     try {
-      downloadBlueprintTemplate(blueprint);
+      const activeLvl = selectedLevel || (selectedGrade.includes('Kelas 7') || selectedGrade.includes('Kelas 8') || selectedGrade.includes('Kelas 9') ? 'SMP' : 'SD');
+      const activeSub = selectedSubject || 'Matematika';
+      const activeGrd = selectedGrade || (activeLvl === 'SD' ? 'Kelas 4' : 'Kelas 7');
+      const activeAsmt = selectedAssessment || 'SAS';
+      const activePhs = getPhaseFromGrade(activeGrd);
+
+      downloadBlueprintTemplate(blueprint, {
+        level: activeLvl,
+        subject_name: activeSub,
+        grade_class: activeGrd,
+        phase: activePhs,
+        assessment_type: activeAsmt
+      });
       setExcelFeedback({
         type: 'success',
-        message: 'Template Excel pemetaan kisi-kisi (Siap Cetak A4) berhasil diunduh.'
+        message: `Template Excel (${activeSub} - ${activeGrd} - ${activeAsmt}) berhasil diunduh.`
       });
       setTimeout(() => setExcelFeedback(null), 5000);
     } catch (err: any) {
@@ -2178,7 +2183,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         const itemGrade = (item.grade_class || '').toLowerCase();
         const selGrade = selectedGrade.toLowerCase();
         const gradeNum = selectedGrade.replace(/\D/g, '');
-        const matchG = itemGrade.includes(selGrade) || (gradeNum && itemGrade.includes(gradeNum));
+        const itemGradeNum = itemGrade.replace(/\D/g, '');
+        const matchG = itemGrade.includes(selGrade) || selGrade.includes(itemGrade) || (Boolean(gradeNum) && Boolean(itemGradeNum) && gradeNum === itemGradeNum);
         if (!matchG) return false;
       }
 
@@ -2211,8 +2217,9 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
         const matchId = Boolean(curId && itemWriterId && (itemWriterId === curId || toValidUUID(itemWriterId) === toValidUUID(curId)));
         const matchName = Boolean(curName && itemWriterName && (itemWriterName === curName || itemWriterName.includes(curName) || curName.includes(itemWriterName)));
+        const matchSlot = Boolean(initialScope?.isLocked && !itemWriterId);
 
-        if (!matchId && !matchName) return false;
+        if (!matchId && !matchName && !matchSlot) return false;
       } else if (filterWriter && filterWriter !== 'ALL') {
         const itemWriterId = item.writer_id;
         const matchW = itemWriterId === filterWriter || (item.writer_name && item.writer_name === filterWriter);

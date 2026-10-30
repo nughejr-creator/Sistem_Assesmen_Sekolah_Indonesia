@@ -279,21 +279,42 @@ export const parseBlueprintFromExcel = (
         const rawRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         // Coba ekstrak metadata dari 5 baris pertama jika ada
-        let extractedSubject = defaultMeta?.subject_name || '';
-        let extractedGrade = defaultMeta?.grade_class || '';
-        let extractedAsmt = defaultMeta?.assessment_type || '';
+        let extractedSubject = '';
+        let extractedGrade = '';
+        let extractedAsmt = '';
+
+        const VALID_ASSESSMENTS = ['Formatif', 'PTS', 'SAS', 'SAT', 'SAJ'];
 
         for (let i = 0; i < Math.min(rawRows.length, 5); i++) {
           const rowText = (rawRows[i] || []).join(' ');
+          
           const subjMatch = rowText.match(/Mata Pelajaran:\s*([^|]+)/i);
           if (subjMatch && !extractedSubject) extractedSubject = subjMatch[1].trim();
 
           const gradeMatch = rowText.match(/(?:Tingkat|Kelas):\s*([^|]+)/i);
           if (gradeMatch && !extractedGrade) extractedGrade = gradeMatch[1].trim();
 
-          const asmtMatch = rowText.match(/(?:Kategori|Asesmen):\s*([^|]+)/i) || rowText.match(/ASESMEN\s+([A-Za-z0-9\s]+)/i);
-          if (asmtMatch && !extractedAsmt) extractedAsmt = asmtMatch[1].trim();
+          // Hindari false positive "SISTEM ASESMEN SEKOLAH INDONESIA"
+          const katMatch = rowText.match(/(?:Kategori|Asesmen):\s*([^|]+)/i);
+          if (katMatch && !extractedAsmt) {
+            const raw = katMatch[1].trim();
+            const matchedValid = VALID_ASSESSMENTS.find(v => v.toLowerCase() === raw.toLowerCase());
+            if (matchedValid) extractedAsmt = matchedValid;
+          }
+          if (!extractedAsmt) {
+            // Cocokkan hanya enum asesmen resmi jika format "ASESMEN FORMATIF" dsb.
+            const bannerMatch = rowText.match(/ASESMEN\s+(Formatif|PTS|SAS|SAT|SAJ)\b/i);
+            if (bannerMatch) {
+              const matchedValid = VALID_ASSESSMENTS.find(v => v.toLowerCase() === bannerMatch[1].toLowerCase());
+              if (matchedValid) extractedAsmt = matchedValid;
+            }
+          }
         }
+
+        // Prioritas tertinggi: Gunakan defaultMeta yang dipilih guru di UI jika tersedia
+        const finalSubject = defaultMeta?.subject_name || extractedSubject || 'Matematika';
+        const finalGrade = defaultMeta?.grade_class || extractedGrade || 'Kelas 4';
+        const finalAsmt = defaultMeta?.assessment_type || extractedAsmt || 'SAS';
 
         // Cari baris header tabel (yang mengandung kata 'Elemen' atau 'No')
         let headerRowIdx = -1;
@@ -360,9 +381,9 @@ export const parseBlueprintFromExcel = (
             question_type: qType,
             task_type: taskType as any,
             workflow_status: status,
-            subject_name: extractedSubject || defaultMeta?.subject_name || 'Matematika',
-            grade_class: extractedGrade || defaultMeta?.grade_class || 'Kelas 4',
-            assessment_type: (extractedAsmt || defaultMeta?.assessment_type || 'SAS') as any
+            subject_name: finalSubject,
+            grade_class: finalGrade,
+            assessment_type: finalAsmt as any
           });
         });
 

@@ -837,6 +837,29 @@ export async function saveBlueprintItemWriterToCloud(itemId: string, writerId: s
   }
 }
 
+/**
+ * Simpan metadata penulis secara atomik dan efisien dalam 1 batch array
+ */
+export async function saveBlueprintItemWritersBatchToCloud(
+  items: { id: string; writer_id?: string | null; writer_name?: string | null }[]
+) {
+  try {
+    if (!items || items.length === 0) return;
+    const rows = items
+      .filter(it => it.id && (it.writer_id || it.writer_name))
+      .map(it => ({
+        id: toValidUUID(it.id),
+        subject_name: '__SASI_BP_ITEM_WRITER__',
+        context_text: `${it.writer_id ? toValidUUID(it.writer_id) : ''}|${it.writer_name || ''}`
+      }));
+    if (rows.length > 0) {
+      await safeSupabaseUpsert('context_presets', rows);
+    }
+  } catch (e) {
+    console.warn('Batch save blueprint item writers fallback:', e);
+  }
+}
+
 export async function deleteBlueprintItemWriterFromCloud(itemId: string) {
   try {
     if (!itemId) return;
