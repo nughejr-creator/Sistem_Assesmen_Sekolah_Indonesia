@@ -269,9 +269,29 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         if (!itemsError && rawCloudItems) {
           cloudItems = rawCloudItems.map((i: any) => {
             const rawSubName = i.blueprint?.subject?.name || '';
-            const cleanSubName = rawSubName.replace(/\s*\(.*\)/, '').trim() || i.subject_name || 'Matematika';
             const bpPhase = i.blueprint?.phase || 'B';
             const bpTitle = i.blueprint?.title || '';
+
+            let cleanSubName = rawSubName.replace(/\s*\(.*\)/, '').trim() || i.subject_name || 'Matematika';
+
+            // Penyelarasan cerdas nama mapel spesifik dari judul blueprint
+            const titleLower = bpTitle.toLowerCase();
+            const rawLower = rawSubName.toLowerCase();
+            if (titleLower.includes('seni rupa')) {
+              cleanSubName = 'Seni Rupa';
+            } else if (titleLower.includes('seni musik')) {
+              cleanSubName = 'Seni Musik';
+            } else if (titleLower.includes('seni tari')) {
+              cleanSubName = 'Seni Tari';
+            } else if (titleLower.includes('bahasa sunda')) {
+              cleanSubName = 'Bahasa Sunda';
+            } else if (titleLower.includes('agama islam') || titleLower.includes('budi pekerti') || rawLower.includes('agama')) {
+              cleanSubName = 'Pendidikan Agama Islam dan Budi Pekerti';
+            } else if (titleLower.includes('ipas') || rawLower.includes('ipas')) {
+              cleanSubName = 'Ilmu Pengetahuan Alam dan Sosial (IPAS)';
+            } else if (titleLower.includes('pjok') || rawLower.includes('pjok')) {
+              cleanSubName = 'Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)';
+            }
 
             const gradeMatch = bpTitle.match(/Kelas\s*([0-9]+)/i);
             let detectedGrade = '';
@@ -2191,7 +2211,31 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       if (selectedSubject) {
         const itemSub = (item.subject_name || '').toLowerCase().trim();
         const selSub = selectedSubject.toLowerCase().trim();
-        const matchS = itemSub === selSub || itemSub.includes(selSub) || selSub.includes(itemSub);
+
+        // Normalisasi toleran untuk variasi penamaan kurikulum:
+        // misal "Pendidikan Agama Islam dan Budi Pekerti" vs "Pendidikan Agama dan Budi Pekerti"
+        const norm = (s: string) => s
+          .replace(/[\(\)\-\/]/g, ' ')
+          .replace(/\bislam\b/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        const normItem = norm(itemSub);
+        const normSel = norm(selSub);
+
+        const matchS = 
+          itemSub === selSub || 
+          itemSub.includes(selSub) || 
+          selSub.includes(itemSub) ||
+          normItem === normSel ||
+          normItem.includes(normSel) ||
+          normSel.includes(normItem) ||
+          (selSub.includes('seni rupa') && (itemSub.includes('seni rupa') || normItem.includes('seni'))) ||
+          (selSub.includes('agama') && itemSub.includes('agama')) ||
+          (selSub.includes('ipas') && itemSub.includes('ipas')) ||
+          (selSub.includes('pjok') && itemSub.includes('pjok')) ||
+          (selSub.includes('sunda') && itemSub.includes('sunda'));
+
         if (!matchS) return false;
       }
 
@@ -2217,7 +2261,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
         const matchId = Boolean(curId && itemWriterId && (itemWriterId === curId || toValidUUID(itemWriterId) === toValidUUID(curId)));
         const matchName = Boolean(curName && itemWriterName && (itemWriterName === curName || itemWriterName.includes(curName) || curName.includes(itemWriterName)));
-        const matchSlot = Boolean(initialScope?.isLocked && !itemWriterId);
+        const matchSlot = Boolean(initialScope?.isLocked);
 
         if (!matchId && !matchName && !matchSlot) return false;
       } else if (filterWriter && filterWriter !== 'ALL') {
