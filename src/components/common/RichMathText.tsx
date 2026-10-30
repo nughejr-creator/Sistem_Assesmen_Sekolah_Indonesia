@@ -84,8 +84,15 @@ export const RichMathText: React.FC<RichMathTextProps> = ({ content, className =
       return `<sub>${clean}</sub>`;
     });
 
-    // 6. Text Alignment & Line Spacing BBCode & HTML support
-    text = text.replace(/\[spacing:([0-9.]+)\]([\s\S]*?)\[\/spacing\]/gi, '<div style="line-height: $1;" class="my-0.5">$2</div>');
+    // 6. Text Alignment & Line Spacing BBCode & HTML support (dengan sanitasi aman line-height)
+    text = text.replace(/\[spacing:([0-9.]+)\]([\s\S]*?)\[\/spacing\]/gi, (_, rawVal, content) => {
+      let num = parseFloat(rawVal);
+      if (isNaN(num) || num <= 0) num = 1.15;
+      if (num > 10) num = num / 100; // auto-clamp jika nilai spasi diinput tanpa koma (misal 115 -> 1.15)
+      if (num > 3) num = 3;
+      if (num < 0.8) num = 1.0;
+      return `<div style="line-height: ${num};" class="my-0.5">${content}</div>`;
+    });
     text = text.replace(/\[\/?spacing(?::[0-9.]+)?\]/gi, '');
     text = text.replace(/\[center\]([\s\S]*?)\[\/center\]/gi, '<div class="text-center my-1">$1</div>');
     text = text.replace(/\[right\]([\s\S]*?)\[\/right\]/gi, '<div class="text-right my-1">$1</div>');

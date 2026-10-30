@@ -26,6 +26,22 @@ export const autoHealBrokenText = (raw: string): string => {
   str = str.replace(/\[\/right\]\s*\[right\]/gi, ' ');
   str = str.replace(/\[\/left\]\s*\[left\]/gi, ' ');
 
+  // 1b. Bersihkan tag pembungkus spasi/alignment kosong tanpa teks yang bisa merusak layout
+  str = str.replace(/\[(justify|center|right|left)\]\s*\[spacing:[0-9.]+\]\s*\[\/\1\]\s*\[\/spacing\]/gi, '');
+  str = str.replace(/\[spacing:[0-9.]+\]\s*\[(justify|center|right|left)\]\s*\[\/spacing\]\s*\[\/\1\]/gi, '');
+  str = str.replace(/\[(justify|center|right|left)\]\s*\[\/\1\]/gi, '');
+  str = str.replace(/\[spacing:[0-9.]+\]\s*\[\/spacing\]/gi, '');
+
+  // 1c. Normalisasi tag spacing jika nilainya tanpa tanda desimal (misal [spacing:115] -> [spacing:1.15])
+  str = str.replace(/\[spacing:([0-9.]+)\]/gi, (_, val) => {
+    let num = parseFloat(val);
+    if (isNaN(num) || num <= 0) num = 1.15;
+    if (num > 10) num = num / 100;
+    if (num > 3) num = 3;
+    if (num < 0.8) num = 1.0;
+    return `[spacing:${num}]`;
+  });
+
   // 2. Hilangkan baris baru sebelum tanda baca (koma, titik, titik dua, tanda tanya)
   str = str.replace(/\s*\n+\s*([,\.\?\!;\:])/g, '$1');
 
@@ -59,7 +75,14 @@ export const stringToVisualHtml = (text: string): string => {
     .replace(/\\frac\{([^{}]+)\}\{([0-9a-zA-Z]+)\}\s*\2(?!\d)/g, '\\frac{$1}{$2}');
 
   // 0. Ubah perataan teks (left, center, right, justify) dan line spacing menjadi elemen div visual
-  html = html.replace(/\[spacing:([0-9.]+)\]([\s\S]*?)\[\/spacing\]/gi, '<div style="line-height: $1;">$2</div>');
+  html = html.replace(/\[spacing:([0-9.]+)\]([\s\S]*?)\[\/spacing\]/gi, (_, rawVal, content) => {
+    let num = parseFloat(rawVal);
+    if (isNaN(num) || num <= 0) num = 1.15;
+    if (num > 10) num = num / 100;
+    if (num > 3) num = 3;
+    if (num < 0.8) num = 1.0;
+    return `<div style="line-height: ${num};">${content}</div>`;
+  });
   html = html.replace(/\[justify\]([\s\S]*?)\[\/justify\]/gi, '<div style="text-align: justify;">$1</div>');
   html = html.replace(/\[center\]([\s\S]*?)\[\/center\]/gi, '<div style="text-align: center;">$1</div>');
   html = html.replace(/\[right\]([\s\S]*?)\[\/right\]/gi, '<div style="text-align: right;">$1</div>');
@@ -197,9 +220,21 @@ export const visualHtmlToString = (html: string): string => {
   str = str.replace(/<(?:div|p)[^>]*(?:style="[^"]*text-align:\s*center[^"]*"|align="center")[^>]*>([\s\S]*?)<\/(?:div|p)>/gi, '[center]$1[/center]');
   str = str.replace(/<(?:div|p)[^>]*(?:style="[^"]*text-align:\s*right[^"]*"|align="right")[^>]*>([\s\S]*?)<\/(?:div|p)>/gi, '[right]$1[/right]');
   str = str.replace(/<(?:div|p)[^>]*(?:style="[^"]*text-align:\s*left[^"]*"|align="left")[^>]*>([\s\S]*?)<\/(?:div|p)>/gi, '[left]$1[/left]');
-  str = str.replace(/<(?:div|p)[^>]*style="[^"]*line-height:\s*([0-9.]+)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|p)>/gi, '[spacing:$1]$2[/spacing]');
+  str = str.replace(/<(?:div|p)[^>]*style="[^"]*line-height:\s*([0-9.]+)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|p)>/gi, (_, rawVal, content) => {
+    let num = parseFloat(rawVal);
+    if (isNaN(num) || num <= 0) num = 1.15;
+    if (num > 10) num = num / 100;
+    if (num > 3) num = 3;
+    if (num < 0.8) num = 1.0;
+    return `[spacing:${num}]${content}[/spacing]`;
+  });
   // Bersihkan jika ada nested duplicate [spacing:X][spacing:X]...[/spacing][/spacing]
   str = str.replace(/\[spacing:([0-9.]+)\]\s*\[spacing:\1\]([\s\S]*?)\[\/spacing\]\s*\[\/spacing\]/gi, '[spacing:$1]$2[/spacing]');
+  // Bersihkan jika tag pembungkus kosong tanpa konten
+  str = str.replace(/\[(justify|center|right|left)\]\s*\[spacing:[0-9.]+\]\s*\[\/\1\]\s*\[\/spacing\]/gi, '');
+  str = str.replace(/\[spacing:[0-9.]+\]\s*\[(justify|center|right|left)\]\s*\[\/spacing\]\s*\[\/\1\]/gi, '');
+  str = str.replace(/\[(justify|center|right|left)\]\s*\[\/\1\]/gi, '');
+  str = str.replace(/\[spacing:[0-9.]+\]\s*\[\/spacing\]/gi, '');
 
   // Fallback Regex jika DOM tidak aktif atau ada sisa (mencakup elemen pecahan MS Word maupun legacy pill)
   str = str.replace(/<span[^>]*class="[^"]*ms-word-fraction[^"]*"[^>]*>[\s\S]*?<span[^>]*class="[^"]*fraction-num[^"]*"[^>]*>([\s\S]*?)<\/span>[\s\S]*?<span[^>]*class="[^"]*fraction-den[^"]*"[^>]*>([\s\S]*?)<\/span>[\s\S]*?<\/span>/gi, '$\\frac{$1}{$2}$');
@@ -345,10 +380,18 @@ export const VisualFormulaEditor: React.FC<VisualFormulaEditorProps> = ({
       else if (value.includes('[right]')) divRef.current.style.textAlign = 'right';
       else if (value.includes('[left]')) divRef.current.style.textAlign = 'left';
 
-      // Sinkronkan line-spacing langsung ke style editor
+      // Sinkronkan line-spacing langsung ke style editor dengan batas aman
       const spacingMatch = value.match(/\[spacing:([0-9.]+)\]/);
       if (spacingMatch && spacingMatch[1]) {
-        divRef.current.style.lineHeight = spacingMatch[1];
+        let num = parseFloat(spacingMatch[1]);
+        if (!isNaN(num) && num > 0) {
+          if (num > 10) num = num / 100;
+          if (num > 3) num = 3;
+          if (num < 0.8) num = 1.0;
+          divRef.current.style.lineHeight = num.toString();
+        }
+      } else {
+        divRef.current.style.lineHeight = '1.5';
       }
     }
   }, [value, divRef]);
@@ -365,7 +408,13 @@ export const VisualFormulaEditor: React.FC<VisualFormulaEditorProps> = ({
     // Sertakan line-spacing jika editor memiliki line-height aktif
     const lineHeight = divRef.current.style.lineHeight;
     if (lineHeight && lineHeight !== 'normal' && lineHeight !== 'initial' && !rawHtml.includes(`line-height: ${lineHeight}`)) {
-      rawHtml = `<div style="line-height: ${lineHeight};">${rawHtml}</div>`;
+      let num = parseFloat(lineHeight);
+      if (!isNaN(num) && num > 0) {
+        if (num > 10) num = num / 100;
+        if (num > 3) num = 3;
+        if (num < 0.8) num = 1.0;
+        rawHtml = `<div style="line-height: ${num};">${rawHtml}</div>`;
+      }
     }
     const cleanStr = visualHtmlToString(rawHtml);
     onChange(cleanStr);
