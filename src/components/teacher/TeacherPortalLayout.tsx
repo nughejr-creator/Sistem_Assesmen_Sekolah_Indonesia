@@ -166,6 +166,13 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
   }, [currentUser, writerAssignments, myAssignments]);
 
   const [activeAssignment, setActiveAssignment] = useState<QuestionWriterAssignment | null>(() => {
+    try {
+      const savedAsgId = sessionStorage.getItem(`sasi_teacher_active_asg_${currentUser.id}`);
+      if (savedAsgId && myAssignments.length > 0) {
+        const found = myAssignments.find(a => a.id === savedAsgId);
+        if (found) return found;
+      }
+    } catch (e) {}
     return myAssignments[0] || null;
   });
 
@@ -183,6 +190,14 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
       }
     }
   }, [myAssignments, activeAssignment]);
+
+  useEffect(() => {
+    if (activeAssignment?.id && currentUser?.id) {
+      try {
+        sessionStorage.setItem(`sasi_teacher_active_asg_${currentUser.id}`, activeAssignment.id);
+      } catch (e) {}
+    }
+  }, [activeAssignment?.id, currentUser?.id]);
 
   // Memoize authorScope so it retains stable reference across re-renders and clock ticks
   const authorScope = useMemo(() => {
@@ -209,11 +224,23 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
 
   // Default tab: if author is dedicated writer, default to writer-tasks!
   const [activeTab, setActiveTab] = useState<TeacherTab>(() => {
+    try {
+      const savedTab = sessionStorage.getItem(`sasi_teacher_active_tab_${currentUser.id}`) as TeacherTab;
+      if (savedTab) return savedTab;
+    } catch (e) {}
     if (currentUser.teacher_type === 'penulis_soal' || currentUser.full_name?.toLowerCase().includes('zyandru') || currentUser.username?.toLowerCase().includes('zyandru') || myAssignments.length > 0) {
       return 'writer-tasks';
     }
     return 'dashboard';
   });
+
+  useEffect(() => {
+    if (activeTab && currentUser?.id) {
+      try {
+        sessionStorage.setItem(`sasi_teacher_active_tab_${currentUser.id}`, activeTab);
+      } catch (e) {}
+    }
+  }, [activeTab, currentUser?.id]);
 
   // Proteksi navigasi: Penulis Murni tidak diarahkan ke dashboard penilaian guru
   useEffect(() => {
