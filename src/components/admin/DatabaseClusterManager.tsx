@@ -99,9 +99,14 @@ export const DatabaseClusterManager: React.FC<DatabaseClusterManagerProps> = ({ 
       setCloningStatus({ isCloning: true, progressMsg: msg });
     });
     setCloningStatus({ isCloning: false, result: res });
+    if (res.success) {
+      alert(`✅ KLONING BERHASIL 100%!\n\nSebanyak ${res.totalCloned} data dari Master Hub (sekolah, akun guru/siswa, bank soal, kisi-kisi, dan paket ujian) telah berhasil disalin secara utuh ke Server Cadangan.`);
+    } else {
+      alert(`⚠️ Peringatan Kloning: ${res.error || 'Beberapa data gagal disalin'}`);
+    }
     setTimeout(() => {
       setCloningStatus(prev => ({ ...prev, result: undefined }));
-    }, 8000);
+    }, 15000);
   };
 
   // Audit Modal States & Handlers
