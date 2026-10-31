@@ -21,11 +21,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   const getFontSizeClass = () => {
     switch (fontSize) {
       case 'large':
-        return 'text-base leading-relaxed';
+        return 'text-lg leading-relaxed';
       case 'xlarge':
-        return 'text-lg leading-loose';
+        return 'text-xl leading-loose';
       default:
-        return 'text-sm leading-normal';
+        return 'text-base leading-relaxed';
     }
   };
 
@@ -182,7 +182,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       )}
 
       {/* Pokok Pertanyaan (Stem) - Menggunakan Font Serif Ramping yang Sama Persis dengan Stimulus (Default font-normal, tebal hanya jika diformat bold) */}
-      <div className="font-serif font-normal text-slate-900 tracking-normal text-base sm:text-lg leading-relaxed">
+      <div className="font-serif font-normal text-slate-900 tracking-normal leading-relaxed">
         <RichMathText content={question.question_text || '(Pertanyaan belum diisi)'} />
       </div>
 
@@ -309,7 +309,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
                 <div>
                   {showAnswerKey ? (
-                    <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-lg text-xs font-bold text-emerald-900 flex items-center justify-between shadow-2xs">
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-lg font-bold text-emerald-900 flex items-center justify-between shadow-2xs">
                       <span>{opt.matching_pair_text || opt.option_text}</span>
                       <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 inline-flex items-center">
                         <Check className="w-3 h-3 mr-1 text-emerald-600 stroke-[3]" /> Pasangan Kunci
@@ -319,7 +319,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     <select
                       value={selectedVal}
                       onChange={(e) => handleMatchingSelect(opt.id, e.target.value)}
-                      className="w-full text-xs font-bold text-brand-800 p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500"
+                      className="w-full font-bold text-brand-800 p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500"
                     >
                       <option value="">-- Pilih Pasangan --</option>
                       {question.options?.map((pairOpt) => (
@@ -405,7 +405,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs sm:text-sm">
+              <table className="w-full text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-700 uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="py-3.5 px-4 w-12 text-center">No</th>
@@ -527,7 +527,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             value={answer?.answer_text || ''}
             onChange={(e) => onUpdateAnswer(undefined, e.target.value)}
             placeholder="Ketik jawaban di sini..."
-            className="w-full max-w-md p-3 text-base font-bold text-slate-900 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-mono"
+            className="w-full max-w-md p-3 font-bold text-slate-900 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-mono"
           />
           {showAnswerKey && (
             <div className="mt-3 p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-xl space-y-1">
@@ -553,7 +553,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             value={answer?.answer_text || ''}
             onChange={(e) => onUpdateAnswer(undefined, e.target.value)}
             placeholder="Uraikan jawaban dan langkah-langkah penyelesaian Anda secara terperinci..."
-            className="w-full p-3.5 text-sm text-slate-900 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 leading-relaxed font-sans"
+            className="w-full p-3.5 text-slate-900 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 leading-relaxed font-sans"
           />
           {showAnswerKey && (
             <div className="mt-3 p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-xl space-y-1">
