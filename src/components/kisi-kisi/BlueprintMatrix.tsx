@@ -45,6 +45,7 @@ import {
   downloadBlueprintTemplate, 
   parseBlueprintFromExcel 
 } from '../../lib/blueprintExcel';
+import { isSameSubject } from '../../lib/subjectMatcher';
 import { 
   Search, 
   Filter, 
@@ -289,9 +290,9 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
             } else if (titleLower.includes('bahasa sunda')) {
               cleanSubName = 'Bahasa Sunda';
             } else if (titleLower.includes('agama islam') || titleLower.includes('budi pekerti') || rawLower.includes('agama')) {
-              cleanSubName = 'Pendidikan Agama Islam dan Budi Pekerti';
+              cleanSubName = 'Pendidikan Agama dan Budi Pekerti';
             } else if (titleLower.includes('ipas') || rawLower.includes('ipas')) {
-              cleanSubName = 'Ilmu Pengetahuan Alam dan Sosial (IPAS)';
+              cleanSubName = 'IPAS (Ilmu Pengetahuan Alam dan Sosial)';
             } else if (titleLower.includes('pjok') || rawLower.includes('pjok')) {
               cleanSubName = 'Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)';
             }
@@ -715,9 +716,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       }
 
       // c. Match Mata Pelajaran (WAJIB COCOK)
-      const itemSubKey = normalizeCleanStr(item.subject_name);
-      if (!asgSubKey || !itemSubKey) return false;
-      if (!itemSubKey.includes(asgSubKey) && !asgSubKey.includes(itemSubKey)) return false;
+      if (!isSameSubject(item.subject_name, asg.subject_name)) return false;
 
       // d. Match Kelas (WAJIB ANGKA KELAS SAMA PERSIS, misal Kelas 4 vs Kelas 4)
       const itemGradeNum = extractGradeNumber(item.grade_class);
@@ -767,8 +766,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       if (asgLevel && qLevel && asgLevel !== qLevel) return false;
 
       // Subject harus cocok dan tidak boleh kosong
-      if (!asgSubKey || !qSubKey) return false;
-      if (!qSubKey.includes(asgSubKey) && !asgSubKey.includes(qSubKey)) return false;
+      if (!isSameSubject(q.subject_name || q.blueprint_item?.subject_name, asg.subject_name)) return false;
 
       // Kelas harus sama persis dan tidak boleh kosong
       if (!asgGradeNum || !qGradeNum || asgGradeNum !== qGradeNum) return false;
@@ -1668,9 +1666,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     if (!matchG) return false;
 
     // 2. Subject match
-    const itemSub = (item.subject_name || '').toLowerCase().trim();
-    const selSub = (selectedSubject || '').toLowerCase().trim();
-    const matchS = itemSub === selSub || itemSub.includes(selSub) || selSub.includes(itemSub);
+    const matchS = isSameSubject(item.subject_name, selectedSubject);
     if (!matchS) return false;
 
     // 3. Assessment match
@@ -1936,9 +1932,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
         const selGrade = targetGrd.toLowerCase();
         const gradeNum = targetGrd.replace(/\D/g, '');
         const matchG = itemGrade.includes(selGrade) || (gradeNum && itemGrade.includes(gradeNum));
-        const itemSub = (i.subject_name || '').toLowerCase().trim();
-        const selSub = targetSub.toLowerCase().trim();
-        const matchS = itemSub === selSub || itemSub.includes(selSub);
+        const matchS = isSameSubject(i.subject_name, targetSub);
         const itemAsmt = (i.assessment_type || 'SAS').toUpperCase();
         const selAsmt = targetAsmt.toUpperCase();
         const matchA = itemAsmt === selAsmt;
@@ -2025,9 +2019,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       if (initialScope?.isLocked) {
         // Cocokkan Mata Pelajaran
         if (initialScope.subject) {
-          const itemSub = (item.subject_name || '').toLowerCase().trim();
-          const targetSub = initialScope.subject.toLowerCase().trim();
-          if (itemSub && !itemSub.includes(targetSub) && !targetSub.includes(itemSub)) {
+          if (!isSameSubject(item.subject_name, initialScope.subject)) {
             return false;
           }
         }
@@ -2266,34 +2258,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       }
 
       if (selectedSubject) {
-        const itemSub = (item.subject_name || '').toLowerCase().trim();
-        const selSub = selectedSubject.toLowerCase().trim();
-
-        // Normalisasi toleran untuk variasi penamaan kurikulum:
-        // misal "Pendidikan Agama Islam dan Budi Pekerti" vs "Pendidikan Agama dan Budi Pekerti"
-        const norm = (s: string) => s
-          .replace(/[\(\)\-\/]/g, ' ')
-          .replace(/\bislam\b/g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        const normItem = norm(itemSub);
-        const normSel = norm(selSub);
-
-        const matchS = 
-          itemSub === selSub || 
-          itemSub.includes(selSub) || 
-          selSub.includes(itemSub) ||
-          normItem === normSel ||
-          normItem.includes(normSel) ||
-          normSel.includes(normItem) ||
-          (selSub.includes('seni rupa') && (itemSub.includes('seni rupa') || normItem.includes('seni'))) ||
-          (selSub.includes('agama') && itemSub.includes('agama')) ||
-          (selSub.includes('ipas') && itemSub.includes('ipas')) ||
-          (selSub.includes('pjok') && itemSub.includes('pjok')) ||
-          (selSub.includes('sunda') && itemSub.includes('sunda'));
-
-        if (!matchS) return false;
+        if (!isSameSubject(item.subject_name, selectedSubject)) return false;
       }
 
       if (selectedAssessment) {
@@ -2722,10 +2687,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       }
 
       if (selectedSubject) {
-        const itemSub = (i.subject_name || '').toLowerCase().trim();
-        const selSub = selectedSubject.toLowerCase().trim();
-        const matchS = itemSub === selSub || itemSub.includes(selSub) || selSub.includes(itemSub);
-        if (!matchS) return false;
+        if (!isSameSubject(i.subject_name, selectedSubject)) return false;
       }
 
       if (selectedAssessment) {
@@ -2777,7 +2739,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       const effGrade = initialScope?.isLocked ? (selectedGrade || initialScope.grade) : bankFilterGrade;
       const effAssessment = initialScope?.isLocked ? (selectedAssessment || initialScope.assessment) : bankFilterAssessment;
 
-      const matchSub = effSubject === 'ALL' || !item.subject_name || item.subject_name.toLowerCase() === effSubject.toLowerCase();
+      const matchSub = effSubject === 'ALL' || !item.subject_name || isSameSubject(item.subject_name, effSubject);
       const matchGrd = effGrade === 'ALL' || !item.grade_class || item.grade_class.toLowerCase().includes(effGrade.toLowerCase());
       const itemAsmt = (item.assessment_type || blueprint.assessment_type || 'SAS').toUpperCase();
       const matchAsmt = effAssessment === 'ALL' || itemAsmt === effAssessment.toUpperCase();
@@ -3894,10 +3856,8 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                         return displayList.map((sub: any) => {
                           const subName = sub?.name || 'Mata Pelajaran';
                           const countForSub = items.filter(i => {
-                            const itemSub = (i?.subject_name || '').toLowerCase().trim();
-                            const targetSub = subName.toLowerCase().trim();
                             const matchG = !selectedGrade || ((i?.grade_class || '').toLowerCase().includes(selectedGrade.toLowerCase()));
-                            return (itemSub === targetSub || itemSub.includes(targetSub)) && matchG;
+                            return isSameSubject(i?.subject_name, subName) && matchG;
                           }).length;
 
                           return (
