@@ -773,16 +773,14 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
                     <th className="py-3 px-4">Mata Pelajaran & Jenjang</th>
                     <th className="py-3 px-4">Guru Penulis Ditugaskan</th>
                     <th className="py-3 px-4">Progres Kisi-Kisi</th>
-                    <th className="py-3 px-4">Status Penulisan Soal</th>
+                    <th className="py-3 px-4">Progres Soal di Bank Soal</th>
                     <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {displayedBlueprints.map((bp) => {
                     const itemsInBp = blueprintItems.filter(i => i.blueprint_id === bp.id);
-                    const finishedInBp = itemsInBp.filter(i => 
-                      i.workflow_status === 'Selesai' || finishedBpItemIds.has(i.id)
-                    );
+                    const bpItemIds = new Set(itemsInBp.map(i => i.id));
                     const isArchived = isBlueprintArchived(bp);
 
                     // Cari Guru Penulis yang Ditugaskan
@@ -795,12 +793,20 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
                       )
                     );
 
-                    // Target Total Soal Dinamis (Mengutamakan butir asli kisi-kisi atau penugasan)
+                    // Butir Soal Nyata yang Ditulis di Bank Soal (Sinkron 100% dengan Monitoring Supervisi Penugasan)
+                    const writtenQuestionsInBp = questionBank.filter(q => 
+                      Boolean(q.question_text?.trim()) && 
+                      (
+                        (q.blueprint_item_id && bpItemIds.has(q.blueprint_item_id)) ||
+                        (matchedAsg?.id && (q as any).assignment_id === matchedAsg.id)
+                      )
+                    );
+
+                    // Target Total Soal Dinamis
                     const targetTotal = bp.total_questions || (itemsInBp.length > 0 ? itemsInBp.length : (matchedAsg?.target_questions || 35));
                     const kisiPct = targetTotal > 0 ? Math.min(100, Math.round((itemsInBp.length / targetTotal) * 100)) : 0;
-                    const finishedCount = finishedInBp.length;
-                    const isComplete = finishedCount >= targetTotal && targetTotal > 0;
-                    const isDraftOnly = finishedCount === 0;
+                    const writtenCount = writtenQuestionsInBp.length;
+                    const isComplete = writtenCount >= targetTotal && targetTotal > 0;
 
                     return (
                       <tr key={bp.id} className="hover:bg-sky-50/50 transition-colors">
@@ -874,29 +880,38 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
                           </span>
                         </td>
 
-                        {/* 5. Status Penulisan Naskah Soal */}
+                        {/* 5. Status Penulisan Naskah Soal (Sinkron 100% dengan Monitoring Supervisi) */}
                         <td className="py-3.5 px-4">
-                          {isComplete ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600 shrink-0 stroke-[2.5]" />
-                              {finishedCount}/{targetTotal} Selesai (100%)
-                            </span>
-                          ) : isDraftOnly ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              <Clock className="w-3.5 h-3.5 mr-1 text-slate-500 shrink-0" />
-                              Draft Penulisan (0/{targetTotal})
-                            </span>
-                          ) : (
-                            <div>
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                                <Clock className="w-3.5 h-3.5 mr-1 text-blue-600 shrink-0" />
-                                {finishedCount}/{targetTotal} Selesai ({Math.round((finishedCount / targetTotal) * 100)}%)
+                          <div className="flex items-center space-x-1.5 text-xs">
+                            <span className="font-black text-slate-900">{writtenCount}</span>
+                            <span className="text-slate-400 font-bold">/</span>
+                            <span className="font-bold text-slate-600">{targetTotal} Butir</span>
+                          </div>
+                          <div className="w-28 bg-slate-100 h-2 rounded-full overflow-hidden mt-1.5 border border-slate-200">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isComplete ? 'bg-emerald-500' : writtenCount > 0 ? 'bg-indigo-600' : 'bg-slate-300'
+                              }`}
+                              style={{ width: `${Math.min(100, Math.round((writtenCount / targetTotal) * 100))}%` }}
+                            />
+                          </div>
+                          <div className="mt-1">
+                            {isComplete ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
+                                Selesai Ditulis (100%)
                               </span>
-                              <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">
-                                Sisa {targetTotal - finishedCount} butir dalam riviu
+                            ) : writtenCount > 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200">
+                                <Clock className="w-3 h-3 mr-1 text-amber-600" />
+                                Proses Penulisan ({writtenCount}/{targetTotal})
                               </span>
-                            </div>
-                          )}
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                Belum Ditulis (0/{targetTotal})
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* 6. Aksi */}
