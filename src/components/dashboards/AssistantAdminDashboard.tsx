@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Archive,
-  RotateCcw
+  RotateCcw,
+  UserCheck,
+  User
 } from 'lucide-react';
 import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage, QuestionWriterAssignment } from '../../types/database';
 import { isSameSubject } from '../../lib/subjectMatcher';
