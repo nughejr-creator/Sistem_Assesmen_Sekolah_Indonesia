@@ -19,7 +19,8 @@ import {
   Archive,
   RotateCcw
 } from 'lucide-react';
-import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage } from '../../types/database';
+import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage, QuestionWriterAssignment } from '../../types/database';
+import { isSameSubject } from '../../lib/subjectMatcher';
 import { supabase } from '../../lib/supabase';
 import { HourglassLoader } from '../common/HourglassLoader';
 import { isBlueprintArchived, getCleanBlueprintTitle, archiveBlueprintInDb, restoreBlueprintInDb } from '../../lib/archiveHelper';
@@ -58,6 +59,15 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
   const [questionBank, setQuestionBank] = useState<QuestionBankItem[]>(() => {
     try {
       const cached = localStorage.getItem('sasi_question_bank_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [writerAssignments, setWriterAssignments] = useState<QuestionWriterAssignment[]>(() => {
+    try {
+      const cached = localStorage.getItem('sasi_writer_assignments_cache');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -175,6 +185,7 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
       .on('postgres_changes', { event: '*', schema: 'public', table: 'blueprints' }, () => fetchRealtimeDashboardData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'question_bank' }, () => fetchRealtimeDashboardData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_packages' }, () => fetchRealtimeDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'question_writer_assignments' }, () => fetchRealtimeDashboardData())
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setIsLiveConnected(true);
@@ -756,11 +767,11 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
               <table className="w-full text-left text-xs">
                 <thead className="bg-sky-100 text-sky-950 font-black border-b-2 border-sky-300 uppercase tracking-wider text-[11px]">
                   <tr>
-                    <th className="py-3 px-4">Judul Kisi-Kisi</th>
-                    <th className="py-3 px-4">Mata Pelajaran</th>
-                    <th className="py-3 px-4">Jenjang & Fase</th>
-                    <th className="py-3 px-4">Jenis Asesmen</th>
-                    <th className="py-3 px-4">Target Soal</th>
+                    <th className="py-3 px-4">Judul Dokumen Kisi-Kisi</th>
+                    <th className="py-3 px-4">Mata Pelajaran & Jenjang</th>
+                    <th className="py-3 px-4">Guru Penulis Ditugaskan</th>
+                    <th className="py-3 px-4">Progres Kisi-Kisi</th>
+                    <th className="py-3 px-4">Status Penulisan Soal</th>
                     <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -771,8 +782,27 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
                       i.workflow_status === 'Selesai' || finishedBpItemIds.has(i.id)
                     );
                     const isArchived = isBlueprintArchived(bp);
+
+                    // Cari Guru Penulis yang Ditugaskan
+                    const matchedAsg = writerAssignments.find(a => 
+                      !a.is_archived &&
+                      isSameSubject(a.subject_name, bp.subject?.name || bp.title) &&
+                      (
+                        (bp.title && a.grade_class && bp.title.toLowerCase().includes(a.grade_class.toLowerCase())) ||
+                        (bp.phase && a.phase && bp.phase === a.phase)
+                      )
+                    );
+
+                    // Target Total Soal Dinamis (Mengutamakan butir asli kisi-kisi atau penugasan)
+                    const targetTotal = bp.total_questions || (itemsInBp.length > 0 ? itemsInBp.length : (matchedAsg?.target_questions || 35));
+                    const kisiPct = targetTotal > 0 ? Math.min(100, Math.round((itemsInBp.length / targetTotal) * 100)) : 0;
+                    const finishedCount = finishedInBp.length;
+                    const isComplete = finishedCount >= targetTotal && targetTotal > 0;
+                    const isDraftOnly = finishedCount === 0;
+
                     return (
                       <tr key={bp.id} className="hover:bg-sky-50/50 transition-colors">
+                        {/* 1. Judul Dokumen */}
                         <td className="py-3.5 px-4 font-bold text-slate-800">
                           <div className="flex items-center space-x-2">
                             <span>{getCleanBlueprintTitle(bp.title)}</span>
@@ -782,28 +812,92 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
                               </span>
                             )}
                           </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600 font-semibold">
-                          {bp.subject?.name || 'Umum'}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            {bp.level} • Fase {bp.phase}
+                          <span className="text-[10px] font-medium text-slate-400 block mt-0.5">
+                            ID: {bp.id.substring(0, 8)}...
                           </span>
                         </td>
+
+                        {/* 2. Mapel & Jenjang */}
                         <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            {bp.assessment_type || 'SAS'}
+                          <span className="font-bold text-slate-800 block">
+                            {bp.subject?.name || 'Umum'}
                           </span>
+                          <div className="flex items-center space-x-1 mt-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              {bp.level} • Fase {bp.phase}
+                            </span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              {bp.assessment_type || 'SAS'}
+                            </span>
+                          </div>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-700">
-                          <span className="font-bold text-slate-900">{finishedInBp.length}</span> / {bp.total_questions || itemsInBp.length || 0} Soal
-                          {itemsInBp.length > 0 && (
-                            <span className="text-[10px] text-slate-500 font-semibold ml-1.5">
-                              ({Math.round((finishedInBp.length / (bp.total_questions || itemsInBp.length)) * 100)}%)
+
+                        {/* 3. Guru Penulis Ditugaskan */}
+                        <td className="py-3.5 px-4">
+                          {matchedAsg ? (
+                            <div>
+                              <div className="flex items-center space-x-1.5 font-bold text-slate-900">
+                                <UserCheck className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                                <span className="line-clamp-1">{matchedAsg.user_name}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-500 font-medium block mt-0.5 truncate max-w-[160px]">
+                                {matchedAsg.user_institution || 'Guru Penulis SASI'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 italic">
+                              <User className="w-3 h-3 mr-1 text-slate-400" />
+                              Belum Ditugaskan
                             </span>
                           )}
                         </td>
+
+                        {/* 4. Progres Kisi-Kisi */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center space-x-1.5 text-xs">
+                            <span className="font-black text-slate-900">{itemsInBp.length}</span>
+                            <span className="text-slate-400 font-bold">/</span>
+                            <span className="font-bold text-slate-600">{targetTotal} Kisi</span>
+                          </div>
+                          <div className="w-28 bg-slate-100 h-2 rounded-full overflow-hidden mt-1.5 border border-slate-200">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                itemsInBp.length >= targetTotal ? 'bg-emerald-500' : 'bg-brand-500'
+                              }`}
+                              style={{ width: `${kisiPct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                            {kisiPct}% Lengkap
+                          </span>
+                        </td>
+
+                        {/* 5. Status Penulisan Naskah Soal */}
+                        <td className="py-3.5 px-4">
+                          {isComplete ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600 shrink-0 stroke-[2.5]" />
+                              {finishedCount}/{targetTotal} Selesai (100%)
+                            </span>
+                          ) : isDraftOnly ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              <Clock className="w-3.5 h-3.5 mr-1 text-slate-500 shrink-0" />
+                              Draft Penulisan (0/{targetTotal})
+                            </span>
+                          ) : (
+                            <div>
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                <Clock className="w-3.5 h-3.5 mr-1 text-blue-600 shrink-0" />
+                                {finishedCount}/{targetTotal} Selesai ({Math.round((finishedCount / targetTotal) * 100)}%)
+                              </span>
+                              <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">
+                                Sisa {targetTotal - finishedCount} butir dalam riviu
+                              </span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* 6. Aksi */}
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end space-x-1.5">
                             <button
