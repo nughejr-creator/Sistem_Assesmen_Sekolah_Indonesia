@@ -15,6 +15,7 @@ import {
   setFailoverActive,
   getFailoverReason,
   cloneMasterDataToBackupNode,
+  syncBackupDataToMasterNode,
   DEFAULT_BACKUP_NODE
 } from '../../lib/clusterManager';
 import { UserProfile, School } from '../../types/database';
@@ -75,7 +76,7 @@ export const DatabaseClusterManager: React.FC<DatabaseClusterManagerProps> = ({ 
     return () => window.removeEventListener('sasi_cluster_failover_changed', handleFailoverChange);
   }, []);
 
-  const handleToggleFailover = () => {
+  const handleToggleFailover = async () => {
     const next = !failoverActive;
     if (next) {
       if (confirm('KONFIRMASI PENGALIHAN DARURAT:\n\nApakah Anda yakin ingin mengalihkan seluruh koneksi web ke SERVER CADANGAN (xtgqdbqjokzkgzzagdly.supabase.co)?\n\nGunakan fitur ini saat Master Hub kehabisan kuota atau mengalami gangguan.')) {
@@ -83,10 +84,26 @@ export const DatabaseClusterManager: React.FC<DatabaseClusterManagerProps> = ({ 
         setFailoverActiveState(true);
       }
     } else {
-      if (confirm('Kembalikan sistem ke Server Utama (Master Hub)?')) {
-        setFailoverActive(false);
-        setFailoverActiveState(false);
+      const doSync = confirm(
+        'KEMBALIKAN SISTEM KE SERVER UTAMA (MASTER HUB):\n\n' +
+        'Apakah Anda ingin MENYELARASKAN data pekerjaan guru dari Server Cadangan kembali ke Master Hub terlebih dahulu?\n\n' +
+        '• Klik [OK] untuk MENYELARASKAN OTOMATIS (sangat direkomendasikan agar soal baru yang dibuat guru saat darurat tidak tertinggal).\n' +
+        '• Klik [Cancel] jika ingin beralih langsung tanpa sinkronisasi.'
+      );
+      if (doSync) {
+        setCloningStatus({ isCloning: true, progressMsg: 'Menyelaraskan data dari Server Cadangan kembali ke Master Hub...' });
+        const syncRes = await syncBackupDataToMasterNode((msg) => {
+          setCloningStatus({ isCloning: true, progressMsg: msg });
+        });
+        setCloningStatus({ isCloning: false, result: { success: syncRes.success, totalCloned: syncRes.totalSynced, error: syncRes.error } });
+        if (syncRes.success) {
+          alert(`✅ SINKRONISASI BALIK SUKSES!\n\nSebanyak ${syncRes.totalSynced} data berhasil diselaraskan ke Master Hub. Sistem kini aman kembali ke Server Utama.`);
+        } else {
+          alert(`⚠️ Peringatan Sinkronisasi: ${syncRes.error || 'Gagal sebagian'}`);
+        }
       }
+      setFailoverActive(false);
+      setFailoverActiveState(false);
     }
   };
 

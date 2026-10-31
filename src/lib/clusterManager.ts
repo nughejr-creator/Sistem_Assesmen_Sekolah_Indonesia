@@ -787,3 +787,59 @@ export const cloneMasterDataToBackupNode = async (
   }
 };
 
+/**
+ * Sinkronisasi Balik (Failback Reconcile): Salin perubahan data baru dari Server Cadangan kembali ke Master Hub
+ * Digunakan sebelum mengembalikan sistem dari mode Failover ke Mode Normal agar pekerjaan guru tidak tertinggal
+ */
+export const syncBackupDataToMasterNode = async (
+  onProgress?: (message: string) => void
+): Promise<{ success: boolean; totalSynced: number; error?: string }> => {
+  const backupNode = getBackupNode();
+  const backupClient = getClientForNode(backupNode);
+
+  const tables = [
+    'schools',
+    'user_profiles',
+    'subjects',
+    'context_presets',
+    'blueprints',
+    'blueprint_items',
+    'question_bank',
+    'question_options',
+    'exam_packages',
+    'exam_package_questions',
+    'exam_sessions',
+    'teachers',
+    'supervisors',
+    'question_writer_assignments'
+  ];
+
+  let totalRecords = 0;
+
+  try {
+    for (const table of tables) {
+      if (onProgress) onProgress(`Membaca data ${table} dari Server Cadangan...`);
+      const { data, error } = await backupClient.from(table).select('*');
+      if (error) {
+        console.warn(`[Failback Sync Warning] Gagal membaca Backup ${table}:`, error.message);
+        continue;
+      }
+      if (!data || data.length === 0) continue;
+
+      if (onProgress) onProgress(`Menyelaraskan ${data.length} ${table} ke Master Hub...`);
+      for (let i = 0; i < data.length; i += 50) {
+        const batch = data.slice(i, i + 50);
+        const { error: upsertErr } = await masterSupabase.from(table).upsert(batch);
+        if (upsertErr) {
+          console.warn(`[Failback Sync Warning] Upsert ${table} ke Master:`, upsertErr.message);
+        } else {
+          totalRecords += batch.length;
+        }
+      }
+    }
+    return { success: true, totalSynced: totalRecords };
+  } catch (err: any) {
+    return { success: false, totalSynced: totalRecords, error: err.message };
+  }
+};
+
