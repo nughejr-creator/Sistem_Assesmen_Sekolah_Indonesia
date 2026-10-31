@@ -10,7 +10,12 @@ import {
   generateMasterClusterSQLSchema,
   syncSchoolUsersToClusterNode,
   purgeSchoolUsersFromClusterNode,
-  DEFAULT_MASTER_NODE
+  DEFAULT_MASTER_NODE,
+  isFailoverActive,
+  setFailoverActive,
+  getFailoverReason,
+  cloneMasterDataToBackupNode,
+  DEFAULT_BACKUP_NODE
 } from '../../lib/clusterManager';
 import { UserProfile, School } from '../../types/database';
 import { ClusterAuditModal } from './ClusterAuditModal';
@@ -55,6 +60,49 @@ export const DatabaseClusterManager: React.FC<DatabaseClusterManagerProps> = ({ 
   const [selectedSqlTab, setSelectedSqlTab] = useState<'master' | 'shard'>('master');
   const [cloudRegistryStatus, setCloudRegistryStatus] = useState<'checking' | 'active' | 'missing_table' | 'error'>('checking');
   const [editingNode, setEditingNode] = useState<DatabaseNode | null>(null);
+
+  // Disaster Recovery Failover States
+  const [failoverActive, setFailoverActiveState] = useState(isFailoverActive());
+  const [failoverReason, setFailoverReasonState] = useState(getFailoverReason());
+  const [cloningStatus, setCloningStatus] = useState<{ isCloning: boolean; progressMsg?: string; result?: { success: boolean; totalCloned: number; error?: string } }>({ isCloning: false });
+
+  useEffect(() => {
+    const handleFailoverChange = () => {
+      setFailoverActiveState(isFailoverActive());
+      setFailoverReasonState(getFailoverReason());
+    };
+    window.addEventListener('sasi_cluster_failover_changed', handleFailoverChange);
+    return () => window.removeEventListener('sasi_cluster_failover_changed', handleFailoverChange);
+  }, []);
+
+  const handleToggleFailover = () => {
+    const next = !failoverActive;
+    if (next) {
+      if (confirm('KONFIRMASI PENGALIHAN DARURAT:\n\nApakah Anda yakin ingin mengalihkan seluruh koneksi web ke SERVER CADANGAN (xtgqdbqjokzkgzzagdly.supabase.co)?\n\nGunakan fitur ini saat Master Hub kehabisan kuota atau mengalami gangguan.')) {
+        setFailoverActive(true, 'Pengalihan Manual oleh Super Admin');
+        setFailoverActiveState(true);
+      }
+    } else {
+      if (confirm('Kembalikan sistem ke Server Utama (Master Hub)?')) {
+        setFailoverActive(false);
+        setFailoverActiveState(false);
+      }
+    }
+  };
+
+  const handleRunFullClone = async () => {
+    if (!confirm('Kloning Seluruh Data Master ke Server Cadangan?\n\nSemua data sekolah, akun guru/siswa, bank soal, dan paket ujian akan disalin ke database cadangan.')) {
+      return;
+    }
+    setCloningStatus({ isCloning: true, progressMsg: 'Menghubungkan ke database...' });
+    const res = await cloneMasterDataToBackupNode((msg) => {
+      setCloningStatus({ isCloning: true, progressMsg: msg });
+    });
+    setCloningStatus({ isCloning: false, result: res });
+    setTimeout(() => {
+      setCloningStatus(prev => ({ ...prev, result: undefined }));
+    }, 8000);
+  };
 
   // Audit Modal States & Handlers
   const [auditNode, setAuditNode] = useState<DatabaseNode | null>(null);
@@ -448,6 +496,118 @@ export const DatabaseClusterManager: React.FC<DatabaseClusterManagerProps> = ({ 
           </button>
         </div>
       )}
+
+      {/* 1.5 EMERGENCY DISASTER RECOVERY & AUTO-FAILOVER CARD */}
+      <div className={`p-6 rounded-3xl border transition-all ${
+        failoverActive 
+          ? 'bg-gradient-to-br from-rose-950/90 via-slate-900 to-rose-950/90 border-rose-500/50 shadow-xl shadow-rose-950/20 text-white' 
+          : 'bg-gradient-to-br from-slate-900 via-indigo-950/80 to-slate-900 border-indigo-500/30 shadow-lg text-white'
+      }`}>
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                failoverActive 
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+              }`}>
+                {failoverActive ? (
+                  <>
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Mode Failover Darurat Aktif</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Sistem Normal (Master Pusat Aktif)</span>
+                  </>
+                )}
+              </span>
+
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-amber-400" />
+                <span>Auto-Failover ON (Anti-Kuras Egress 402/429)</span>
+              </span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
+              <span>Pusat Kendali Server Cadangan (Disaster Recovery Hub)</span>
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              {failoverActive ? (
+                <span className="text-rose-200">
+                  ⚠️ Seluruh permintaan database siswa, guru, dan proktor saat ini <strong>sedang dilayani oleh Server Cadangan (xtgqdbqjokzkgzzagdly.supabase.co)</strong>. Alasan: {failoverReason}.
+                </span>
+              ) : (
+                <span>
+                  Server Cadangan Mandiri (<code className="text-emerald-300 font-mono bg-slate-800/80 px-1 py-0.5 rounded">xtgqdbqjokzkgzzagdly.supabase.co</code>) siap siaga dengan kuota <strong>5 GB Egress terpisah</strong>. Jika kuota Master habis, sistem akan otomatis beralih atau Anda dapat mengalihkannya secara instan dengan 1-klik di bawah ini.
+                </span>
+              )}
+            </p>
+
+            {/* Cloning Progress / Result Alert */}
+            {cloningStatus.isCloning && (
+              <div className="p-3 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 text-xs flex items-center gap-2 animate-pulse">
+                <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
+                <span>{cloningStatus.progressMsg || 'Sedang menyinkronkan data ke Server Cadangan...'}</span>
+              </div>
+            )}
+
+            {cloningStatus.result && (
+              <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                cloningStatus.result.success
+                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-200'
+                  : 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
+              }`}>
+                {cloningStatus.result.success ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Sukses! {cloningStatus.result.totalCloned} data berhasil disalin ke Server Cadangan.</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    <span>Gagal kloning: {cloningStatus.result.error}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0">
+            <button
+              onClick={handleToggleFailover}
+              className={`px-5 py-3 rounded-2xl font-black text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                failoverActive
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25'
+                  : 'bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-400 hover:to-orange-400 text-white shadow-rose-500/25'
+              }`}
+            >
+              {failoverActive ? (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Kembalikan ke Master Hub</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-amber-300" />
+                  <span>Alihkan ke Server Cadangan (1-Klik)</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleRunFullClone}
+              disabled={cloningStatus.isCloning}
+              className="px-5 py-3 rounded-2xl bg-slate-800/90 hover:bg-slate-700 text-indigo-200 hover:text-white font-bold text-xs border border-indigo-500/30 hover:border-indigo-400 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Copy className="w-4 h-4 text-indigo-400" />
+              <span>{cloningStatus.isCloning ? 'Menyalin...' : 'Kloning Data Master ke Cadangan'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* 2. Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

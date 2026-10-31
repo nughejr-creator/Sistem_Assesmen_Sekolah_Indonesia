@@ -17,13 +17,18 @@ const env = (typeof import.meta !== 'undefined' && (import.meta as any).env)
 const SUPABASE_URL = env.VITE_SUPABASE_URL || 'https://lmlflfkdukcdhkdjssmm.supabase.co';
 const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_jCtI_SZy-jxcJoDkeXPN-g_HKO4LEXX';
 
+// Server Cadangan Darurat (Disaster Recovery Project Baru)
+export const BACKUP_SUPABASE_URL = 'https://xtgqdbqjokzkgzzagdly.supabase.co';
+export const BACKUP_SUPABASE_ANON_KEY = 'sb_publishable_oBxW-P4ypotuVHxTl1nEtw_-7ZTeUOK';
+
 export const isLiveSupabase = Boolean(
   SUPABASE_URL && 
   SUPABASE_ANON_KEY && 
   SUPABASE_URL.includes('lmlflfkdukcdhkdjssmm')
 );
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Client Master Utama
+export const primarySupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -33,6 +38,38 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       eventsPerSecond: 10,
     },
   },
+});
+
+// Client Cadangan Darurat (Standby Disaster Recovery)
+export const backupSupabase = createClient(BACKUP_SUPABASE_URL, BACKUP_SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
+
+// Dynamic Failover Proxy: Otomatis mengarahkan seluruh query ke Server Cadangan jika Failover aktif
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_target, prop) {
+    let isFailover = false;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        isFailover = window.localStorage.getItem('sasi_cluster_failover_active') === 'true';
+      }
+    } catch {}
+
+    const client = isFailover ? backupSupabase : primarySupabase;
+    const value = (client as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
+  }
 });
 
 // ==============================================================================

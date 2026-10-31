@@ -38,6 +38,23 @@ export const DEFAULT_MASTER_NODE: DatabaseNode = {
   created_at: '2026-10-20T00:00:00.000Z'
 };
 
+// Backup node default configuration (Server Cadangan Darurat Baru)
+export const DEFAULT_BACKUP_NODE: DatabaseNode = {
+  id: 'node-backup-dr-01',
+  name: 'Server Cadangan Darurat (Disaster Recovery Hub)',
+  supabaseUrl: 'https://xtgqdbqjokzkgzzagdly.supabase.co',
+  supabaseAnonKey: 'sb_publishable_oBxW-P4ypotuVHxTl1nEtw_-7ZTeUOK',
+  isMaster: false,
+  isActive: true,
+  assignedSchoolIds: [], // Standby cadangan (menerima semua sekolah saat failover aktif)
+  maxPoolSize: 15,
+  maxClients: 200,
+  status: 'standby',
+  latencyMs: 35,
+  notes: 'Dedicated Standby Disaster Recovery Database (Auto-Failover jika Master habis kuota).',
+  created_at: '2026-10-31T00:00:00.000Z'
+};
+
 // Node kluster terdaftar awal (agar langsung aktif di seluruh browser/incognito siswa & proktor)
 export const INITIAL_CLUSTER_NODES: DatabaseNode[] = [
   DEFAULT_MASTER_NODE,
@@ -55,8 +72,71 @@ export const INITIAL_CLUSTER_NODES: DatabaseNode[] = [
     latencyMs: 32,
     notes: 'Dedicated Shard Server CBT Wilayah Pamulihan.',
     created_at: '2026-10-24T00:00:00.000Z'
-  }
+  },
+  DEFAULT_BACKUP_NODE
 ];
+
+// ==============================================================================
+// FAILOVER STATE MANAGEMENT (AUTO & MANUAL)
+// ==============================================================================
+export const FAILOVER_STORAGE_KEY = 'sasi_cluster_failover_active';
+export const FAILOVER_REASON_KEY = 'sasi_cluster_failover_reason';
+
+export const isFailoverActive = (): boolean => {
+  try {
+    return localStorage.getItem(FAILOVER_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+export const getFailoverReason = (): string => {
+  try {
+    return localStorage.getItem(FAILOVER_REASON_KEY) || 'Pengalihan sistem darurat.';
+  } catch {
+    return 'Pengalihan sistem darurat.';
+  }
+};
+
+export const setFailoverActive = (active: boolean, reason?: string) => {
+  try {
+    localStorage.setItem(FAILOVER_STORAGE_KEY, active ? 'true' : 'false');
+    if (active && reason) {
+      localStorage.setItem(FAILOVER_REASON_KEY, reason);
+    } else if (!active) {
+      localStorage.removeItem(FAILOVER_REASON_KEY);
+    }
+    window.dispatchEvent(new CustomEvent('sasi_cluster_failover_changed', { detail: { active, reason } }));
+  } catch (e) {
+    console.error('Error setting failover status:', e);
+  }
+};
+
+export const getBackupNode = (): DatabaseNode => {
+  const nodes = getClusterNodes();
+  return nodes.find(n => n.id === 'node-backup-dr-01' || n.name.toLowerCase().includes('cadangan')) || DEFAULT_BACKUP_NODE;
+};
+
+export const checkAndHandleAutoFailover = (error: any) => {
+  if (!error) return;
+  const msg = (error.message || '').toLowerCase();
+  const code = String(error.code || '');
+  if (
+    code === '402' || 
+    code === '429' || 
+    code === 'PGRST503' ||
+    msg.includes('egress') || 
+    msg.includes('rate limit') || 
+    msg.includes('quota') || 
+    msg.includes('project paused') || 
+    msg.includes('exceeded')
+  ) {
+    if (!isFailoverActive()) {
+      console.warn('[SASI Auto-Failover Triggered]', error);
+      setFailoverActive(true, `Deteksi Otomatis: Server Master mengalami batasan kuota (${error.message || code}). Beralih ke Server Cadangan.`);
+    }
+  }
+};
 
 // Ambil seluruh node kluster yang tersimpan
 export const getClusterNodes = (): DatabaseNode[] => {
@@ -68,6 +148,9 @@ export const getClusterNodes = (): DatabaseNode[] => {
         // Pastikan node master selalu ada dan berada di urutan pertama
         const masterIdx = parsed.findIndex(n => n.isMaster);
         const list: DatabaseNode[] = masterIdx === -1 ? [DEFAULT_MASTER_NODE, ...parsed] : parsed;
+        if (!list.some(n => n.id === 'node-backup-dr-01')) {
+          list.push(DEFAULT_BACKUP_NODE);
+        }
         return list;
       }
     }
@@ -190,6 +273,11 @@ export const getClientForNode = (node: DatabaseNode): SupabaseClient => {
 
 // Cek dan tentukan node database mana yang bertanggung jawab untuk sekolah tertentu
 export const getNodeForSchool = (schoolId?: string | null): DatabaseNode => {
+  // JIKA FAILOVER DARURAT AKTIF: Langsung alihkan seluruh request ke Server Cadangan!
+  if (isFailoverActive()) {
+    return getBackupNode();
+  }
+
   const nodes = getClusterNodes();
   if (!schoolId) {
     return nodes.find(n => n.isMaster) || DEFAULT_MASTER_NODE;
@@ -642,3 +730,60 @@ SELECT id, name, is_master, is_active, array_length(assigned_school_ids, 1) as m
 FROM public.cluster_nodes;
 `;
 };
+
+/**
+ * Kloning seluruh data operasional dari Master Hub ke Server Cadangan (Disaster Recovery Hub)
+ */
+export const cloneMasterDataToBackupNode = async (
+  onProgress?: (message: string) => void
+): Promise<{ success: boolean; totalCloned: number; error?: string }> => {
+  const backupNode = getBackupNode();
+  const backupClient = getClientForNode(backupNode);
+
+  const tables = [
+    'schools',
+    'user_profiles',
+    'subjects',
+    'context_presets',
+    'blueprints',
+    'blueprint_items',
+    'question_bank',
+    'question_options',
+    'exam_packages',
+    'exam_package_questions',
+    'exam_sessions',
+    'teachers',
+    'supervisors',
+    'cluster_nodes',
+    'question_writer_assignments'
+  ];
+
+  let totalRecords = 0;
+
+  try {
+    for (const table of tables) {
+      if (onProgress) onProgress(`Mengambil ${table} dari Master...`);
+      const { data, error } = await masterSupabase.from(table).select('*');
+      if (error) {
+        console.warn(`[Clone Warning] Gagal membaca Master ${table}:`, error.message);
+        continue;
+      }
+      if (!data || data.length === 0) continue;
+
+      if (onProgress) onProgress(`Menyalin ${data.length} ${table} ke Server Cadangan...`);
+      for (let i = 0; i < data.length; i += 50) {
+        const batch = data.slice(i, i + 50);
+        const { error: upsertErr } = await backupClient.from(table).upsert(batch);
+        if (upsertErr) {
+          console.warn(`[Clone Warning] Upsert ${table}:`, upsertErr.message);
+        } else {
+          totalRecords += batch.length;
+        }
+      }
+    }
+    return { success: true, totalCloned: totalRecords };
+  } catch (err: any) {
+    return { success: false, totalCloned: totalRecords, error: err.message };
+  }
+};
+
