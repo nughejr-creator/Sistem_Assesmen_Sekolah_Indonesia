@@ -53,7 +53,26 @@ export const backupSupabase = createClient(BACKUP_SUPABASE_URL, BACKUP_SUPABASE_
   },
 });
 
-// Dynamic Failover Proxy: Otomatis mengarahkan seluruh query ke Server Cadangan jika Failover aktif
+// Tabel yang dilindungi fitur Dual-Write (Replikasi Instan Tanpa Blokir untuk Guru & Asesmen)
+export const DUAL_WRITE_TABLES = new Set([
+  'question_bank',
+  'question_options',
+  'blueprints',
+  'blueprint_items',
+  'exam_packages',
+  'exam_package_questions',
+  'exam_sessions',
+  'user_profiles',
+  'schools',
+  'teachers',
+  'supervisors',
+  'question_writer_assignments'
+]);
+
+// Dynamic Failover & Dual-Write Proxy:
+// 1. Secara otomatis membaca dari Master saat normal, atau dari Backup saat Failover aktif
+// 2. Setiap kali Guru menyimpan/mengubah/menghapus bank soal, kisi-kisi, atau paket ujian,
+//    data otomatis direplikasi ke Server Cadangan di latar belakang (Non-Blocking Dual-Write)
 export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
   get(_target, prop) {
     let isFailover = false;
@@ -62,6 +81,69 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
         isFailover = window.localStorage.getItem('sasi_cluster_failover_active') === 'true';
       }
     } catch {}
+
+    if (prop === 'from') {
+      return function(tableName: string) {
+        const client = isFailover ? backupSupabase : primarySupabase;
+        const targetBuilder = client.from(tableName as any);
+
+        // Jika Failover aktif atau tabel bukan tabel data penting, kembalikan builder standar
+        if (isFailover || !DUAL_WRITE_TABLES.has(tableName)) {
+          return targetBuilder;
+        }
+
+        // DUAL-WRITE INTERCEPTOR: Replikasi perubahan ke Server Cadangan di latar belakang
+        const backupBuilder = backupSupabase.from(tableName as any);
+        return new Proxy(targetBuilder, {
+          get(bTarget, bProp) {
+            const orig = (bTarget as any)[bProp];
+            if (typeof orig !== 'function') return orig;
+
+            // Replikasi INSERT & UPSERT ke Server Cadangan
+            if (bProp === 'insert' || bProp === 'upsert') {
+              return function(values: any, options: any) {
+                try {
+                  const bMethod = (backupBuilder as any)[bProp];
+                  if (typeof bMethod === 'function') {
+                    bMethod.call(backupBuilder, values, options)
+                      .then(() => {})
+                      .catch((err: any) => console.warn(`[Dual-Write Silent Warning on ${tableName}]:`, err?.message));
+                  }
+                } catch {}
+                return orig.apply(bTarget, arguments);
+              };
+            }
+
+            // Replikasi DELETE ke Server Cadangan
+            if (bProp === 'delete') {
+              return function() {
+                const pDelete = orig.apply(bTarget, arguments);
+                const bDelete = backupBuilder.delete();
+                return new Proxy(pDelete, {
+                  get(dTarget, dProp) {
+                    const dOrig = (dTarget as any)[dProp];
+                    if (typeof dOrig !== 'function') return dOrig;
+                    if (dProp === 'eq' || dProp === 'in') {
+                      return function(col: string, val: any) {
+                        try {
+                          (bDelete as any)[dProp](col, val)
+                            .then(() => {})
+                            .catch((err: any) => console.warn(`[Dual-Write Delete Warning on ${tableName}]:`, err?.message));
+                        } catch {}
+                        return dOrig.apply(dTarget, arguments);
+                      };
+                    }
+                    return dOrig.bind(dTarget);
+                  }
+                });
+              };
+            }
+
+            return orig.bind(bTarget);
+          }
+        });
+      };
+    }
 
     const client = isFailover ? backupSupabase : primarySupabase;
     const value = (client as any)[prop];
