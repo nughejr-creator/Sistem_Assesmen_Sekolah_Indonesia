@@ -95,3 +95,29 @@ export function getItemUnresolvedMessageCount(
   if (!thread || thread.is_resolved) return 0;
   return thread.messages?.length || 0;
 }
+
+/**
+ * Format catatan revisi (JSON threads atau plain text) menjadi tampilan teks yang bersih, rapi, dan mudah dibaca manusia.
+ */
+export function formatRevisionNotesForDisplay(rawNotes?: string | null): string {
+  if (!rawNotes || !rawNotes.trim()) return '';
+  const parsed = parseReviewThreads(rawNotes);
+  
+  if (parsed.threads && parsed.threads.length > 0) {
+    const threadSummaries = parsed.threads.map(t => {
+      const lastMsg = t.messages?.[t.messages.length - 1];
+      const statusText = t.is_resolved ? ' (Disepakati)' : '';
+      if (lastMsg) {
+        return `• Butir #${t.item_number} [${lastMsg.sender_role === 'reviewer' ? 'Reviewer' : 'Penulis'}]: "${lastMsg.message}"${statusText}`;
+      }
+      return `• Butir #${t.item_number}${statusText}`;
+    });
+
+    if (parsed.generalNotes) {
+      return `${parsed.generalNotes}\n\n${threadSummaries.join('\n')}`;
+    }
+    return threadSummaries.join('\n');
+  }
+
+  return parsed.generalNotes;
+}

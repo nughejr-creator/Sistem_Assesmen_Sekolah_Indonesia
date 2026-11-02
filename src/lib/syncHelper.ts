@@ -907,7 +907,11 @@ export async function deleteBlueprintItemWriterFromCloud(itemId: string) {
  * Helper Serialisasi Pipe untuk Penyimpanan Hemat Ruang di PostgreSQL VARCHAR(255)
  */
 export function encodeWriterAssignmentToPipe(a: QuestionWriterAssignment): string {
-  const safeNotes = (a.revision_notes || '').replace(/\|/g, '&#124;');
+  let safeNotes = a.revision_notes || '';
+  if (safeNotes.startsWith('{') || safeNotes.startsWith('[')) {
+    safeNotes = '(Thread Diskusi)';
+  }
+  safeNotes = safeNotes.slice(0, 40).replace(/\|/g, '&#124;');
   const parts = [
     a.user_id || '',
     a.user_name || '',
@@ -927,7 +931,8 @@ export function encodeWriterAssignmentToPipe(a: QuestionWriterAssignment): strin
     a.reviewed_by || '',
     a.reviewed_at || ''
   ];
-  return `SASI_P1:${parts.join('|')}`;
+  const full = `SASI_P1:${parts.join('|')}`;
+  return full.slice(0, 250); // Hard limit to guarantee fitting in VARCHAR(255)
 }
 
 export function decodeWriterAssignmentFromPipe(id: string, text: string): QuestionWriterAssignment | null {
@@ -1067,6 +1072,15 @@ export function deduplicateWriterAssignments(
           }
         }
       }
+
+      // Pastikan revision_notes berformat lengkap (JSON diskusi) selalu dipertahankan
+      const currentNotes = resultList[existingIndex].revision_notes;
+      const candidateNotes = item.revision_notes;
+      if (candidateNotes && (candidateNotes.startsWith('{') || candidateNotes.startsWith('['))) {
+        resultList[existingIndex].revision_notes = candidateNotes;
+      } else if (!currentNotes && candidateNotes) {
+        resultList[existingIndex].revision_notes = candidateNotes;
+      }
     }
   }
 
@@ -1118,18 +1132,51 @@ export async function saveWriterAssignmentToCloud(assignment: QuestionWriterAssi
     const cloudId = toValidUUID(assignment.id);
     const normalized = { ...assignment, id: cloudId };
 
-    // 1. Simpan ke context_presets namespace menggunakan format pipe compact (menjamin muat di VARCHAR(255))
-    const encodedPayload = encodeWriterAssignmentToPipe(normalized);
-    await safeSupabaseUpsert('context_presets', {
-      id: cloudId,
-      subject_name: '__SASI_WRITER_ASSIGNMENT__',
-      context_text: encodedPayload
-    });
-
-    // 2. Juga upsert ke tabel dedicated jika sudah terpasang di database
+    // 1. Prioritas Utama: Simpan ke tabel dedicated question_writer_assignments (TEXT column, tidak terbatas 255 char)
     try {
-      await supabase.from('question_writer_assignments').upsert(normalized);
-    } catch (e) {}
+      const dbPayload: any = {
+        id: cloudId,
+        user_id: normalized.user_id,
+        user_name: normalized.user_name,
+        user_email: normalized.user_email || null,
+        user_institution: normalized.user_institution || null,
+        user_type: normalized.user_type || 'guru_internal',
+        subject_id: normalized.subject_id || null,
+        subject_name: normalized.subject_name,
+        grade_class: normalized.grade_class,
+        phase: normalized.phase,
+        level: normalized.level,
+        assessment_types: normalized.assessment_types,
+        target_questions: normalized.target_questions ?? 30,
+        status: normalized.status,
+        is_archived: Boolean(normalized.is_archived),
+        archived_at: normalized.archived_at || null,
+        notes: normalized.notes || '',
+        revision_notes: normalized.revision_notes || null,
+        catatan_revisi: normalized.revision_notes || null, // Synchronize both revision columns
+        reviewed_by: normalized.reviewed_by || null,
+        reviewed_at: normalized.reviewed_at || null,
+        updated_at: new Date().toISOString()
+      };
+      const { error: upsertErr } = await supabase.from('question_writer_assignments').upsert(dbPayload);
+      if (upsertErr) {
+        console.warn('Upsert to question_writer_assignments warning:', upsertErr.message);
+      }
+    } catch (e) {
+      console.warn('Dedicated upsert error:', e);
+    }
+
+    // 2. Simpan ke context_presets namespace sebagai compact fallback (panjang dijamin <= 250 char)
+    try {
+      const encodedPayload = encodeWriterAssignmentToPipe(normalized);
+      await safeSupabaseUpsert('context_presets', {
+        id: cloudId,
+        subject_name: '__SASI_WRITER_ASSIGNMENT__',
+        context_text: encodedPayload
+      });
+    } catch (e) {
+      // Ignored non-critical fallback
+    }
   } catch (e) {
     console.warn('Save writer assignment fallback:', e);
   }

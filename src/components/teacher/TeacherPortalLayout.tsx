@@ -827,8 +827,8 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
                                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                                 <span>Catatan Perbaikan Verifikator:</span>
                               </div>
-                              <p className="text-rose-700 font-medium italic">
-                                "{asg.revision_notes}"
+                              <p className="text-rose-700 font-medium italic whitespace-pre-wrap">
+                                {formatRevisionNotesForDisplay(asg.revision_notes)}
                               </p>
                               {asg.reviewed_at && (
                                 <div className="text-[10px] text-rose-500">

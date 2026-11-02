@@ -38,7 +38,7 @@ import { getContextOptionsForSubject } from '../../lib/contextPresetData';
 import { CreatableCombobox } from './CreatableCombobox';
 import { QuestionEditorModal } from './QuestionEditorModal';
 import { ItemDiscussionModal } from './ItemDiscussionModal';
-import { parseReviewThreads, serializeReviewThreads, getThreadForItem } from '../../lib/revisionThreadHelper';
+import { parseReviewThreads, serializeReviewThreads, getThreadForItem, formatRevisionNotesForDisplay } from '../../lib/revisionThreadHelper';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
 import { RichMathText } from '../common/RichMathText';
 import { HourglassLoader } from '../common/HourglassLoader';
@@ -1491,6 +1491,14 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
   const getActiveAssignmentForMatrix = () => {
     if (initialScope?.assignment) return initialScope.assignment;
     if (selectedSubject && selectedGrade) {
+      if (currentUser?.id && currentUser.role === 'teacher') {
+        const userAsg = writerAssignments.find(a => 
+          a.user_id === currentUser.id && 
+          isSameSubject(a.subject_name, selectedSubject) && 
+          extractGradeNumber(a.grade_class) === extractGradeNumber(selectedGrade)
+        );
+        if (userAsg) return userAsg;
+      }
       return writerAssignments.find(a => 
         isSameSubject(a.subject_name, selectedSubject) && 
         extractGradeNumber(a.grade_class) === extractGradeNumber(selectedGrade)
@@ -3310,7 +3318,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                           Catatan Perbaikan Verifikator:
                         </h4>
                         <p className="text-xs text-amber-800 font-medium italic">
-                          "{initialScope.assignment.revision_notes || 'Silakan lakukan revisi pada butir yang diminta, kemudian klik \'Kirim Kembali\' setelah selesai.'}"
+                          {formatRevisionNotesForDisplay(initialScope.assignment.revision_notes) || 'Silakan lakukan revisi pada butir yang diminta, kemudian klik \'Kirim Kembali\' setelah selesai.'}
                         </p>
                         <p className="text-[11px] text-amber-700">
                           Akses edit lembar kerja kembali dibuka. Silakan sesuaikan butir soal dan kisi-kisi, lalu kirim kembali.
@@ -7289,7 +7297,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                       <span>Catatan Revisi Terakhir (Verifikator):</span>
                     </div>
                     <p className="text-rose-700 font-medium whitespace-pre-wrap pl-6">
-                      "{asg.revision_notes}"
+                      {formatRevisionNotesForDisplay(asg.revision_notes)}
                     </p>
                     {asg.reviewed_at && (
                       <div className="text-[10px] text-rose-500 pl-6">
