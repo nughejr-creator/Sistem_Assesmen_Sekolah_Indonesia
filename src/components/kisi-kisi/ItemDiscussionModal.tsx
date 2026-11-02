@@ -15,9 +15,12 @@ import {
   ItemDiscussionMessage,
   parseReviewThreads,
   serializeReviewThreads,
-  getThreadForItem
+  getThreadForItem,
+  mergeRevisionNotes
 } from '../../lib/revisionThreadHelper';
 import { QuestionWriterAssignment } from '../../types/database';
+import { supabase } from '../../lib/supabase';
+import { toValidUUID } from '../../lib/syncHelper';
 
 interface ItemDiscussionModalProps {
   isOpen: boolean;
@@ -47,10 +50,93 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentAssignment, setCurrentAssignment] = useState<QuestionWriterAssignment>(assignment);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const parsed = parseReviewThreads(assignment.revision_notes);
+  // Selalu sinkronkan state lokal saat prop assignment diperbarui
+  useEffect(() => {
+    setCurrentAssignment(prev => {
+      const mergedNotes = mergeRevisionNotes(prev.revision_notes, assignment.revision_notes);
+      return {
+        ...assignment,
+        revision_notes: mergedNotes || assignment.revision_notes || prev.revision_notes
+      };
+    });
+  }, [assignment]);
+
+  // Direct Cloud Fetch & Realtime Subscription ketika modal dibuka (Dua Arah Instan)
+  useEffect(() => {
+    if (!isOpen || !assignment?.id) return;
+    const cloudId = toValidUUID(assignment.id);
+    let isMounted = true;
+
+    const fetchLatestFromCloud = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('question_writer_assignments')
+          .select('*')
+          .eq('id', cloudId)
+          .maybeSingle();
+
+        if (!error && data && isMounted) {
+          setCurrentAssignment(prev => {
+            const cloudNotes = data.revision_notes || data.catatan_revisi;
+            const mergedNotes = mergeRevisionNotes(prev.revision_notes, cloudNotes);
+            const updated: QuestionWriterAssignment = {
+              ...prev,
+              ...data,
+              revision_notes: mergedNotes || cloudNotes || prev.revision_notes
+            };
+            onUpdateAssignment(updated);
+            return updated;
+          });
+        }
+      } catch (e) {
+        console.warn('Direct fetch in ItemDiscussionModal error:', e);
+      }
+    };
+
+    fetchLatestFromCloud();
+
+    // Dengarkan realtime update pada record penugasan ini saat modal terbuka
+    const channel = supabase
+      .channel(`modal_discussion_${cloudId}_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'question_writer_assignments',
+          filter: `id=eq.${cloudId}`
+        },
+        (payload) => {
+          if (!isMounted) return;
+          const freshRow = payload.new as any;
+          if (freshRow) {
+            setCurrentAssignment(prev => {
+              const incomingNotes = freshRow.revision_notes || freshRow.catatan_revisi;
+              const mergedNotes = mergeRevisionNotes(prev.revision_notes, incomingNotes);
+              const updated: QuestionWriterAssignment = {
+                ...prev,
+                ...freshRow,
+                revision_notes: mergedNotes || incomingNotes || prev.revision_notes
+              };
+              onUpdateAssignment(updated);
+              return updated;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, assignment?.id]);
+
+  const parsed = parseReviewThreads(currentAssignment.revision_notes);
   const activeThread = getThreadForItem(parsed.threads, itemNumber, variantNumber);
   const messages: ItemDiscussionMessage[] = activeThread?.messages || [];
   const isResolved = Boolean(activeThread?.is_resolved);
@@ -121,7 +207,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
         existingThreads.push({
           item_number: itemNumber,
           variant_number: variantNumber,
-          questionId: questionId,
+          question_id: questionId,
           messages: [newMessage],
           is_resolved: false
         });
@@ -129,13 +215,16 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
 
       const updatedSerialized = serializeReviewThreads(parsed.generalNotes, existingThreads);
       const updatedAsg: QuestionWriterAssignment = {
-        ...assignment,
+        ...currentAssignment,
         revision_notes: updatedSerialized,
-        reviewed_by: isReviewerRole ? senderName : assignment.reviewed_by,
-        reviewed_at: isReviewerRole ? new Date().toISOString() : assignment.reviewed_at,
+        catatan_revisi: updatedSerialized,
+        status: isReviewerRole ? 'Perlu Revisi' : currentAssignment.status,
+        reviewed_by: isReviewerRole ? senderName : currentAssignment.reviewed_by,
+        reviewed_at: isReviewerRole ? new Date().toISOString() : currentAssignment.reviewed_at,
         updated_at: new Date().toISOString()
       };
 
+      setCurrentAssignment(updatedAsg);
       await onUpdateAssignment(updatedAsg);
       setInputText('');
     } finally {
@@ -162,7 +251,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
       existingThreads.push({
         item_number: itemNumber,
         variant_number: variantNumber,
-        questionId: questionId,
+        question_id: questionId,
         messages: [],
         is_resolved: true
       });
@@ -170,11 +259,13 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
 
     const updatedSerialized = serializeReviewThreads(parsed.generalNotes, existingThreads);
     const updatedAsg: QuestionWriterAssignment = {
-      ...assignment,
+      ...currentAssignment,
       revision_notes: updatedSerialized,
+      catatan_revisi: updatedSerialized,
       updated_at: new Date().toISOString()
     };
 
+    setCurrentAssignment(updatedAsg);
     await onUpdateAssignment(updatedAsg);
   };
 

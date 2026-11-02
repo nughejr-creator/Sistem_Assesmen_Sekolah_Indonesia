@@ -121,3 +121,64 @@ export function formatRevisionNotesForDisplay(rawNotes?: string | null): string 
 
   return parsed.generalNotes;
 }
+
+/**
+ * Penggabungan aman dua revision_notes (misal antara Cloud dan Local Cache)
+ * Menjamin tidak ada pesan obrolan yang hilang atau terhapus secara senyap.
+ */
+export function mergeRevisionNotes(notesA?: string | null, notesB?: string | null): string {
+  if (!notesA && !notesB) return '';
+  if (!notesA) return notesB || '';
+  if (!notesB) return notesA || '';
+
+  const parsedA = parseReviewThreads(notesA);
+  const parsedB = parseReviewThreads(notesB);
+
+  // Jika salah satu tidak punya threads, prioritaskan yang memiliki threads
+  if (parsedA.threads.length === 0 && parsedB.threads.length > 0) return notesB;
+  if (parsedB.threads.length === 0 && parsedA.threads.length > 0) return notesA;
+  if (parsedA.threads.length === 0 && parsedB.threads.length === 0) {
+    return parsedB.generalNotes || parsedA.generalNotes || '';
+  }
+
+  // Gabungkan threads
+  const mergedThreads: ItemDiscussionThread[] = [...parsedA.threads];
+
+  for (const tB of parsedB.threads) {
+    const existingIndex = mergedThreads.findIndex(
+      t => Number(t.item_number) === Number(tB.item_number) &&
+           Number(t.variant_number || 1) === Number(tB.variant_number || 1)
+    );
+
+    if (existingIndex === -1) {
+      mergedThreads.push(tB);
+    } else {
+      const tA = mergedThreads[existingIndex];
+      // Gabungkan pesan dan hilangkan duplikasi berdasarkan id atau created_at+message
+      const seenMsgKeys = new Set<string>();
+      const combinedMessages: ItemDiscussionMessage[] = [];
+
+      for (const msg of [...(tA.messages || []), ...(tB.messages || [])]) {
+        const key = msg.id || `${msg.created_at}_${msg.message}_${msg.sender_name}`;
+        if (!seenMsgKeys.has(key)) {
+          seenMsgKeys.add(key);
+          combinedMessages.push(msg);
+        }
+      }
+
+      // Urutkan pesan berdasarkan waktu pembuatan (kronologis)
+      combinedMessages.sort((m1, m2) => new Date(m1.created_at || 0).getTime() - new Date(m2.created_at || 0).getTime());
+
+      mergedThreads[existingIndex] = {
+        ...tA,
+        ...tB,
+        question_id: tB.question_id || tA.question_id,
+        is_resolved: tB.is_resolved !== undefined ? tB.is_resolved : tA.is_resolved,
+        messages: combinedMessages
+      };
+    }
+  }
+
+  const mergedGeneral = parsedB.generalNotes || parsedA.generalNotes || '';
+  return serializeReviewThreads(mergedGeneral, mergedThreads);
+}

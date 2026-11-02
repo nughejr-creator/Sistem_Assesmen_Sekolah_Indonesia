@@ -14,6 +14,7 @@ import {
   getNodeForSchool
 } from './clusterManager';
 import { BlueprintItem, QuestionBankItem, QuestionOption, QuestionWriterAssignment } from '../types/database';
+import { mergeRevisionNotes } from './revisionThreadHelper';
 
 /**
  * Validasi apakah suatu string merupakan UUID standar yang valid (PostgreSQL compatible)
@@ -1044,6 +1045,10 @@ export function deduplicateWriterAssignments(
       resultList.push(item);
     } else {
       const existing = resultList[existingIndex];
+      const previousNotes = existing.revision_notes || existing.catatan_revisi;
+      const incomingNotes = item.revision_notes || item.catatan_revisi;
+      const mergedNotes = mergeRevisionNotes(previousNotes, incomingNotes);
+
       const itemIsUUID = isValidUUID(item.id);
       const existingIsUUID = isValidUUID(existing.id);
 
@@ -1073,13 +1078,10 @@ export function deduplicateWriterAssignments(
         }
       }
 
-      // Pastikan revision_notes berformat lengkap (JSON diskusi) selalu dipertahankan
-      const currentNotes = resultList[existingIndex].revision_notes;
-      const candidateNotes = item.revision_notes;
-      if (candidateNotes && (candidateNotes.startsWith('{') || candidateNotes.startsWith('['))) {
-        resultList[existingIndex].revision_notes = candidateNotes;
-      } else if (!currentNotes && candidateNotes) {
-        resultList[existingIndex].revision_notes = candidateNotes;
+      // Pastikan catatan revisi / thread obrolan hasil penggabungan selalu terpasang aman dan tidak pernah hilang
+      if (mergedNotes) {
+        resultList[existingIndex].revision_notes = mergedNotes;
+        resultList[existingIndex].catatan_revisi = mergedNotes;
       }
     }
   }

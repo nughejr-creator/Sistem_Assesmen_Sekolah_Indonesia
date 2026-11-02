@@ -10,6 +10,7 @@ import { BlueprintMatrix } from '../kisi-kisi/BlueprintMatrix';
 import { ExamAssembly } from '../exam/ExamAssembly';
 import { checkIsGuruKelas } from '../../lib/teacherScope';
 import { toValidUUID, fetchWriterAssignmentsFromCloud, deduplicateWriterAssignments } from '../../lib/syncHelper';
+import { supabase } from '../../lib/supabase';
 import { 
   Award, 
   LayoutDashboard, 
@@ -88,11 +89,24 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
     };
     syncCloudAssignments();
 
+    // Supabase Realtime Listener untuk penugasan & catatan revisi baru
+    const channel = supabase
+      .channel('teacher_portal_asg_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'question_writer_assignments' },
+        () => {
+          syncCloudAssignments();
+        }
+      )
+      .subscribe();
+
     const handleUpdate = () => syncCloudAssignments();
     window.addEventListener('sasi_assignments_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       isMounted = false;
+      supabase.removeChannel(channel);
       window.removeEventListener('sasi_assignments_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };

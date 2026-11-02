@@ -38,7 +38,7 @@ import { getContextOptionsForSubject } from '../../lib/contextPresetData';
 import { CreatableCombobox } from './CreatableCombobox';
 import { QuestionEditorModal } from './QuestionEditorModal';
 import { ItemDiscussionModal } from './ItemDiscussionModal';
-import { parseReviewThreads, serializeReviewThreads, getThreadForItem, formatRevisionNotesForDisplay } from '../../lib/revisionThreadHelper';
+import { parseReviewThreads, serializeReviewThreads, getThreadForItem, formatRevisionNotesForDisplay, mergeRevisionNotes } from '../../lib/revisionThreadHelper';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
 import { RichMathText } from '../common/RichMathText';
 import { HourglassLoader } from '../common/HourglassLoader';
@@ -498,7 +498,20 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     };
     loadAssignments();
 
+    // Supabase Realtime Listener untuk update penugasan & catatan revisi
+    const channel = supabase
+      .channel('matrix_asg_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'question_writer_assignments' },
+        () => {
+          loadAssignments();
+        }
+      )
+      .subscribe();
+
     const handleUpdate = () => {
+      loadAssignments();
       try {
         const cached = localStorage.getItem('sasi_writer_assignments_cache');
         if (cached) {
@@ -511,6 +524,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
     window.addEventListener('storage', handleUpdate);
     return () => {
       isMounted = false;
+      supabase.removeChannel(channel);
       window.removeEventListener('sasi_assignments_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
@@ -1501,28 +1515,50 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
   // Helper: Dapatkan penugasan aktif untuk konteks matriks (Guru/Penulis)
   const getActiveAssignmentForMatrix = () => {
-    // 1. Selalu utamakan mencari record penugasan paling up-to-date dari writerAssignments berdasarkan ID
+    let candidate: QuestionWriterAssignment | null = null;
+
     if (initialScope?.assignment?.id) {
-      const fresh = writerAssignments.find(a => a.id === initialScope.assignment.id);
-      if (fresh) return fresh;
-      return initialScope.assignment;
-    }
-    if (initialScope?.assignment) return initialScope.assignment;
-    if (selectedSubject && selectedGrade) {
+      const scopeId = initialScope.assignment.id;
+      const scopeUUID = toValidUUID(scopeId);
+      candidate = writerAssignments.find(a => 
+        a.id === scopeId || 
+        toValidUUID(a.id) === scopeUUID ||
+        (a.user_id && initialScope.assignment.user_id && toValidUUID(a.user_id) === toValidUUID(initialScope.assignment.user_id) && isSameSubject(a.subject_name, initialScope.assignment.subject_name))
+      ) || initialScope.assignment;
+    } else if (initialScope?.assignment) {
+      candidate = initialScope.assignment;
+    } else if (selectedSubject && selectedGrade) {
       if (currentUser?.id && currentUser.role === 'teacher') {
         const userAsg = writerAssignments.find(a => 
-          a.user_id === currentUser.id && 
+          (a.user_id === currentUser.id || toValidUUID(a.user_id) === toValidUUID(currentUser.id)) && 
           isSameSubject(a.subject_name, selectedSubject) && 
           extractGradeNumber(a.grade_class) === extractGradeNumber(selectedGrade)
         );
-        if (userAsg) return userAsg;
+        if (userAsg) candidate = userAsg;
       }
-      return writerAssignments.find(a => 
-        isSameSubject(a.subject_name, selectedSubject) && 
-        extractGradeNumber(a.grade_class) === extractGradeNumber(selectedGrade)
-      ) || null;
+      if (!candidate) {
+        candidate = writerAssignments.find(a => 
+          isSameSubject(a.subject_name, selectedSubject) && 
+          extractGradeNumber(a.grade_class) === extractGradeNumber(selectedGrade)
+        ) || null;
+      }
     }
-    return null;
+
+    if (!candidate) return null;
+
+    // Pastikan jika initialScope.assignment memiliki revision_notes atau threads, kita gabungkan secara aman
+    if (initialScope?.assignment) {
+      const mergedNotes = mergeRevisionNotes(candidate.revision_notes, initialScope.assignment.revision_notes);
+      if (mergedNotes && mergedNotes !== candidate.revision_notes) {
+        candidate = {
+          ...candidate,
+          revision_notes: mergedNotes,
+          catatan_revisi: mergedNotes
+        };
+      }
+    }
+
+    return candidate;
   };
 
   // Handler Update Assignment dari Modal Percakapan Butir Soal
