@@ -181,12 +181,17 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
     return myAssignments[0]?.assessment_types?.[0] || 'Formatif';
   });
 
-  // Keep activeAssignment and selectedAssessmentType in sync with myAssignments
+  // Keep activeAssignment and selectedAssessmentType in sync with myAssignments (termasuk update revision_notes terbaru)
   useEffect(() => {
     if (myAssignments.length > 0) {
       if (!activeAssignment || !myAssignments.some(a => a.id === activeAssignment.id)) {
         setActiveAssignment(myAssignments[0]);
         setSelectedAssessmentType(myAssignments[0].assessment_types?.[0] || 'Formatif');
+      } else {
+        const fresh = myAssignments.find(a => a.id === activeAssignment.id);
+        if (fresh && (fresh.revision_notes !== activeAssignment.revision_notes || fresh.status !== activeAssignment.status || fresh.updated_at !== activeAssignment.updated_at)) {
+          setActiveAssignment(fresh);
+        }
       }
     }
   }, [myAssignments, activeAssignment]);
@@ -213,13 +218,8 @@ export const TeacherPortalLayout: React.FC<TeacherPortalLayoutProps> = ({
       assignment: activeAssignment
     };
   }, [
-    activeAssignment?.id,
-    activeAssignment?.level,
-    activeAssignment?.grade_class,
-    activeAssignment?.subject_name,
-    activeAssignment?.target_questions,
-    selectedAssessmentType,
-    activeAssignment?.assessment_types
+    activeAssignment,
+    selectedAssessmentType
   ]);
 
   // Default tab: if author is dedicated writer, default to writer-tasks!

@@ -791,6 +791,18 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       return true;
     });
 
+    // Urutkan matchedItems secara mutlak berdasarkan question_number (1, 2, 3, ...)
+    matchedItems.sort((a, b) => (Number(a.question_number) || 0) - (Number(b.question_number) || 0));
+
+    // Urutkan matchedQuestions sesuai urutan nomor butir kisi-kisi (question_number 1, 2, 3, ...)
+    matchedQuestions.sort((a, b) => {
+      const bpA = matchedItems.find(i => i.id === a.blueprint_item_id);
+      const bpB = matchedItems.find(i => i.id === b.blueprint_item_id);
+      const numA = bpA ? (Number(bpA.question_number) || 0) : 0;
+      const numB = bpB ? (Number(bpB.question_number) || 0) : 0;
+      return numA - numB;
+    });
+
     const writtenCount = matchedQuestions.filter(q => q.question_text?.trim()).length;
     const target = asg.target_questions || (matchedItems.length > 0 ? matchedItems.length : 5);
 
@@ -1489,6 +1501,12 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
 
   // Helper: Dapatkan penugasan aktif untuk konteks matriks (Guru/Penulis)
   const getActiveAssignmentForMatrix = () => {
+    // 1. Selalu utamakan mencari record penugasan paling up-to-date dari writerAssignments berdasarkan ID
+    if (initialScope?.assignment?.id) {
+      const fresh = writerAssignments.find(a => a.id === initialScope.assignment.id);
+      if (fresh) return fresh;
+      return initialScope.assignment;
+    }
     if (initialScope?.assignment) return initialScope.assignment;
     if (selectedSubject && selectedGrade) {
       if (currentUser?.id && currentUser.role === 'teacher') {
@@ -7332,10 +7350,12 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                       >
                         Semua Butir ({questionsList.length})
                       </button>
-                      {questionsList.map((_, i) => {
+                      {questionsList.map((qItem, i) => {
                         const asg = previewAssignment;
+                        const matchedBp = itemsList.find(item => item.id === qItem.blueprint_item_id) || itemsList[i];
+                        const itemNum = matchedBp ? (Number(matchedBp.question_number) || (i + 1)) : (i + 1);
                         const parsedRev = asg ? parseReviewThreads(asg.revision_notes) : null;
-                        const thread = parsedRev ? getThreadForItem(parsedRev.threads, i + 1, 1) : null;
+                        const thread = parsedRev ? getThreadForItem(parsedRev.threads, itemNum, 1) : null;
                         const hasUnresolved = Boolean(thread && thread.messages && thread.messages.length > 0 && !thread.is_resolved);
 
                         return (
@@ -7351,7 +7371,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                             }`}
                           >
-                            <span>No. {i + 1}</span>
+                            <span>No. {itemNum}</span>
                             {hasUnresolved && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
                           </button>
                         );
@@ -7401,7 +7421,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                                 <div className="flex items-center space-x-2.5">
                                   <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-brand-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
-                                    {originalIndex + 1}
+                                    {matchedBp?.question_number || (originalIndex + 1)}
                                   </span>
                                   <span className="font-bold text-xs px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200/80">
                                     {normalizedQType}
@@ -7419,8 +7439,9 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                                   {(() => {
                                     const asg = previewAssignment;
                                     if (!asg) return null;
+                                    const actualItemNum = matchedBp ? (Number(matchedBp.question_number) || (originalIndex + 1)) : (originalIndex + 1);
                                     const parsedRev = parseReviewThreads(asg.revision_notes);
-                                    const thread = getThreadForItem(parsedRev.threads, originalIndex + 1, 1);
+                                    const thread = getThreadForItem(parsedRev.threads, actualItemNum, 1);
                                     const hasMessages = Boolean(thread && thread.messages && thread.messages.length > 0);
                                     const isResolved = Boolean(thread?.is_resolved);
 
@@ -7431,7 +7452,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                                           setActiveItemDiscussion({
                                             isOpen: true,
                                             assignment: asg,
-                                            itemNumber: originalIndex + 1,
+                                            itemNumber: actualItemNum,
                                             variantNumber: 1,
                                             questionId: q.id
                                           });
