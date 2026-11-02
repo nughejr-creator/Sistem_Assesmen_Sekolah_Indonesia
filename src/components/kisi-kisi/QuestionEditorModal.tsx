@@ -35,7 +35,8 @@ import {
   Columns,
   Edit3,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from 'lucide-react';
 import { WordEquationToolbar } from './WordEquationToolbar';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
@@ -52,6 +53,8 @@ interface QuestionEditorModalProps {
   onClose: () => void;
   onSave: (savedQuestion: QuestionBankItem, updatedStatus: WorkflowStatus) => void | Promise<void>;
   userRole?: string;
+  activeDiscussionThread?: any;
+  onOpenDiscussion?: () => void;
 }
 
 export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
@@ -62,6 +65,8 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
   onClose,
   onSave,
   userRole = 'assistant_admin',
+  activeDiscussionThread,
+  onOpenDiscussion,
 }) => {
   // Full-screen Theater & View Modes (Fokus Tulis Soal, Split Berdampingan, Pratinjau Utuh Siswa)
   const [viewMode, setViewMode] = useState<EditorViewMode>('split');
@@ -693,6 +698,49 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Banner Percakapan & Catatan Revisi Aktif untuk Butir Ini */}
+        {activeDiscussionThread && activeDiscussionThread.messages?.length > 0 && (
+          <div className={`px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs border-b shrink-0 shadow-2xs ${
+            activeDiscussionThread.is_resolved 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-950' 
+              : 'bg-amber-50 border-amber-300 text-amber-950'
+          }`}>
+            <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+              <span className={`p-1.5 rounded-lg shrink-0 ${
+                activeDiscussionThread.is_resolved ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-200/70 text-amber-800'
+              }`}>
+                <MessageSquare className="w-4 h-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="font-extrabold text-[11px] uppercase tracking-wider text-amber-900">
+                    Catatan Revisi Terakhir (Reviewer):
+                  </span>
+                  {activeDiscussionThread.is_resolved && (
+                    <span className="text-[10px] bg-emerald-200 text-emerald-800 font-bold px-2 py-0.2 rounded-full">
+                      Sudah Disepakati
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-xs font-medium text-slate-800 italic mt-0.5">
+                  "{activeDiscussionThread.messages[activeDiscussionThread.messages.length - 1]?.message}"
+                </p>
+              </div>
+            </div>
+
+            {onOpenDiscussion && (
+              <button
+                type="button"
+                onClick={onOpenDiscussion}
+                className="px-3 py-1.5 bg-white hover:bg-amber-100/70 border border-amber-300 rounded-xl text-xs font-bold text-amber-900 transition flex items-center space-x-1.5 shadow-2xs active:scale-95 shrink-0"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+                <span>Buka Diskusi ({activeDiscussionThread.messages.length} Pesan)</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Inherited 11-Attributes Summary Bar */}
         <div className="bg-slate-50 border-b border-slate-200 px-6 py-2.5 text-xs grid grid-cols-2 sm:grid-cols-5 gap-3 text-slate-700 shrink-0">

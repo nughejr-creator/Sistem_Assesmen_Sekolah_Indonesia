@@ -235,6 +235,23 @@ export interface StudentAnswer {
   updated_at?: string;
 }
 
+export interface ItemDiscussionMessage {
+  id: string;
+  sender_id?: string;
+  sender_name: string;
+  sender_role: 'reviewer' | 'teacher';
+  message: string;
+  created_at: string;
+}
+
+export interface ItemDiscussionThread {
+  item_number: number;
+  variant_number?: number;
+  question_id?: string;
+  messages: ItemDiscussionMessage[];
+  is_resolved?: boolean;
+}
+
 // Tabel 14: question_writer_assignments (Penugasan Khusus Penulis Soal)
 export interface QuestionWriterAssignment {
   id: string;
@@ -252,6 +269,7 @@ export interface QuestionWriterAssignment {
   target_questions?: number; // Target butir soal, default 30
   status: 'Draft' | 'Dalam Penulisan' | 'Proses Penulisan' | 'Menunggu Riviu' | 'Menunggu Verifikasi' | 'Perlu Revisi' | 'Selesai' | 'Terverifikasi' | 'Diarsipkan' | 'needs_revision' | 'approved' | 'pending_review' | 'in_progress';
   revision_notes?: string;
+  review_threads?: ItemDiscussionThread[];
   reviewed_by?: string;
   reviewed_at?: string;
   is_archived?: boolean;

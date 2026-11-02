@@ -37,6 +37,8 @@ import {
 import { getContextOptionsForSubject } from '../../lib/contextPresetData';
 import { CreatableCombobox } from './CreatableCombobox';
 import { QuestionEditorModal } from './QuestionEditorModal';
+import { ItemDiscussionModal } from './ItemDiscussionModal';
+import { parseReviewThreads, serializeReviewThreads, getThreadForItem } from '../../lib/revisionThreadHelper';
 import { QuestionRenderer } from '../cbt/QuestionRenderer';
 import { RichMathText } from '../common/RichMathText';
 import { HourglassLoader } from '../common/HourglassLoader';
@@ -86,6 +88,7 @@ import {
   Trash2,
   User,
   RotateCcw,
+  MessageSquare,
   ArrowLeft
 } from 'lucide-react';
 
@@ -1474,6 +1477,54 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
   const [selectedItemForEditor, setSelectedItemForEditor] = useState<BlueprintItem | null>(null);
   const [selectedQuestionForEditor, setSelectedQuestionForEditor] = useState<QuestionBankItem | null>(null);
   const [selectedVariantNumber, setSelectedVariantNumber] = useState<number>(1);
+
+  // State Dialog Percakapan & Klarifikasi 2-Arah Butir Soal (Reviewer <-> Penulis)
+  const [activeItemDiscussion, setActiveItemDiscussion] = useState<{
+    isOpen: boolean;
+    assignment: QuestionWriterAssignment;
+    itemNumber: number;
+    variantNumber: number;
+    questionId?: string;
+  } | null>(null);
+
+  // Helper: Dapatkan penugasan aktif untuk konteks matriks (Guru/Penulis)
+  const getActiveAssignmentForMatrix = () => {
+    if (initialScope?.assignment) return initialScope.assignment;
+    if (selectedSubject && selectedGrade) {
+      return writerAssignments.find(a => 
+        isSameSubject(a.subject_name, selectedSubject) && 
+        extractGradeNumber(a.grade_class) === extractGradeNumber(selectedGrade)
+      ) || null;
+    }
+    return null;
+  };
+
+  // Handler Update Assignment dari Modal Percakapan Butir Soal
+  const handleUpdateAssignmentFromDiscussion = async (updatedAsg: QuestionWriterAssignment) => {
+    setWriterAssignments(prev => prev.map(a => a.id === updatedAsg.id ? updatedAsg : a));
+    if (previewAssignment && previewAssignment.id === updatedAsg.id) {
+      setPreviewAssignment(updatedAsg);
+    }
+    if (initialScope?.assignment && initialScope.assignment.id === updatedAsg.id) {
+      initialScope.assignment = updatedAsg;
+    }
+    if (activeItemDiscussion && activeItemDiscussion.assignment.id === updatedAsg.id) {
+      setActiveItemDiscussion(prev => prev ? { ...prev, assignment: updatedAsg } : null);
+    }
+    try {
+      const cached = localStorage.getItem('sasi_writer_assignments_cache');
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const next = list.map((a: any) => a.id === updatedAsg.id ? updatedAsg : a);
+          localStorage.setItem('sasi_writer_assignments_cache', JSON.stringify(next));
+        }
+      }
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('sasi_assignments_updated'));
+    } catch (e) {}
+    await saveWriterAssignmentToCloud(updatedAsg);
+  };
 
   // Popup Pemberitahuan Berhasil Simpan Soal & Kisi-Kisi ke Database (Permintaan User)
   const [saveSuccessNotification, setSaveSuccessNotification] = useState<{
@@ -4671,6 +4722,44 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
 
+                                  {/* Ikon Balon Obrolan 2-Arah (di samping tombol edit) */}
+                                  {(() => {
+                                    const asg = getActiveAssignmentForMatrix();
+                                    if (!asg) return null;
+                                    const parsedRev = parseReviewThreads(asg.revision_notes);
+                                    const thread = getThreadForItem(parsedRev.threads, item.question_number, vNum);
+                                    const hasMessages = Boolean(thread && thread.messages && thread.messages.length > 0);
+                                    const isResolved = Boolean(thread?.is_resolved);
+
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveItemDiscussion({
+                                            isOpen: true,
+                                            assignment: asg,
+                                            itemNumber: item.question_number,
+                                            variantNumber: vNum,
+                                            questionId: varQ.id
+                                          });
+                                        }}
+                                        className={`p-1 rounded transition-colors relative ${
+                                          hasMessages
+                                            ? isResolved
+                                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                              : 'bg-rose-50 text-rose-700 hover:bg-rose-100 ring-1 ring-rose-400'
+                                            : 'hover:bg-indigo-50 text-slate-400 hover:text-indigo-600'
+                                        }`}
+                                        title={hasMessages ? `Buka Diskusi/Catatan Revisi (${thread?.messages?.length} pesan)` : 'Buka Diskusi Butir Soal'}
+                                      >
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        {hasMessages && !isResolved && (
+                                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                                        )}
+                                      </button>
+                                    );
+                                  })()}
+
                                   {/* Ikon Tong Sampah (Hapus Varian Ini Saja, Kisi-Kisi Tetap Aman) */}
                                   <button
                                     type="button"
@@ -5233,6 +5322,44 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
+
+                                  {/* Balon Obrolan 2-Arah (di samping tombol edit di kartu) */}
+                                  {(() => {
+                                    const asg = getActiveAssignmentForMatrix();
+                                    if (!asg) return null;
+                                    const parsedRev = parseReviewThreads(asg.revision_notes);
+                                    const thread = getThreadForItem(parsedRev.threads, item.question_number, vNum);
+                                    const hasMessages = Boolean(thread && thread.messages && thread.messages.length > 0);
+                                    const isResolved = Boolean(thread?.is_resolved);
+
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveItemDiscussion({
+                                            isOpen: true,
+                                            assignment: asg,
+                                            itemNumber: item.question_number,
+                                            variantNumber: vNum,
+                                            questionId: variant.id
+                                          });
+                                        }}
+                                        className={`p-1.5 rounded-lg transition-colors relative ${
+                                          hasMessages
+                                            ? isResolved
+                                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                              : 'bg-rose-50 text-rose-700 hover:bg-rose-100 ring-1 ring-rose-400'
+                                            : 'hover:bg-indigo-50 text-slate-400 hover:text-indigo-600'
+                                        }`}
+                                        title={hasMessages ? `Buka Diskusi/Catatan Revisi (${thread?.messages?.length} pesan)` : 'Buka Diskusi Butir Soal'}
+                                      >
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        {hasMessages && !isResolved && (
+                                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                                        )}
+                                      </button>
+                                    );
+                                  })()}
 
                                   {/* 3. Ikon Tong Sampah: Hapus Varian Ini Saja */}
                                   <button
@@ -6005,18 +6132,34 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       )}
 
       {/* Editor Modal Popup: Mendukung Multi-Varian Soal */}
-      {selectedItemForEditor && (
-        <QuestionEditorModal
-          blueprintItem={selectedItemForEditor}
-          existingQuestion={selectedQuestionForEditor || undefined}
-          variantNumber={selectedVariantNumber}
-          onClose={() => {
-            setSelectedItemForEditor(null);
-            setSelectedQuestionForEditor(null);
-          }}
-          onSave={handleSaveQuestion}
-        />
-      )}
+      {selectedItemForEditor && (() => {
+        const asg = getActiveAssignmentForMatrix();
+        const parsedRev = asg ? parseReviewThreads(asg.revision_notes) : null;
+        const discussionThread = parsedRev ? getThreadForItem(parsedRev.threads, selectedItemForEditor.question_number, selectedVariantNumber) : undefined;
+
+        return (
+          <QuestionEditorModal
+            blueprintItem={selectedItemForEditor}
+            existingQuestion={selectedQuestionForEditor || undefined}
+            variantNumber={selectedVariantNumber}
+            activeDiscussionThread={discussionThread}
+            onOpenDiscussion={asg ? () => {
+              setActiveItemDiscussion({
+                isOpen: true,
+                assignment: asg,
+                itemNumber: selectedItemForEditor.question_number,
+                variantNumber: selectedVariantNumber,
+                questionId: selectedQuestionForEditor?.id
+              });
+            } : undefined}
+            onClose={() => {
+              setSelectedItemForEditor(null);
+              setSelectedQuestionForEditor(null);
+            }}
+            onSave={handleSaveQuestion}
+          />
+        );
+      })()}
 
       {/* POPUP PEMBERITAHUAN: SOAL BERHASIL DISIMPAN KE DATABASE (Tampil True Center via createPortal document.body) */}
       {saveSuccessNotification?.isOpen && typeof document !== 'undefined' && createPortal(
@@ -7181,20 +7324,30 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                       >
                         Semua Butir ({questionsList.length})
                       </button>
-                      {questionsList.map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setActivePreviewQuestionTab(i)}
-                          className={`px-3 py-1.5 rounded-xl font-bold text-xs transition shrink-0 ${
-                            activePreviewQuestionTab === i
-                              ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-xs'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                          }`}
-                        >
-                          No. {i + 1}
-                        </button>
-                      ))}
+                      {questionsList.map((_, i) => {
+                        const asg = previewAssignment;
+                        const parsedRev = asg ? parseReviewThreads(asg.revision_notes) : null;
+                        const thread = parsedRev ? getThreadForItem(parsedRev.threads, i + 1, 1) : null;
+                        const hasUnresolved = Boolean(thread && thread.messages && thread.messages.length > 0 && !thread.is_resolved);
+
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setActivePreviewQuestionTab(i)}
+                            className={`px-3 py-1.5 rounded-xl font-bold text-xs transition shrink-0 flex items-center space-x-1 ${
+                              activePreviewQuestionTab === i
+                                ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-xs'
+                                : hasUnresolved
+                                  ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-300 font-extrabold'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                            }`}
+                          >
+                            <span>No. {i + 1}</span>
+                            {hasUnresolved && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -7253,6 +7406,46 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
                                   <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200/80">
                                     🎯 Bobot: {q.weight || 10} Poin
                                   </span>
+
+                                  {/* Tombol Balon Obrolan Reviewer (di samping bobot point) */}
+                                  {(() => {
+                                    const asg = previewAssignment;
+                                    if (!asg) return null;
+                                    const parsedRev = parseReviewThreads(asg.revision_notes);
+                                    const thread = getThreadForItem(parsedRev.threads, originalIndex + 1, 1);
+                                    const hasMessages = Boolean(thread && thread.messages && thread.messages.length > 0);
+                                    const isResolved = Boolean(thread?.is_resolved);
+
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveItemDiscussion({
+                                            isOpen: true,
+                                            assignment: asg,
+                                            itemNumber: originalIndex + 1,
+                                            variantNumber: 1,
+                                            questionId: q.id
+                                          });
+                                        }}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs active:scale-95 ${
+                                          hasMessages
+                                            ? isResolved
+                                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                                              : 'bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 animate-pulse'
+                                            : 'bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200'
+                                        }`}
+                                        title="Interaksi langsung & kirim catatan perbaikan butir ini ke penulis"
+                                      >
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        <span>
+                                          {hasMessages 
+                                            ? `${thread?.messages?.length} Pesan${isResolved ? ' (Selesai)' : ''}` 
+                                            : 'Beri Catatan'}
+                                        </span>
+                                      </button>
+                                    );
+                                  })()}
                                 </div>
                               </div>
 
@@ -7375,6 +7568,20 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
           );
         })(),
         document.body
+      )}
+
+      {/* Modal Dialog Percakapan & Klarifikasi 2-Arah Butir Soal */}
+      {activeItemDiscussion && activeItemDiscussion.isOpen && (
+        <ItemDiscussionModal
+          isOpen={activeItemDiscussion.isOpen}
+          onClose={() => setActiveItemDiscussion(null)}
+          assignment={activeItemDiscussion.assignment}
+          itemNumber={activeItemDiscussion.itemNumber}
+          variantNumber={activeItemDiscussion.variantNumber}
+          questionId={activeItemDiscussion.questionId}
+          currentUser={currentUser}
+          onUpdateAssignment={handleUpdateAssignmentFromDiscussion}
+        />
       )}
 
     </div>
