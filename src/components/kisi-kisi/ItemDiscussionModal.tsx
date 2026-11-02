@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   MessageSquare, 
   Send, 
@@ -47,6 +48,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
   const [inputText, setInputText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const parsed = parseReviewThreads(assignment.revision_notes);
   const activeThread = getThreadForItem(parsed.threads, itemNumber, variantNumber);
@@ -61,16 +63,32 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
                      currentUser?.name || 
                      (isReviewerRole ? 'Reviewer (Asisten Admin)' : 'Guru Penulis');
 
-  // Auto scroll to bottom when messages update
+  // Auto focus input and scroll to bottom when opened
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        textareaRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, messages.length]);
 
+  // Handle ESC key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -103,7 +121,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
         existingThreads.push({
           item_number: itemNumber,
           variant_number: variantNumber,
-          question_id: questionId,
+          questionId: questionId,
           messages: [newMessage],
           is_resolved: false
         });
@@ -122,6 +140,9 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
       setInputText('');
     } finally {
       setIsSubmitting(false);
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
     }
   };
 
@@ -141,7 +162,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
       existingThreads.push({
         item_number: itemNumber,
         variant_number: variantNumber,
-        question_id: questionId,
+        questionId: questionId,
         messages: [],
         is_resolved: true
       });
@@ -157,15 +178,16 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
     await onUpdateAssignment(updatedAsg);
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-[10050] flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-xs animate-fade-in select-none"
+      style={{ zIndex: 10050 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg flex flex-col overflow-hidden max-h-[85vh] animate-scale-up"
+        className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg flex flex-col overflow-hidden max-h-[85vh] animate-scale-up select-text"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Dialog */}
@@ -192,7 +214,8 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+            title="Tutup (Esc)"
           >
             <X className="w-4 h-4" />
           </button>
@@ -223,7 +246,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
             <button
               type="button"
               onClick={handleToggleResolve}
-              className={`text-[11px] font-bold px-3 py-1 rounded-xl transition flex items-center space-x-1 ${
+              className={`text-[11px] font-bold px-3 py-1 rounded-xl transition flex items-center space-x-1 cursor-pointer ${
                 isResolved
                   ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300'
                   : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -305,6 +328,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
         >
           <div className="relative">
             <textarea
+              ref={textareaRef}
               rows={2}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -320,11 +344,12 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
                   : "Tulis balasan konfirmasi/klarifikasi perbaikan..."
               }
               className="w-full text-xs p-3 pr-12 rounded-2xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-slate-50/60 text-slate-800 placeholder:text-slate-400 resize-none transition"
+              autoFocus
             />
             <button
               type="submit"
               disabled={!inputText.trim() || isSubmitting}
-              className="absolute right-2.5 bottom-3.5 w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white flex items-center justify-center transition shadow-xs active:scale-95"
+              className="absolute right-2.5 bottom-3.5 w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white flex items-center justify-center transition shadow-xs active:scale-95 cursor-pointer"
               title="Kirim pesan"
             >
               <Send className="w-3.5 h-3.5" />
@@ -336,6 +361,7 @@ export const ItemDiscussionModal: React.FC<ItemDiscussionModalProps> = ({
           </p>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
