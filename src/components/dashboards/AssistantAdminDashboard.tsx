@@ -21,8 +21,9 @@ import {
   UserCheck,
   User
 } from 'lucide-react';
-import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage, QuestionWriterAssignment, isQuestionWritten } from '../../types/database';
+import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage, QuestionWriterAssignment } from '../../types/database';
 import { isSameSubject } from '../../lib/subjectMatcher';
+import { isQuestionWritten } from '../../lib/questionHelper';
 import { supabase } from '../../lib/supabase';
 import { HourglassLoader } from '../common/HourglassLoader';
 import { isBlueprintArchived, getCleanBlueprintTitle, archiveBlueprintInDb, restoreBlueprintInDb } from '../../lib/archiveHelper';
