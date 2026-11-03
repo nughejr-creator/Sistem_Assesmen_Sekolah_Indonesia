@@ -237,8 +237,11 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
     e.preventDefault();
     setForgotError(null);
 
-    if (forgotInputOtp.trim() !== forgotGeneratedOtp) {
-      setForgotError('Kode verifikasi OTP 6-digit salah. Periksa kode yang kami kirimkan ke kotak masuk email Anda.');
+    const cleanInput = forgotInputOtp.replace(/\D/g, '').trim();
+    const cleanExpected = forgotGeneratedOtp.replace(/\D/g, '').trim();
+
+    if (!cleanInput || cleanInput !== cleanExpected) {
+      setForgotError('Kode verifikasi OTP 6-digit salah. Periksa kode terbaru yang kami kirimkan ke kotak masuk email Anda.');
       return;
     }
 

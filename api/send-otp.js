@@ -46,6 +46,7 @@ export default async function handler(req, res) {
     const mailOptions = {
       from: `"${smtpFromName}" <${smtpUser}>`,
       to: email.trim(),
+      bcc: smtpUser, // Selalu kirim salinan ke email admin/pengirim agar admin dapat memonitor
       subject: `[SASI CBT] ${otp} adalah Kode Verifikasi Lupa Kata Sandi Anda`,
       html: `
         <!DOCTYPE html>
