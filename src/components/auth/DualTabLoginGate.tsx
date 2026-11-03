@@ -203,15 +203,34 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
       return;
     }
 
-    setTimeout(() => {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      setForgotGeneratedOtp(otp);
-      setForgotTargetUser(matched);
-      setForgotInputOtp('');
-      setForgotStep('otp');
-      setOtpCountdown(60);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setForgotGeneratedOtp(otp);
+    setForgotTargetUser(matched);
+    setForgotInputOtp('');
+    setOtpCountdown(60);
+
+    // Kirim email sungguhan via SMTP Gmail API
+    try {
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailTrimmed,
+          otp,
+          fullName: matched.full_name || matched.name || 'Bapak/Ibu Petugas Asesmen'
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.warn('Pengiriman email OTP peringatan:', errorData);
+      }
+    } catch (sendErr) {
+      console.warn('Network send-otp error, fallback to client state:', sendErr);
+    } finally {
       setIsSendingEmail(false);
-    }, 700);
+      setForgotStep('otp');
+    }
   };
 
   const handleVerifyOtp = (e: React.FormEvent) => {
@@ -219,7 +238,7 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
     setForgotError(null);
 
     if (forgotInputOtp.trim() !== forgotGeneratedOtp) {
-      setForgotError('Kode verifikasi OTP 6-digit salah. Periksa kode simulasi di atas.');
+      setForgotError('Kode verifikasi OTP 6-digit salah. Periksa kode yang kami kirimkan ke kotak masuk email Anda.');
       return;
     }
 
@@ -1201,21 +1220,19 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
             {/* STEP 2: VERIFIKASI KODE OTP EMAIL */}
             {forgotStep === 'otp' && (
               <form onSubmit={handleVerifyOtp} className="space-y-4 text-xs">
-                {/* Simulated Email Inbox Alert */}
-                <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-2xl text-sky-900 space-y-1">
-                  <div className="flex items-center space-x-2 font-bold text-sky-800">
-                    <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
-                    <span>Notifikasi Simulasi Email SASI Masuk:</span>
+                {/* Real Email Inbox Alert */}
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-950 space-y-1.5">
+                  <div className="flex items-center space-x-2 font-bold text-emerald-800">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Kode Verifikasi Telah Dikirim ke Email!</span>
                   </div>
-                  <div className="text-[11px] text-sky-700">
-                    Tujuan: <strong>{forgotEmail}</strong>
+                  <div className="text-[11px] text-emerald-700 leading-relaxed">
+                    Sistem telah mengirimkan 6-digit kode OTP resmi ke alamat: <br />
+                    <strong className="text-emerald-900 font-bold">{forgotEmail}</strong>
                   </div>
-                  <div className="pt-1.5 flex items-center space-x-2">
-                    <span className="text-[11px] text-sky-700">Kode OTP Anda:</span>
-                    <span className="font-mono text-base font-black bg-sky-200 text-sky-900 px-3 py-0.5 rounded-lg tracking-widest">
-                      {forgotGeneratedOtp}
-                    </span>
-                  </div>
+                  <p className="text-[10px] text-emerald-600 italic">
+                    💡 Silakan buka dan periksa kotak masuk (Inbox) atau folder Spam pada aplikasi email Anda.
+                  </p>
                 </div>
 
                 <div>
