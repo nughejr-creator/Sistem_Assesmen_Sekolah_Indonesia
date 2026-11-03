@@ -817,12 +817,13 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       return numA - numB;
     });
 
-    const writtenCount = matchedQuestions.filter(q => q.question_text?.trim()).length;
+    const validWrittenQuestions = matchedQuestions.filter(isQuestionWritten);
+    const writtenCount = validWrittenQuestions.length;
     const target = asg.target_questions || (matchedItems.length > 0 ? matchedItems.length : 5);
 
     return {
       items: matchedItems,
-      questions: matchedQuestions,
+      questions: validWrittenQuestions,
       writtenCount,
       target
     };
@@ -2820,13 +2821,7 @@ export const BlueprintMatrix: React.FC<BlueprintMatrixProps> = ({
       const itemVariants = questionBank.filter(
         qb => qb.blueprint_item_id === item.id || (!qb.blueprint_item_id && qb.id === `qb-00${item.question_number}`)
       );
-      return itemVariants.some(q => 
-        Boolean(
-          (q.question_text && q.question_text.trim().length > 0) ||
-          (q.stimulus_text && q.stimulus_text.trim().length > 0) ||
-          (q.options && q.options.some(opt => opt.option_text && opt.option_text.trim().length > 0))
-        )
-      );
+      return itemVariants.some(isQuestionWritten);
     }).length;
   }, [items, questionBank, isScopedFilter, selectedLevel, selectedGrade, selectedSubject, selectedAssessment]);
 

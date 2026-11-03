@@ -21,7 +21,7 @@ import {
   UserCheck,
   User
 } from 'lucide-react';
-import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage, QuestionWriterAssignment } from '../../types/database';
+import { UserProfile, BlueprintItem, Blueprint, QuestionBankItem, ExamPackage, QuestionWriterAssignment, isQuestionWritten } from '../../types/database';
 import { isSameSubject } from '../../lib/subjectMatcher';
 import { supabase } from '../../lib/supabase';
 import { HourglassLoader } from '../common/HourglassLoader';
@@ -795,7 +795,7 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
 
                     // Butir Soal Nyata yang Ditulis di Bank Soal (Sinkron 100% dengan Monitoring Supervisi Penugasan)
                     const writtenQuestionsInBp = questionBank.filter(q => 
-                      Boolean(q.question_text?.trim()) && 
+                      isQuestionWritten(q) && 
                       (
                         (q.blueprint_item_id && bpItemIds.has(q.blueprint_item_id)) ||
                         (matchedAsg?.id && (q as any).assignment_id === matchedAsg.id)
