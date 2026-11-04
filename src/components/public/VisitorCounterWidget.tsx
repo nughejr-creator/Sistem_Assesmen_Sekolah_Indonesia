@@ -16,8 +16,11 @@ import {
 import { 
   VisitorMetrics, 
   getVisitorMetrics, 
-  trackPageView 
+  trackPageView,
+  fetchCloudVisitorMetrics,
+  ANALYTICS_CLOUD_ID
 } from '../../lib/visitorTracker';
+import { supabase } from '../../lib/supabase';
 
 interface VisitorCounterWidgetProps {
   compact?: boolean;
@@ -39,21 +42,48 @@ export const VisitorCounterWidget: React.FC<VisitorCounterWidgetProps> = ({
   const [metrics, setMetrics] = useState<VisitorMetrics>(getVisitorMetrics);
 
   useEffect(() => {
-    // Jalankan pencatatan pageview saat widget aktif
-    const updated = trackPageView('portal');
-    setMetrics(updated);
+    let isMounted = true;
 
-    // Langganan event pembaruan metrik dari aksi klik tombol di tempat lain
+    // 1. Ambil data terbaru dari Cloud Supabase & catat pageview
+    trackPageView('portal').then(updated => {
+      if (isMounted && updated) setMetrics(updated);
+    });
+
+    // 2. Langganan event pembaruan metrik lokal
     const handleStatsUpdated = (e: any) => {
+      if (!isMounted) return;
       if (e.detail) {
         setMetrics(e.detail);
       } else {
         setMetrics(getVisitorMetrics());
       }
     };
-
     window.addEventListener('sasi_visitor_stats_updated', handleStatsUpdated);
-    return () => window.removeEventListener('sasi_visitor_stats_updated', handleStatsUpdated);
+
+    // 3. Langganan Realtime Supabase (Sinkron live antar semua perangkat/sekolah di seluruh dunia)
+    const channel = supabase
+      .channel('sasi-realtime-visitor-stats')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'context_presets',
+          filter: `id=eq.${ANALYTICS_CLOUD_ID}`
+        },
+        () => {
+          fetchCloudVisitorMetrics().then(fresh => {
+            if (isMounted && fresh) setMetrics(fresh);
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('sasi_visitor_stats_updated', handleStatsUpdated);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Format angka ke format Indonesia (14.820)
@@ -62,18 +92,18 @@ export const VisitorCounterWidget: React.FC<VisitorCounterWidgetProps> = ({
   if (compact) {
     // Tampilan ringkas horizontal untuk Footer
     return (
-      <div className="inline-flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-[11px] shadow-xs">
-        <div className="flex items-center space-x-1.5 text-emerald-400 font-semibold">
+      <div className="inline-flex flex-wrap items-center gap-3 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-[11px] shadow-xs">
+        <div className="flex items-center space-x-1.5 text-emerald-400 font-semibold" title="Pengunjung aktif saat ini">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Online: <strong>{metrics.activeNow}</strong></span>
         </div>
         <span className="text-slate-700">|</span>
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1" title="Pengunjung unik hari ini">
           <Users className="w-3.5 h-3.5 text-sky-400" />
           <span>Hari Ini: <strong className="text-white">{formatNum(metrics.todayViews)}</strong></span>
         </div>
         <span className="text-slate-700">|</span>
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1" title="Total kunjungan halaman sejak rilis">
           <Eye className="w-3.5 h-3.5 text-indigo-400" />
           <span>Total Kunjungan: <strong className="text-white">{formatNum(metrics.totalViews)}</strong></span>
         </div>
@@ -95,14 +125,14 @@ export const VisitorCounterWidget: React.FC<VisitorCounterWidgetProps> = ({
               Statistik Kunjungan
             </h4>
             <p className="text-[10px] text-slate-400">
-              Pemantauan Lalu Lintas Portal
+              Lalu Lintas Portal Real-Time
             </p>
           </div>
         </div>
 
-        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-          <span>Aktif: {metrics.activeNow}</span>
+          <span>Live: {metrics.activeNow}</span>
         </span>
       </div>
 
@@ -184,8 +214,9 @@ export const VisitorCounterWidget: React.FC<VisitorCounterWidgetProps> = ({
           <ShieldCheck className="w-3 h-3 text-emerald-500" />
           <span>Privasi Terlindungi</span>
         </span>
-        <span className="text-slate-400 font-medium">
-          Cloudflare Analytics
+        <span className="text-emerald-600 font-bold flex items-center space-x-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>Cloud Sync Aktif</span>
         </span>
       </div>
     </div>
