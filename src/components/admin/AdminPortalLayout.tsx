@@ -10,6 +10,7 @@ import { ExamAssembly } from '../exam/ExamAssembly';
 import { WriterAssignmentManager } from '../assignment/WriterAssignmentManager';
 import { DatabaseClusterManager } from './DatabaseClusterManager';
 import { AdminPortalManager } from './portal/AdminPortalManager';
+import { TrafficAnalyticsView } from './TrafficAnalyticsView';
 import { RoleSwitcher } from '../common/RoleSwitcher';
 import {
   LayoutDashboard,
@@ -32,7 +33,8 @@ import {
   Database,
   UserCheck,
   ChevronDown,
-  Globe
+  Globe,
+  Activity
 } from 'lucide-react';
 
 interface AdminPortalLayoutProps {
@@ -51,7 +53,8 @@ export type AdminTab =
   | 'kisi-kisi'
   | 'exam-assembly'
   | 'database-clusters'
-  | 'portal-manager';
+  | 'portal-manager'
+  | 'traffic-analytics';
 
 export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
   currentUser,
@@ -169,6 +172,13 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
             label: 'Manajer Portal Publik (CMS)',
             icon: Globe,
             badge: 'CMS Publik',
+            badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+          },
+          {
+            id: 'traffic-analytics' as AdminTab,
+            label: 'Trafik & Analitik Web',
+            icon: Activity,
+            badge: 'Cloudflare',
             badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
           }
         ]
@@ -547,6 +557,11 @@ export const AdminPortalLayout: React.FC<AdminPortalLayoutProps> = ({
             {/* 8. Manajer Portal Publik CMS (Super Admin & Admin) */}
             {activeTab === 'portal-manager' && (isSuperAdmin || currentUser.role === 'admin') && (
               <AdminPortalManager currentUser={currentUser} />
+            )}
+
+            {/* 9. Trafik & Analitik Web Cloudflare (Super Admin & Admin) */}
+            {activeTab === 'traffic-analytics' && (isSuperAdmin || currentUser.role === 'admin') && (
+              <TrafficAnalyticsView currentUser={currentUser} />
             )}
 
           </div>

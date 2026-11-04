@@ -25,6 +25,9 @@ const STORAGE_METRICS_KEY = 'sasi_visitor_metrics_v2';
 const SESSION_TRACKED_KEY = 'sasi_session_visit_logged_cloud';
 export const ANALYTICS_CLOUD_ID = 'a0000000-0000-4000-8000-000000000099';
 export const ANALYTICS_NAMESPACE = '__SASI_SITE_ANALYTICS__';
+export const BASELINE_HISTORICAL_COUNT = 14820;
+export const CLOUDFLARE_BEACON_TOKEN = (import.meta as any).env?.VITE_CLOUDFLARE_BEACON_TOKEN || '0650fb86debf4a47ae2c7fc7c90e87c7';
+export const CLOUDFLARE_API_TOKEN = (import.meta as any).env?.VITE_CLOUDFLARE_API_TOKEN || '';
 
 const CLICK_MAPPING: Record<string, { label: string; iconName: string }> = {
   cbt: { label: 'Masuk Ujian CBT Siswa', iconName: 'Laptop' },
@@ -248,3 +251,47 @@ export function trackActionClick(actionId: string, customLabel?: string): Visito
 
   return current;
 }
+
+/**
+ * Memperbarui langsung total kunjungan dan menyinkronkan ke Cloud Supabase (untuk Admin)
+ */
+export async function calibrateMetrics(newTotal: number, todayViews?: number): Promise<VisitorMetrics> {
+  const current = await fetchCloudVisitorMetrics();
+  current.totalViews = Math.max(0, Math.floor(newTotal));
+  if (todayViews !== undefined) {
+    current.todayViews = Math.max(0, Math.floor(todayViews));
+  }
+  current.lastDateStr = new Date().toISOString().slice(0, 10);
+  
+  notifyUI(current);
+  await pushMetricsToCloud(current);
+  return current;
+}
+
+/**
+ * Kalibrasi berbasis Cloudflare:
+ * Total Kunjungan = Baseline Historis (14.820) + Total Pengunjung Cloudflare
+ */
+export async function calibrateWithCloudflare(
+  cloudflareCount: number,
+  baseline: number = BASELINE_HISTORICAL_COUNT
+): Promise<VisitorMetrics> {
+  const calculatedTotal = baseline + Math.max(0, Math.floor(cloudflareCount));
+  const current = await fetchCloudVisitorMetrics();
+  current.totalViews = calculatedTotal;
+  current.lastDateStr = new Date().toISOString().slice(0, 10);
+
+  notifyUI(current);
+  await pushMetricsToCloud(current);
+  return current;
+}
+
+/**
+ * Menyimpan seluruh struktur metrik (termasuk reset atau penyesuaian klik)
+ */
+export async function updateAllMetrics(metrics: VisitorMetrics): Promise<VisitorMetrics> {
+  notifyUI(metrics);
+  await pushMetricsToCloud(metrics);
+  return metrics;
+}
+
