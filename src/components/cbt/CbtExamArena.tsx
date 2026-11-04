@@ -565,43 +565,61 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       } catch (e) {}
     }
 
-    // 2. Jika belum ada di cache lokal, baru ambil dari Supabase Cloud (Single-Payload)
+    // 2. Jika belum ada di cache lokal, ambil lewat Gateway Cloudflare Edge (/api/exam-packet)
     if (!isLoadedFromLocalCache && matchedSession?.package_id) {
+      const packageIdResolved = toValidUUID(matchedSession.package_id);
+
+      // Jalur Utama: Cloudflare Edge Gateway (Ter-cache di Jakarta, Egress Supabase = 0 KB)
       try {
-        const { data: epqData } = await supabase
-          .from('exam_package_questions')
-          .select('question_id, order_number')
-          .eq('package_id', toValidUUID(matchedSession.package_id))
-          .order('order_number', { ascending: true });
-
-        if (epqData && epqData.length > 0) {
-          const qIds = epqData.map((x: any) => x.question_id);
-          const { data: qData } = await supabase
-            .from('question_bank')
-            .select('*, options:question_options(*)')
-            .in('id', qIds);
-
-          if (qData && qData.length > 0) {
-            const qMap = new Map(qData.map((q: any) => [q.id, q]));
-            const ordered: QuestionBankItem[] = [];
-            epqData.forEach((epq: any) => {
-              const found = qMap.get(epq.question_id);
-              if (found) {
-                ordered.push({
-                  ...found,
-                  options: Array.isArray(found.options)
-                    ? [...found.options].sort((a: any, b: any) => (a.option_label || '').localeCompare(b.option_label || ''))
-                    : []
-                });
-              }
-            });
-            if (ordered.length > 0) {
-              sessionQuestions = ordered;
-            }
+        const edgeRes = await fetch(`/api/exam-packet?package_id=${packageIdResolved}`);
+        if (edgeRes.ok) {
+          const edgeData = await edgeRes.json();
+          if (edgeData.success && Array.isArray(edgeData.questions) && edgeData.questions.length > 0) {
+            sessionQuestions = edgeData.questions;
           }
         }
-      } catch (err) {
-        console.warn('Could not load specific package questions:', err);
+      } catch (edgeErr) {
+        console.warn('Cloudflare edge gateway unavailable, attempting fallback:', edgeErr);
+      }
+
+      // Jalur Cadangan (Fallback): Ambil langsung dari Supabase jika gateway edge tidak merespons
+      if (sessionQuestions.length === 0) {
+        try {
+          const { data: epqData } = await supabase
+            .from('exam_package_questions')
+            .select('question_id, order_number')
+            .eq('package_id', packageIdResolved)
+            .order('order_number', { ascending: true });
+
+          if (epqData && epqData.length > 0) {
+            const qIds = epqData.map((x: any) => x.question_id);
+            const { data: qData } = await supabase
+              .from('question_bank')
+              .select('*, options:question_options(*)')
+              .in('id', qIds);
+
+            if (qData && qData.length > 0) {
+              const qMap = new Map(qData.map((q: any) => [q.id, q]));
+              const ordered: QuestionBankItem[] = [];
+              epqData.forEach((epq: any) => {
+                const found = qMap.get(epq.question_id);
+                if (found) {
+                  ordered.push({
+                    ...found,
+                    options: Array.isArray(found.options)
+                      ? [...found.options].sort((a: any, b: any) => (a.option_label || '').localeCompare(b.option_label || ''))
+                      : []
+                  });
+                }
+              });
+              if (ordered.length > 0) {
+                sessionQuestions = ordered;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load specific package questions via fallback:', err);
+        }
       }
     }
 
