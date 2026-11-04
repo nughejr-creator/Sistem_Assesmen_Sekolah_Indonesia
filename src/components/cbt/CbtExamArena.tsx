@@ -223,31 +223,10 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
     return {};
   });
 
-  // Sync latest verified questions from cloud
-  useEffect(() => {
-    let isMounted = true;
-    const fetchCloudQuestions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('question_bank')
-          .select('*, options:question_options(*)');
-        if (!error && data && data.length > 0 && isMounted) {
-          const sorted = data.map((q: any) => ({
-            ...q,
-            options: Array.isArray(q.options)
-              ? [...q.options].sort((a: any, b: any) => (a.option_label || '').localeCompare(b.option_label || ''))
-              : []
-          }));
-          setQuestions(sorted);
-          try {
-            localStorage.setItem('sasi_question_bank_cache', JSON.stringify(sorted));
-          } catch (e) {}
-        }
-      } catch (e) {}
-    };
-    fetchCloudQuestions();
-    return () => { isMounted = false; };
-  }, []);
+  // Optimasi Skala Akbar (1.000 - 1.500 Siswa):
+  // Tidak mengunduh seluruh isi tabel question_bank saat halaman baru dibuka.
+  // Butir soal spesifik paket ujian akan dimuat secara terarah (targeted single-payload)
+  // saat token sesi aktif diverifikasi, menghemat ribuan koneksi konkuren ke Supabase.
 
   // Cek apakah siswa memiliki riwayat ujian selesai atau ujian berjalan (Single Attempt & Auto-Resume Protection per Sesi)
   const [completedAttemptInfo, setCompletedAttemptInfo] = useState<any>(null);
@@ -305,15 +284,29 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
         if (matched) {
           setActiveSession(matched);
 
-          // Ambil jumlah soal spesifik paket sesi jika ada mapping di exam_package_questions
+          // Ambil jumlah soal spesifik paket sesi (Cek Cache Lokal Dulu untuk Hindari Beban DB)
           if (matched.package_id) {
             try {
-              const { data: epq } = await supabase
-                .from('exam_package_questions')
-                .select('question_id')
-                .eq('package_id', toValidUUID(matched.package_id));
-              if (isMounted && epq && epq.length > 0) {
-                setSessionQuestionCount(epq.length);
+              const localCachedPkg = localStorage.getItem(`sasi_package_questions_${matched.id}`);
+              if (localCachedPkg) {
+                const parsed = JSON.parse(localCachedPkg);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  setSessionQuestionCount(parsed.length);
+                }
+              } else {
+                const cachedCount = sessionStorage.getItem(`sasi_pkg_count_${matched.package_id}`);
+                if (cachedCount) {
+                  setSessionQuestionCount(Number(cachedCount));
+                } else {
+                  const { data: epq } = await supabase
+                    .from('exam_package_questions')
+                    .select('question_id')
+                    .eq('package_id', toValidUUID(matched.package_id));
+                  if (isMounted && epq && epq.length > 0) {
+                    setSessionQuestionCount(epq.length);
+                    try { sessionStorage.setItem(`sasi_pkg_count_${matched.package_id}`, String(epq.length)); } catch (e) {}
+                  }
+                }
               }
             } catch (e) {}
           }
@@ -554,9 +547,26 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       setSecondsRemaining(matchedSession.package.duration_minutes * 60);
     }
 
-    // Muat butir soal spesifik untuk paket ujian sesi ini jika tersedia di database
+    // Muat butir soal spesifik untuk paket ujian sesi ini (Strategi Cache-First untuk 1.500 Siswa)
     let sessionQuestions: QuestionBankItem[] = [];
-    if (matchedSession?.package_id) {
+    let isLoadedFromLocalCache = false;
+
+    // 1. Cek apakah paket soal sesi ini SUDAH PERNAH di-cache di perangkat lokal siswa (0 ms, 0 DB query)
+    if (matchedSession?.id) {
+      try {
+        const cachedPkg = localStorage.getItem(`sasi_package_questions_${matchedSession.id}`);
+        if (cachedPkg) {
+          const parsed = JSON.parse(cachedPkg);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            sessionQuestions = parsed;
+            isLoadedFromLocalCache = true;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Jika belum ada di cache lokal, baru ambil dari Supabase Cloud (Single-Payload)
+    if (!isLoadedFromLocalCache && matchedSession?.package_id) {
       try {
         const { data: epqData } = await supabase
           .from('exam_package_questions')
@@ -597,35 +607,38 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
 
     let finalQuestions = sessionQuestions.length > 0 ? sessionQuestions : [...questions];
 
-    // 1. Acak Urutan Soal jika paket mengaktifkan randomize_questions
-    if (matchedSession?.package?.randomize_questions) {
-      finalQuestions = [...finalQuestions].sort(() => Math.random() - 0.5);
-    }
-
-    // 2. Acak Opsi Pilihan Jawaban jika paket mengaktifkan randomize_options
-    if (matchedSession?.package?.randomize_options) {
-      finalQuestions = finalQuestions.map(q => {
-        if (!q.options || q.options.length <= 1) return q;
-        const shuffled = [...q.options].sort(() => Math.random() - 0.5);
-        // Label disesuaikan dengan posisi baru di layar siswa (A, B, C, D)
-        // Kunci jawaban tetap aman karena penilaian mencocokkan UUID option.id asli
-        return {
-          ...q,
-          options: shuffled.map((opt, idx) => ({
-            ...opt,
-            option_label: String.fromCharCode(65 + idx),
-          })),
-        };
-      });
-    }
-
-    setQuestions(finalQuestions);
-    try {
-      localStorage.setItem('sasi_question_bank_cache', JSON.stringify(finalQuestions));
-      if (matchedSession) {
-        localStorage.setItem(`sasi_package_questions_${matchedSession.id}`, JSON.stringify(finalQuestions));
+    // Hanya acak urutan soal dan opsi jika BARU PERTAMA KALI diunduh (bukan dari cache lokal)
+    // agar saat siswa me-refresh halaman di tengah ujian, nomor urut soal tetap konsisten!
+    if (!isLoadedFromLocalCache) {
+      // 1. Acak Urutan Soal jika paket mengaktifkan randomize_questions
+      if (matchedSession?.package?.randomize_questions) {
+        finalQuestions = [...finalQuestions].sort(() => Math.random() - 0.5);
       }
-    } catch (e) {}
+
+      // 2. Acak Opsi Pilihan Jawaban jika paket mengaktifkan randomize_options
+      if (matchedSession?.package?.randomize_options) {
+        finalQuestions = finalQuestions.map(q => {
+          if (!q.options || q.options.length <= 1) return q;
+          const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+          // Label disesuaikan dengan posisi baru di layar siswa (A, B, C, D)
+          // Kunci jawaban tetap aman karena penilaian mencocokkan UUID option.id asli
+          return {
+            ...q,
+            options: shuffled.map((opt, idx) => ({
+              ...opt,
+              option_label: String.fromCharCode(65 + idx),
+            })),
+          };
+        });
+      }
+
+      try {
+        localStorage.setItem('sasi_question_bank_cache', JSON.stringify(finalQuestions));
+        if (matchedSession) {
+          localStorage.setItem(`sasi_package_questions_${matchedSession.id}`, JSON.stringify(finalQuestions));
+        }
+      } catch (e) {}
+    }
 
     // 1. Tentukan apakah ini sesi Lanjutan (Auto-Resume) atau Sesi Baru (Fresh Attempt)
     const isResuming = Boolean(inProgressAttemptInfo);
