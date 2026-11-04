@@ -65,10 +65,13 @@ export default async function handler(req, res) {
     epqData.forEach(epq => {
       const found = qMap.get(epq.question_id);
       if (found) {
+        // Keamanan Ketat CBT: Hapus teks pembahasan (explanation) dari payload siswa
+        // agar tidak bisa diintip lewat browser DevTools / Network tab
+        const { explanation, ...sanitized } = found;
         orderedQuestions.push({
-          ...found,
-          options: Array.isArray(found.options)
-            ? [...found.options].sort((a, b) => (a.option_label || '').localeCompare(b.option_label || ''))
+          ...sanitized,
+          options: Array.isArray(sanitized.options)
+            ? [...sanitized.options].sort((a, b) => (a.option_label || '').localeCompare(b.option_label || ''))
             : []
         });
       }

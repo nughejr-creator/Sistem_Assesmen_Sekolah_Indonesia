@@ -1660,6 +1660,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
             fontSize={fontSize}
             answer={currentAnswer}
             onUpdateAnswer={handleUpdateAnswer}
+            showAnswerKey={false}
           />
 
           {/* Bottom Action Strip: Prev, Ragu-Ragu, Next / Finish */}

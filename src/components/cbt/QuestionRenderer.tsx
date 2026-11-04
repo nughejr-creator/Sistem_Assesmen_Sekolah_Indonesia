@@ -568,8 +568,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         </div>
       )}
 
-      {/* Pembahasan Soal & Kunci Jawaban Lengkap */}
-      {question.explanation && (
+      {/* Pembahasan Soal & Kunci Jawaban Lengkap (Dibatasi Khusus Guru/Admin, 100% Terkunci untuk Siswa) */}
+      {showAnswerKey && question.explanation && (
         <div className="mt-6 pt-4 border-t border-slate-200">
           <details open={showAnswerKey} className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 text-emerald-950 group">
             <summary className="font-black text-xs uppercase tracking-wider text-emerald-800 cursor-pointer flex items-center justify-between select-none">
