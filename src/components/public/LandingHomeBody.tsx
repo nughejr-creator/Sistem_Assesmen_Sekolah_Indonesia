@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackActionClick } from '../../lib/visitorTracker';
 import { 
   GraduationCap, 
   ShieldCheck, 
@@ -50,6 +51,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
   const handleQuickTokenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanToken = quickTokenInput.trim().toUpperCase() || 'SASI26';
+    trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa');
     onOpenLogin('student', cleanToken);
   };
 
@@ -98,7 +100,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
             <div className="pt-1 flex flex-wrap items-center justify-center gap-2.5">
               <button
                 type="button"
-                onClick={() => onOpenLogin('student')}
+                onClick={() => { trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa'); onOpenLogin('student'); }}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white text-xs font-black shadow-lg shadow-emerald-500/20 flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 group"
               >
                 <GraduationCap className="w-4 h-4 text-emerald-100 transition-transform group-hover:rotate-12" />
@@ -108,7 +110,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
 
               <button
                 type="button"
-                onClick={() => onOpenLogin('student', 'SASI26')}
+                onClick={() => { trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa'); onOpenLogin('student', 'SASI26'); }}
                 className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border-2 border-white/25 text-xs font-bold backdrop-blur-md transition-all flex items-center space-x-1.5 shadow-xs"
               >
                 <PlayCircle className="w-3.5 h-3.5 text-sky-400" />

@@ -13,6 +13,8 @@ import {
   Lock
 } from 'lucide-react';
 import { PublicNavRoute } from './PublicNavbar';
+import { VisitorCounterWidget } from './VisitorCounterWidget';
+import { trackActionClick } from '../../lib/visitorTracker';
 
 interface PublicFooterProps {
   onNavigate: (route: PublicNavRoute) => void;
@@ -179,7 +181,7 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({
               <li>
                 <button
                   type="button"
-                  onClick={() => onOpenLogin('student')}
+                  onClick={() => { trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa'); onOpenLogin('student'); }}
                   className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors text-left"
                 >
                   Masuk Ujian Siswa (CBT) →
@@ -188,7 +190,7 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({
               <li>
                 <button
                   type="button"
-                  onClick={() => onOpenLogin('officer')}
+                  onClick={() => { trackActionClick('teacher_portal_login', 'Portal Petugas & Guru'); onOpenLogin('officer'); }}
                   className="hover:text-white transition-colors text-left"
                 >
                   Portal Petugas & Meja Koreksi
@@ -214,11 +216,16 @@ export const PublicFooter: React.FC<PublicFooterProps> = ({
         {/* =====================================================================
             BOTTOM ROW: COPYRIGHT & METADATA (COMPACT)
         ===================================================================== */}
-        <div className="pt-3.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500">
+        <div className="pt-4 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
           <div>
             <p>
               © {new Date().getFullYear()} <strong className="text-slate-400">SASIPEDIA</strong> — Sistem Asesmen Sekolah Indonesia.
             </p>
+          </div>
+
+          {/* Widget Statistik Pengunjung Realtime */}
+          <div>
+            <VisitorCounterWidget compact={true} />
           </div>
 
           <div className="flex items-center space-x-3 text-[11px]">

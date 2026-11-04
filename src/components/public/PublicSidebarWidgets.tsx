@@ -25,6 +25,7 @@ import {
   PortalQuickLink,
   PublicSidebarAggregatePayload 
 } from '../../types/publicPortal';
+import { VisitorCounterWidget } from './VisitorCounterWidget';
 import { 
   getSidebarWidgetConfig, 
   getPortalQuickLinks 
@@ -204,7 +205,9 @@ export const PublicSidebarWidgets: React.FC<PublicSidebarWidgetsProps> = ({
         <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-24" />
         <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-64" />
         <div className="bg-white rounded-3xl p-5 border-2 border-slate-200 h-48" />
-      </aside>
+        {/* 6. Widget Statistik Pengunjung & Interaksi Publik */}
+      <VisitorCounterWidget />
+    </aside>
     );
   }
 
