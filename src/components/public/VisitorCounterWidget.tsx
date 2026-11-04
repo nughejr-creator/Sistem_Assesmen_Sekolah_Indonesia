@@ -17,10 +17,8 @@ import {
   VisitorMetrics, 
   getVisitorMetrics, 
   trackPageView,
-  fetchCloudVisitorMetrics,
-  ANALYTICS_CLOUD_ID
+  fetchCloudVisitorMetrics
 } from '../../lib/visitorTracker';
-import { supabase } from '../../lib/supabase';
 
 interface VisitorCounterWidgetProps {
   compact?: boolean;
@@ -45,11 +43,13 @@ export const VisitorCounterWidget: React.FC<VisitorCounterWidgetProps> = ({
     let isMounted = true;
 
     // 1. Ambil data terbaru dari Cloud Supabase & catat pageview
-    trackPageView('portal').then(updated => {
-      if (isMounted && updated) setMetrics(updated);
-    });
+    trackPageView('portal')
+      .then(updated => {
+        if (isMounted && updated) setMetrics(updated);
+      })
+      .catch(() => {});
 
-    // 2. Langganan event pembaruan metrik lokal
+    // 2. Langganan event pembaruan metrik lokal (saat pengguna mengklik tombol di halaman ini)
     const handleStatsUpdated = (e: any) => {
       if (!isMounted) return;
       if (e.detail) {
@@ -60,29 +60,30 @@ export const VisitorCounterWidget: React.FC<VisitorCounterWidgetProps> = ({
     };
     window.addEventListener('sasi_visitor_stats_updated', handleStatsUpdated);
 
-    // 3. Langganan Realtime Supabase (Sinkron live antar semua perangkat/sekolah di seluruh dunia)
-    const channel = supabase
-      .channel('sasi-realtime-visitor-stats')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'context_presets',
-          filter: `id=eq.${ANALYTICS_CLOUD_ID}`
-        },
-        () => {
-          fetchCloudVisitorMetrics().then(fresh => {
-            if (isMounted && fresh) setMetrics(fresh);
-          });
-        }
-      )
-      .subscribe();
+    // 3. Polling berkala ringan setiap 60 detik (Sangat hemat kuota, 0 beban WebSocket)
+    const interval = setInterval(() => {
+      fetchCloudVisitorMetrics()
+        .then(fresh => {
+          if (isMounted && fresh) setMetrics(fresh);
+        })
+        .catch(() => {});
+    }, 60000);
+
+    // 4. Perbarui data saat tab kembali dibuka / fokus
+    const handleWindowFocus = () => {
+      fetchCloudVisitorMetrics()
+        .then(fresh => {
+          if (isMounted && fresh) setMetrics(fresh);
+        })
+        .catch(() => {});
+    };
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       isMounted = false;
       window.removeEventListener('sasi_visitor_stats_updated', handleStatsUpdated);
-      supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleWindowFocus);
+      clearInterval(interval);
     };
   }, []);
 
