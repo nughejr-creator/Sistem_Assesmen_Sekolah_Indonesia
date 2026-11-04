@@ -19,7 +19,8 @@ import {
   Sparkles,
   Eye,
   Check,
-  UploadCloud
+  UploadCloud,
+  RefreshCw
 } from 'lucide-react';
 
 interface ExamScoreRecapViewProps {
@@ -58,6 +59,8 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
   const [selectedStudentForReview, setSelectedStudentForReview] = useState<UserProfile | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [manualRefreshCount, setManualRefreshCount] = useState(0);
   const [reconcileToast, setReconcileToast] = useState<string | null>(null);
 
   // Rekonsiliasi Nilai Ujian dari Shard Klaster ke Master Hub
@@ -117,6 +120,7 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
+      setIsRefreshing(true);
       try {
         const { data: cloudSessions } = await supabase
           .from('exam_sessions')
@@ -217,16 +221,19 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
         }
       } catch (e) {
         if (isMounted) setQuestions(MOCK_QUESTION_BANK);
+      } finally {
+        if (isMounted) setIsRefreshing(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 4000);
+    // Polling setiap 30 detik (Optimal untuk efisiensi server & kuota database)
+    const interval = setInterval(() => fetchData(false), 30000);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [school.id]);
+  }, [school.id, manualRefreshCount]);
 
   // Helper presisi mengekstrak nomor tingkatan kelas
   const extractGradeNumber = (str?: string): string | null => {
@@ -384,6 +391,17 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
         </div>
 
         <div className="flex items-center space-x-2.5">
+          <button
+            type="button"
+            onClick={() => setManualRefreshCount(prev => prev + 1)}
+            disabled={isRefreshing}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors border border-slate-200 shadow-xs"
+            title="Segarkan data rekap nilai sekarang (Otomatis diperbarui berkala setiap 30 detik)"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-brand-600' : 'text-slate-500'}`} />
+            <span>{isRefreshing ? 'Memuat...' : 'Segarkan'}</span>
+          </button>
+
           <button
             type="button"
             onClick={handleReconcileToMaster}
