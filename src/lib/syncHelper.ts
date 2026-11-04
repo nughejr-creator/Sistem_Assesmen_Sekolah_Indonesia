@@ -11,7 +11,8 @@ import {
   formatTeacherForShard,
   getClusterNodes,
   getClientForNode,
-  getNodeForSchool
+  getNodeForSchool,
+  checkAndHandleAutoFailover
 } from './clusterManager';
 import { BlueprintItem, QuestionBankItem, QuestionOption, QuestionWriterAssignment } from '../types/database';
 import { mergeRevisionNotes } from './revisionThreadHelper';
@@ -404,6 +405,7 @@ export async function safeSupabaseUpsert<T extends Record<string, any>>(
       const upsertOptions = tableName === 'user_profiles' ? { onConflict: 'username' } : undefined;
       const { error: masterErr } = await (supabase.from(tableName) as any).upsert(dataToInsert as any, upsertOptions);
       if (masterErr) {
+        checkAndHandleAutoFailover(masterErr);
         console.warn(`[Supabase Sync] Warning saat upsert ke Master "${tableName}":`, masterErr.message);
       }
 
@@ -436,11 +438,13 @@ export async function safeSupabaseUpsert<T extends Record<string, any>>(
 
     const { error } = await client.from(tableName).upsert(dataToInsert as any);
     if (error) {
+      checkAndHandleAutoFailover(error);
       console.warn(`[Supabase Sync] Warning saat upsert ke tabel "${tableName}":`, error.message, error.details || '');
       return { success: false, error };
     }
     return { success: true };
   } catch (err) {
+    checkAndHandleAutoFailover(err);
     console.warn(`[Supabase Sync] Exception saat upsert ke tabel "${tableName}":`, err);
     return { success: false, error: err };
   }
