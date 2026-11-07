@@ -803,8 +803,9 @@ export const AssistantAdminDashboard: React.FC<AssistantAdminDashboardProps> = (
                       )
                     );
 
-                    // Target Total Soal Dinamis
-                    const targetTotal = bp.total_questions || (itemsInBp.length > 0 ? itemsInBp.length : (matchedAsg?.target_questions || 35));
+                    // Target Total Soal Dinamis (Memprioritaskan target penugasan resmi dan butir riil agar sinkron 100%)
+                    const targetTotal = matchedAsg?.target_questions 
+                      || (itemsInBp.length > (bp.total_questions || 0) ? itemsInBp.length : (bp.total_questions || 35));
                     const kisiPct = targetTotal > 0 ? Math.min(100, Math.round((itemsInBp.length / targetTotal) * 100)) : 0;
                     const writtenCount = writtenQuestionsInBp.length;
                     const isComplete = writtenCount >= targetTotal && targetTotal > 0;
