@@ -19,7 +19,7 @@ import {
   supabase
 } from '../../lib/supabase';
 import { getSupabaseClientForSchool } from '../../lib/clusterManager';
-import { toValidUUID } from '../../lib/syncHelper';
+import { toValidUUID, isStudentDataLocked, fetchStudentDataLockFromCloud } from '../../lib/syncHelper';
 import { ImportExcelModal } from './ImportExcelModal';
 import { ExamCardPrintModal } from './ExamCardPrintModal';
 import { EmergencyRecoveryModal } from './EmergencyRecoveryModal';
@@ -44,7 +44,8 @@ import {
   Archive,
   Calendar,
   ShieldAlert,
-  UploadCloud
+  UploadCloud,
+  Lock
 } from 'lucide-react';
 import { isSessionArchived, getCleanSessionName } from '../../lib/archiveHelper';
 
@@ -131,6 +132,18 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
 
   // Action alerts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Status Penguncian Data Siswa (Mode Ujian)
+  const [isDataLocked, setIsDataLocked] = useState<boolean>(isStudentDataLocked());
+
+  useEffect(() => {
+    fetchStudentDataLockFromCloud().then(res => setIsDataLocked(res));
+    const onLockChange = (e: any) => {
+      setIsDataLocked(Boolean(e.detail?.isLocked));
+    };
+    window.addEventListener('sasi_student_data_lock_changed', onLockChange);
+    return () => window.removeEventListener('sasi_student_data_lock_changed', onLockChange);
+  }, []);
 
   // Rekonsiliasi Nilai Ujian dari Shard Klaster ke Master Hub Pusat
   const handleReconcileToMaster = async () => {
@@ -1104,11 +1117,23 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
           {/* Action Buttons: Import, Cetak, Darurat & Sync */}
           <div className="grid grid-cols-2 sm:flex sm:flex-col gap-1.5 w-full sm:w-auto">
             <button
-              onClick={() => setShowImportModal(true)}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 transition-all shadow-md"
+              disabled={isDataLocked}
+              onClick={() => {
+                if (isDataLocked) {
+                  showNotification('Akses Ditolak: Fitur impor data siswa sedang dikunci oleh Super Admin selama masa ujian.');
+                  return;
+                }
+                setShowImportModal(true);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 transition-all shadow-md ${
+                isDataLocked
+                  ? 'bg-slate-700/80 text-slate-400 border border-slate-600/80 cursor-not-allowed opacity-75'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+              title={isDataLocked ? 'Fitur impor siswa dikunci oleh Admin Pusat selama pelaksanaan ujian' : 'Import daftar siswa dari file Excel'}
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Import (Excel)</span>
+              {isDataLocked ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+              <span>{isDataLocked ? 'Import Terkunci' : 'Import (Excel)'}</span>
             </button>
 
             <button

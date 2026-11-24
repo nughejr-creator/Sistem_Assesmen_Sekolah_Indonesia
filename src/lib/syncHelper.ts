@@ -1376,3 +1376,65 @@ export async function saveBapReportToCloud(
   } catch (e) {}
 }
 
+// =============================================================================
+// FITUR SAKELAR PENGUNCIAN DATA SISWA (EXAM LOCKDOWN MODE)
+// Mencegah perubahan/tambah/edit/hapus data siswa oleh proktor di tengah ujian
+// =============================================================================
+export const STUDENT_DATA_LOCK_STORAGE_KEY = 'sasi_student_data_lock_active';
+export const STUDENT_DATA_LOCK_PRESET_ID = '00000000-0000-4000-8000-0000000010c4';
+export const STUDENT_DATA_LOCK_PRESET_NAME = '__SASI_STUDENT_DATA_LOCK__';
+
+export function isStudentDataLocked(): boolean {
+  try {
+    return localStorage.getItem(STUDENT_DATA_LOCK_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchStudentDataLockFromCloud(): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from('context_presets')
+      .select('context_text')
+      .eq('id', STUDENT_DATA_LOCK_PRESET_ID)
+      .maybeSingle();
+
+    if (data && data.context_text) {
+      const isLocked = data.context_text.trim().toUpperCase() === 'LOCKED';
+      localStorage.setItem(STUDENT_DATA_LOCK_STORAGE_KEY, isLocked ? 'true' : 'false');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sasi_student_data_lock_changed', { detail: { isLocked } }));
+      }
+      return isLocked;
+    }
+  } catch (e) {
+    console.warn('Gagal membaca status lock data siswa dari cloud:', e);
+  }
+  return isStudentDataLocked();
+}
+
+export async function setStudentDataLock(locked: boolean, adminName: string = 'Super Admin'): Promise<boolean> {
+  try {
+    const lockVal = locked ? 'LOCKED' : 'UNLOCKED';
+    localStorage.setItem(STUDENT_DATA_LOCK_STORAGE_KEY, locked ? 'true' : 'false');
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sasi_student_data_lock_changed', { detail: { isLocked: locked } }));
+    }
+
+    // Simpan ke Master Supabase via context_presets
+    await safeSupabaseUpsert('context_presets', {
+      id: STUDENT_DATA_LOCK_PRESET_ID,
+      subject_name: STUDENT_DATA_LOCK_PRESET_NAME,
+      context_text: lockVal
+    });
+
+    return true;
+  } catch (e) {
+    console.error('Gagal memperbarui status lock data siswa:', e);
+    return false;
+  }
+}
+
+

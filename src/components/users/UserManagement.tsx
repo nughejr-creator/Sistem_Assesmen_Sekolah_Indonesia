@@ -11,7 +11,10 @@ import {
   mergeCloudAndLocal, 
   safeSupabaseUpsert,
   safeSupabaseDistributedDelete,
-  safeSupabaseDistributedUpdate
+  safeSupabaseDistributedUpdate,
+  isStudentDataLocked,
+  setStudentDataLock,
+  fetchStudentDataLockFromCloud
 } from '../../lib/syncHelper';
 import { 
   Users, 
@@ -151,6 +154,40 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
   const notify = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  // State Penguncian Data Siswa (Mode Ujian)
+  const [isDataLocked, setIsDataLocked] = useState<boolean>(isStudentDataLocked());
+  const [isTogglingLock, setIsTogglingLock] = useState(false);
+
+  useEffect(() => {
+    fetchStudentDataLockFromCloud().then(res => setIsDataLocked(res));
+    const onLockChange = (e: any) => {
+      setIsDataLocked(Boolean(e.detail?.isLocked));
+    };
+    window.addEventListener('sasi_student_data_lock_changed', onLockChange);
+    return () => window.removeEventListener('sasi_student_data_lock_changed', onLockChange);
+  }, []);
+
+  const isProctorLocked = isDataLocked && currentUser.role === 'proctor';
+
+  const handleToggleStudentLock = async () => {
+    const next = !isDataLocked;
+    const confirmMsg = next
+      ? 'KUNCI DATA SISWA (MODE UJIAN AKTIF)?\n\nSeluruh proktor di semua sekolah akan dikunci dari menambah, mengimpor, mengedit, atau menghapus data siswa demi menjaga konsistensi sinkronisasi kluster server.\n\nHanya Super Admin yang dapat mengubah data siswa saat mode ini aktif.'
+      : 'BUKA KUNCI DATA SISWA (MODE BEBAS)?\n\nProktor akan kembali diizinkan menambah dan mengedit data siswa sekolah masing-masing.';
+
+    if (!confirm(confirmMsg)) return;
+
+    setIsTogglingLock(true);
+    const success = await setStudentDataLock(next, currentUser.full_name);
+    setIsTogglingLock(false);
+    if (success) {
+      setIsDataLocked(next);
+      notify(next ? '🔒 Data Siswa Berhasil Dikunci (Mode Ujian Aktif). Proktor tidak dapat mengubah data.' : '🔓 Kunci Data Siswa Dibuka. Proktor dapat kembali mengelola data siswa.');
+    } else {
+      notify('⚠️ Gagal memperbarui status penguncian data.');
+    }
   };
 
   const togglePasswordVisibility = (id: string) => {
@@ -601,6 +638,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
       return;
     }
 
+    // Lockdown Guard: Proktor dilarang menghapus siswa saat mode ujian aktif
+    if (isProctorLocked && targetUser?.role === 'student') {
+      alert('Akses Ditolak: Seluruh perubahan data siswa sedang dikunci oleh Super Admin demi menjaga konsistensi sinkronisasi antar kluster selama masa ujian.');
+      return;
+    }
+
     if (window.confirm(`Apakah Anda yakin ingin menghapus ${userLabel} secara permanen dari sistem?`)) {
       const updated = users.filter(u => u.id !== userId);
       persistUsers(updated);
@@ -1031,6 +1074,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
   };
 
   const openEditModal = (u: UserProfile) => {
+    if (isProctorLocked && u.role === 'student') {
+      alert('Akses Ditolak: Seluruh perubahan data siswa sedang dikunci oleh Super Admin demi menjaga konsistensi sinkronisasi antar kluster selama masa ujian.');
+      return;
+    }
     setEditingUser(u);
     setFullName(u.full_name);
     setUsername(u.username);
@@ -1084,6 +1131,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
   };
 
   const openCreateModal = () => {
+    if (isProctorLocked) {
+      alert('Akses Ditolak: Penambahan data siswa sedang dikunci oleh Super Admin demi menjaga konsistensi sinkronisasi antar kluster selama masa ujian.');
+      return;
+    }
     setEditingUser(null);
     setFullName('');
     setUsername('');
@@ -1174,6 +1225,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
           {currentUser.role === 'super_admin' && (
             <button
               type="button"
+              disabled={isTogglingLock}
+              onClick={handleToggleStudentLock}
+              className={`col-span-2 sm:col-span-1 px-3 py-2 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs cursor-pointer ${
+                isDataLocked
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/25 ring-2 ring-rose-400'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/25'
+              }`}
+              title={isDataLocked ? 'Mode Ujian Aktif: Klik untuk BUKA KUNCI (izinkan proktor mengelola siswa)' : 'Mode Normal: Klik untuk KUNCI DATA SISWA (cegah perubahan di masa ujian)'}
+            >
+              {isDataLocked ? (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-amber-200" />
+                  <span>Kunci Aktif (Mode Ujian)</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="w-3.5 h-3.5 text-emerald-200" />
+                  <span>Kunci Data Siswa</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {currentUser.role === 'super_admin' && (
+            <button
+              type="button"
               onClick={() => setShowResetModal(true)}
               className="col-span-2 sm:col-span-1 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-800 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs"
               title="Reset data akun berdasarkan sekolah atau peran"
@@ -1185,12 +1262,20 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
 
           <button
             type="button"
-            onClick={() => setShowImportModal(true)}
-            className="px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-800 text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs"
-            title="Impor daftar siswa dari file Excel (.xlsx / .xls)"
+            disabled={isProctorLocked}
+            onClick={() => {
+              if (isProctorLocked) return;
+              setShowImportModal(true);
+            }}
+            className={`px-3 py-2 border text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-xs ${
+              isProctorLocked
+                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                : 'bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-800'
+            }`}
+            title={isProctorLocked ? 'Fitur impor dikunci oleh Super Admin selama masa ujian' : 'Impor daftar siswa dari file Excel (.xlsx / .xls)'}
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-700" />
-            <span>Impor Siswa (.xlsx)</span>
+            {isProctorLocked ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-blue-700" />}
+            <span>{isProctorLocked ? 'Impor Terkunci' : 'Impor Siswa (.xlsx)'}</span>
           </button>
 
           <button
@@ -1223,14 +1308,41 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
 
           <button
             type="button"
-            onClick={openCreateModal}
-            className="px-3.5 py-2 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white text-xs sm:text-sm font-black rounded-xl flex items-center justify-center space-x-1.5 shadow-md shadow-brand-500/20 transition-all transform active:scale-95"
+            disabled={isProctorLocked}
+            onClick={() => {
+              if (isProctorLocked) return;
+              openCreateModal();
+            }}
+            className={`px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
+              isProctorLocked
+                ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed'
+                : 'bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white shadow-md shadow-brand-500/20 transform active:scale-95'
+            }`}
+            title={isProctorLocked ? 'Penambahan siswa dikunci oleh Super Admin selama masa ujian' : 'Tambah pengguna baru'}
           >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>{currentUser.role === 'proctor' ? 'Tambah Siswa' : (currentUser.role === 'assistant_admin' ? 'Tambah Siswa / Proktor' : 'Tambah Pengguna')}</span>
+            {isProctorLocked ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : <UserPlus className="w-3.5 h-3.5" />}
+            <span>{isProctorLocked ? 'Tambah Siswa (Terkunci)' : (currentUser.role === 'proctor' ? 'Tambah Siswa' : (currentUser.role === 'assistant_admin' ? 'Tambah Siswa / Proktor' : 'Tambah Pengguna'))}</span>
           </button>
         </div>
       </div>
+
+      {/* Banner Notifikasi jika Mode Ujian (Lockdown) Sedang Aktif bagi Proktor */}
+      {isProctorLocked && (
+        <div className="p-3.5 sm:p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-start sm:items-center space-x-3 text-amber-950 animate-scale-up">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-700 shrink-0 mt-0.5 sm:mt-0">
+            <Lock className="w-5 h-5" />
+          </div>
+          <div className="text-xs">
+            <div className="flex items-center space-x-2">
+              <strong className="font-black text-amber-950 text-sm">Mode Ujian Aktif: Data Siswa Dikunci oleh Admin Pusat</strong>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 text-[10px] font-bold border border-amber-400">Lockdown</span>
+            </div>
+            <p className="text-amber-800 text-[11px] mt-0.5 leading-relaxed">
+              Fitur penambahan, impor excel, dan pengeditan data siswa dibekukan untuk menjaga integritas sinkronisasi server kluster saat asesmen berlangsung. Hubungi Super Admin jika ada siswa susulan atau koreksi darurat.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Role Filter Tabs (Disesuaikan dengan Hak Akses Role Pengguna) */}
       {(() => {
@@ -1672,21 +1784,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) =
                               {/* Edit Profil */}
                               <button
                                 type="button"
-                                onClick={() => openEditModal(u)}
-                                className="p-1 text-slate-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-slate-200"
-                                title="Edit Pengguna & Profil"
+                                disabled={isProctorLocked && u.role === 'student'}
+                                onClick={() => {
+                                  if (isProctorLocked && u.role === 'student') return;
+                                  openEditModal(u);
+                                }}
+                                className={`p-1 rounded-lg transition-colors border ${
+                                  isProctorLocked && u.role === 'student'
+                                    ? 'text-slate-300 border-slate-100 cursor-not-allowed bg-slate-50'
+                                    : 'text-slate-600 hover:text-brand-600 hover:bg-brand-50 border-slate-200'
+                                }`}
+                                title={isProctorLocked && u.role === 'student' ? 'Edit data siswa dikunci oleh Admin Pusat selama masa ujian' : 'Edit Pengguna & Profil'}
                               >
-                                <Edit3 className="w-3.5 h-3.5" />
+                                {isProctorLocked && u.role === 'student' ? <Lock className="w-3.5 h-3.5 text-slate-300" /> : <Edit3 className="w-3.5 h-3.5" />}
                               </button>
 
                               {/* Hapus Pengguna */}
                               <button
                                 type="button"
-                                onClick={() => handleDeleteUser(u.id)}
-                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-slate-200"
-                                title="Hapus Pengguna"
+                                disabled={isProctorLocked && u.role === 'student'}
+                                onClick={() => {
+                                  if (isProctorLocked && u.role === 'student') return;
+                                  handleDeleteUser(u.id);
+                                }}
+                                className={`p-1 rounded-lg transition-colors border ${
+                                  isProctorLocked && u.role === 'student'
+                                    ? 'text-slate-300 border-slate-100 cursor-not-allowed bg-slate-50'
+                                    : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-slate-200'
+                                }`}
+                                title={isProctorLocked && u.role === 'student' ? 'Hapus data siswa dikunci oleh Admin Pusat selama masa ujian' : 'Hapus Pengguna'}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                {isProctorLocked && u.role === 'student' ? <Lock className="w-3.5 h-3.5 text-slate-300" /> : <Trash2 className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </td>
