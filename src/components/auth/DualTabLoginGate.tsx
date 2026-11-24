@@ -52,6 +52,15 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
 
+  // Isolasi Cache Sandbox: Jika tab Siswa aktif, bersihkan sisa-sisa cache bank soal proktor/admin
+  useEffect(() => {
+    if (activeTab === 'student') {
+      try {
+        localStorage.removeItem('sasi_question_bank_cache');
+      } catch (e) {}
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     if (initialToken) setToken(initialToken);
   }, [initialToken]);

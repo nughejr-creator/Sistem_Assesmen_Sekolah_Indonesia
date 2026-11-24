@@ -200,17 +200,8 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       : (activeSession?.school_id ? toValidUUID(activeSession.school_id) : '1e6e1bbb-05cb-49a8-8ab0-e166336c9222');
   }, [student.school_id, activeSession?.school_id]);
 
-  // Exam Questions & State
-  const [questions, setQuestions] = useState<QuestionBankItem[]>(() => {
-    try {
-      const cached = localStorage.getItem('sasi_question_bank_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return MOCK_QUESTION_BANK;
-  });
+  // Exam Questions & State - Murni kosong di awal (Hanya dimuat saat paket sesi tervalidasi secara resmi!)
+  const [questions, setQuestions] = useState<QuestionBankItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, StudentAnswer>>(() => {
     try {
@@ -284,27 +275,28 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
         if (matched) {
           setActiveSession(matched);
 
-          // Ambil jumlah soal spesifik paket sesi (Cek Cache Lokal Dulu untuk Hindari Beban DB)
+          // Ambil jumlah soal spesifik paket sesi langsung dari otoritas tabel exam_package_questions
           if (matched.package_id) {
             try {
-              const localCachedPkg = localStorage.getItem(`sasi_package_questions_${matched.id}`);
-              if (localCachedPkg) {
-                const parsed = JSON.parse(localCachedPkg);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  setSessionQuestionCount(parsed.length);
-                }
-              } else {
-                const cachedCount = sessionStorage.getItem(`sasi_pkg_count_${matched.package_id}`);
-                if (cachedCount) {
-                  setSessionQuestionCount(Number(cachedCount));
-                } else {
-                  const { data: epq } = await supabase
-                    .from('exam_package_questions')
-                    .select('question_id')
-                    .eq('package_id', toValidUUID(matched.package_id));
-                  if (isMounted && epq && epq.length > 0) {
-                    setSessionQuestionCount(epq.length);
-                    try { sessionStorage.setItem(`sasi_pkg_count_${matched.package_id}`, String(epq.length)); } catch (e) {}
+              const { data: epq } = await supabase
+                .from('exam_package_questions')
+                .select('question_id')
+                .eq('package_id', toValidUUID(matched.package_id));
+
+              if (isMounted && epq && epq.length > 0) {
+                const authoritativeCount = epq.length;
+                setSessionQuestionCount(authoritativeCount);
+
+                // Validasi Integritas Cache Lokal: Jika jumlah soal di cache tidak sama persis dengan database, buang cache lama!
+                const localCachedPkg = localStorage.getItem(`sasi_package_questions_${matched.id}`);
+                if (localCachedPkg) {
+                  try {
+                    const parsed = JSON.parse(localCachedPkg);
+                    if (!Array.isArray(parsed) || parsed.length !== authoritativeCount) {
+                      localStorage.removeItem(`sasi_package_questions_${matched.id}`);
+                    }
+                  } catch (e) {
+                    localStorage.removeItem(`sasi_package_questions_${matched.id}`);
                   }
                 }
               }
@@ -554,9 +546,12 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
         const cachedPkg = localStorage.getItem(`sasi_package_questions_${matchedSession.id}`);
         if (cachedPkg) {
           const parsed = JSON.parse(cachedPkg);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          // Validasi Integritas: Hanya terima cache jika jumlahnya sama persis dengan sessionQuestionCount
+          if (Array.isArray(parsed) && parsed.length > 0 && (!sessionQuestionCount || parsed.length === sessionQuestionCount)) {
             sessionQuestions = parsed;
             isLoadedFromLocalCache = true;
+          } else {
+            localStorage.removeItem(`sasi_package_questions_${matchedSession.id}`);
           }
         }
       } catch (e) {}
@@ -589,7 +584,16 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
             .order('order_number', { ascending: true });
 
           if (epqData && epqData.length > 0) {
-            const qIds = epqData.map((x: any) => x.question_id);
+            const seenQIds = new Set();
+            const uniqueEpqData: any[] = [];
+            epqData.forEach((item: any) => {
+              if (item.question_id && !seenQIds.has(item.question_id)) {
+                seenQIds.add(item.question_id);
+                uniqueEpqData.push(item);
+              }
+            });
+
+            const qIds = Array.from(seenQIds);
             const { data: qData } = await supabase
               .from('question_bank')
               .select('*, options:question_options(*)')
@@ -598,7 +602,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
             if (qData && qData.length > 0) {
               const qMap = new Map(qData.map((q: any) => [q.id, q]));
               const ordered: QuestionBankItem[] = [];
-              epqData.forEach((epq: any) => {
+              uniqueEpqData.forEach((epq: any) => {
                 const found = qMap.get(epq.question_id);
                 if (found) {
                   ordered.push({
@@ -653,7 +657,6 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       }
 
       try {
-        localStorage.setItem('sasi_question_bank_cache', JSON.stringify(finalQuestions));
         if (matchedSession) {
           localStorage.setItem(`sasi_package_questions_${matchedSession.id}`, JSON.stringify(finalQuestions));
         }

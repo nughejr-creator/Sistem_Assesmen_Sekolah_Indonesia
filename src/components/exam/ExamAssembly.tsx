@@ -1085,24 +1085,30 @@ export const ExamAssembly: React.FC<ExamAssemblyProps> = ({ currentUser, initial
       randomize_options: newPkg.randomize_options
     });
 
-    // Insert package questions mapping
-    for (let idx = 0; idx < selectedQuestionIds.length; idx++) {
-      const qid = selectedQuestionIds[idx];
-      await safeSupabaseUpsert('exam_package_questions', {
-        id: generateValidUUID(),
-        package_id: packageId,
-        question_id: toValidUUID(qid),
-        order_number: idx + 1
-      });
-    }
+    // Bersihkan pemetaan soal lama paket ini terlebih dahulu jika ada untuk mencegah duplikasi (Clean-before-write)
+    try {
+      await supabase.from('exam_package_questions').delete().eq('package_id', packageId);
+    } catch (e) {}
+
+    // Deduplikasi butir soal terpilih
+    const uniqueQuestionIds = Array.from(new Set(selectedQuestionIds));
+
+    // Batch Insert package questions mapping
+    const epqPayload = uniqueQuestionIds.map((qid, idx) => ({
+      id: generateValidUUID(),
+      package_id: packageId,
+      question_id: toValidUUID(qid),
+      order_number: idx + 1
+    }));
+    await safeSupabaseUpsert('exam_package_questions', epqPayload);
 
     // Update packageQuestionsMap in local state
-    const selectedQObjects = questions.filter(q => selectedQuestionIds.includes(q.id));
+    const selectedQObjects = questions.filter(q => uniqueQuestionIds.includes(q.id));
     const totalW = selectedQObjects.reduce((acc, q) => acc + (q.weight || 1), 0);
     setPackageQuestionsMap(prev => ({
       ...prev,
       [packageId]: {
-        count: selectedQuestionIds.length,
+        count: uniqueQuestionIds.length,
         totalWeight: totalW,
         questions: selectedQObjects
       }

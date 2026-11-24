@@ -46,8 +46,17 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, count: 0, questions: [] });
     }
 
-    // 2. Ambil seluruh butir soal dan opsi jawabannya sekaligus (Single-Payload)
-    const qIds = epqData.map(item => item.question_id);
+    // 2. Ambil seluruh butir soal dan opsi jawabannya sekaligus (Single-Payload dengan Proteksi Deduplikasi)
+    const seenQIds = new Set();
+    const uniqueEpqData = [];
+    epqData.forEach(item => {
+      if (item.question_id && !seenQIds.has(item.question_id)) {
+        seenQIds.add(item.question_id);
+        uniqueEpqData.push(item);
+      }
+    });
+
+    const qIds = Array.from(seenQIds);
     const { data: qData, error: qError } = await supabase
       .from('question_bank')
       .select('*, options:question_options(*)')
@@ -62,7 +71,7 @@ export default async function handler(req, res) {
     const qMap = new Map((qData || []).map(q => [q.id, q]));
     const orderedQuestions = [];
 
-    epqData.forEach(epq => {
+    uniqueEpqData.forEach(epq => {
       const found = qMap.get(epq.question_id);
       if (found) {
         // Keamanan Ketat CBT: Hapus teks pembahasan (explanation) dari payload siswa
