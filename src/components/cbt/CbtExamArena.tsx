@@ -42,7 +42,8 @@ import {
 } from 'lucide-react';
 
 // Evaluator Standar ANBK Terpadu: Hitung skor butir soal secara real-time
-export const evaluateSingleQuestion = (q: ExamQuestion, ans?: StudentAnswer): { scoreRatio: number; itemScore: number; evalNote: string } => {
+export const evaluateSingleQuestion = (q?: ExamQuestion | null, ans?: StudentAnswer): { scoreRatio: number; itemScore: number; evalNote: string } => {
+  if (!q) return { scoreRatio: 0, itemScore: 0, evalNote: 'Soal tidak ditemukan' };
   const w = q.weight || 1;
   let scoreRatio = 0;
   let evalNote = '';
@@ -773,10 +774,12 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       ]);
     } catch (err) {}
 
+    // Daftarkan seluruh paket butir soal ke state reaktif siswa
+    setQuestions(finalQuestions);
     setPhase('exam');
   };
 
-  const currentQuestion = questions[currentIndex] || questions[0];
+  const currentQuestion = (questions && questions.length > 0) ? (questions[currentIndex] || questions[0]) : null;
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;
 
   // Handler Intervensi Proktor (Force Submit / Selesai Sepihak)
@@ -1560,6 +1563,25 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   // =========================================================================
   // VIEW 3: ARENA CBT EXAM ENGINE
   // =========================================================================
+  if (phase === 'exam' && (!currentQuestion || questions.length === 0)) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border border-slate-200">
+          <Loader2 className="w-10 h-10 text-brand-600 animate-spin mx-auto" />
+          <h2 className="text-base font-bold text-slate-800">Menyiapkan Lembar Soal...</h2>
+          <p className="text-xs text-slate-500">Memuat butir soal asesmen secara aman ke perangkat Anda.</p>
+          <button
+            type="button"
+            onClick={() => setPhase('confirm')}
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all"
+          >
+            Kembali ke Konfirmasi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       
@@ -1577,9 +1599,9 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
                 Soal Nomor {currentIndex + 1} dari {questions.length}
               </div>
               <div className="text-[10px] text-slate-500 flex items-center space-x-1.5">
-                <span className="font-semibold text-brand-700">{currentQuestion.question_type}</span>
+                <span className="font-semibold text-brand-700">{currentQuestion?.question_type || '-'}</span>
                 <span>•</span>
-                <span>Bobot: {currentQuestion.weight} Poin</span>
+                <span>Bobot: {currentQuestion?.weight ?? 1} Poin</span>
               </div>
             </div>
           </div>
@@ -1660,13 +1682,15 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
         {/* Main Question Card */}
         <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xs border border-slate-200 flex flex-col justify-between">
           
-          <QuestionRenderer
-            question={currentQuestion}
-            fontSize={fontSize}
-            answer={currentAnswer}
-            onUpdateAnswer={handleUpdateAnswer}
-            showAnswerKey={false}
-          />
+          {currentQuestion && (
+            <QuestionRenderer
+              question={currentQuestion}
+              fontSize={fontSize}
+              answer={currentAnswer}
+              onUpdateAnswer={handleUpdateAnswer}
+              showAnswerKey={false}
+            />
+          )}
 
           {/* Bottom Action Strip: Prev, Ragu-Ragu, Next / Finish */}
           <div className="pt-8 mt-8 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">

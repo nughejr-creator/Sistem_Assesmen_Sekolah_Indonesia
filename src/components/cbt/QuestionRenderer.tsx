@@ -18,6 +18,14 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   onUpdateAnswer,
   showAnswerKey = false,
 }) => {
+  if (!question) {
+    return (
+      <div className="p-8 text-center text-xs text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
+        Butir soal tidak ditemukan atau sedang disiapkan.
+      </div>
+    );
+  }
+
   const getFontSizeClass = () => {
     switch (fontSize) {
       case 'large':
