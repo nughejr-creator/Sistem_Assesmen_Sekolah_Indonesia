@@ -52,14 +52,19 @@ export const TeacherSubjectLedgerView: React.FC<TeacherSubjectLedgerViewProps> =
     let isMounted = true;
     const fetchData = async () => {
       try {
-        const { data: cloudSessions } = await supabase
+        const validSchoolId = teacher.school_id ? toValidUUID(teacher.school_id) : null;
+
+        let sessionsQuery = supabase
           .from('exam_sessions')
           .select('*, package:exam_packages(*)')
           .order('created_at', { ascending: false });
+        if (validSchoolId) {
+          sessionsQuery = sessionsQuery.eq('school_id', validSchoolId);
+        }
+        const { data: cloudSessions } = await sessionsQuery;
 
         if (cloudSessions && isMounted) {
-          const matched = teacher.school_id ? cloudSessions.filter(s => s.school_id === teacher.school_id) : cloudSessions;
-          const scopedSessions = filterSessionsForTeacher(matched, teacher);
+          const scopedSessions = filterSessionsForTeacher(cloudSessions, teacher);
           setSessions(scopedSessions as ExamSession[]);
 
           setSelectedSessionId(prev => {
@@ -73,34 +78,43 @@ export const TeacherSubjectLedgerView: React.FC<TeacherSubjectLedgerViewProps> =
 
         const clusterClient = getSupabaseClientForSchool(teacher.school_id);
 
-        const { data: cloudStudents } = await clusterClient
+        let shardStdQuery = clusterClient
           .from('user_profiles')
           .select('*')
           .eq('role', 'student')
           .order('full_name');
+        if (validSchoolId) {
+          shardStdQuery = shardStdQuery.eq('school_id', validSchoolId);
+        }
+        const { data: cloudStudents } = await shardStdQuery;
 
-        const effectiveStudents = (cloudStudents && cloudStudents.length > 0) ? cloudStudents : (await supabase.from('user_profiles').select('*').eq('role', 'student')).data;
+        let effectiveStudents = cloudStudents;
+        if (!effectiveStudents || effectiveStudents.length === 0) {
+          let masterStdQuery = supabase.from('user_profiles').select('*').eq('role', 'student');
+          if (validSchoolId) masterStdQuery = masterStdQuery.eq('school_id', validSchoolId);
+          const { data: mStd } = await masterStdQuery;
+          effectiveStudents = mStd;
+        }
 
         if (effectiveStudents && effectiveStudents.length > 0 && isMounted) {
-          const matchedStudents = teacher.school_id ? effectiveStudents.filter(s => s.school_id === teacher.school_id) : effectiveStudents;
-          const scopedStudents = filterStudentsForTeacher(matchedStudents, teacher);
+          const scopedStudents = filterStudentsForTeacher(effectiveStudents, teacher);
           setStudents(scopedStudents);
         } else if (isMounted) {
           setStudents([]);
         }
 
         let combinedAttempts: any[] = [];
-        const { data: shardAttempts, error: shardAttErr } = await clusterClient
-          .from('student_attempts')
-          .select('*');
+        let shardAttQuery = clusterClient.from('student_attempts').select('*');
+        if (validSchoolId) shardAttQuery = shardAttQuery.eq('school_id', validSchoolId);
+        const { data: shardAttempts, error: shardAttErr } = await shardAttQuery;
 
         if (!shardAttErr && shardAttempts && shardAttempts.length > 0) {
           combinedAttempts = [...shardAttempts];
         }
 
-        const { data: masterAttempts } = await supabase
-          .from('student_attempts')
-          .select('*');
+        let masterAttQuery = supabase.from('student_attempts').select('*');
+        if (validSchoolId) masterAttQuery = masterAttQuery.eq('school_id', validSchoolId);
+        const { data: masterAttempts } = await masterAttQuery;
 
         if (masterAttempts && masterAttempts.length > 0) {
           const map = new Map<string, any>();
@@ -124,24 +138,18 @@ export const TeacherSubjectLedgerView: React.FC<TeacherSubjectLedgerViewProps> =
           });
           setAttempts(mappedAttempts as StudentAttempt[]);
         }
-
-        const { data: cloudQuestions } = await supabase
-          .from('question_bank')
-          .select('*, options:question_options(*)')
-          .order('created_at', { ascending: true });
-
-        if (cloudQuestions && cloudQuestions.length > 0 && isMounted) {
-          setQuestions(cloudQuestions as QuestionBankItem[]);
-        } else if (isMounted) {
-          setQuestions(MOCK_QUESTION_BANK);
-        }
+        // CATATAN PENGHEMATAN EGRESS:
+        // question_bank TIDAK di-fetch di sini. Soal paket aktif dimuat secara terarah di useEffect loadSessionQuestions di bawah.
       } catch (e) {
-        if (isMounted) setQuestions(MOCK_QUESTION_BANK);
+        console.warn('Teacher ledger fetch error:', e);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 45000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchData();
+    }, 60000);
     return () => {
       isMounted = false;
       clearInterval(interval);

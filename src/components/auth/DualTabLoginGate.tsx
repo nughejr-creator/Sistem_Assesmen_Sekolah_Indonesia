@@ -82,58 +82,9 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
   // Error & loading state
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Auto-prefetch latest users from Supabase Cloud on mount (Cross-device Sync)
-  useEffect(() => {
-    let isMounted = true;
-    const prefetchUsersFromCloud = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('*, school:schools(*)');
-
-        if (!error && data && data.length > 0 && isMounted) {
-          try {
-            const decodeTeacherProfile = (u: any): UserProfile => {
-              if (u.exam_card_password && typeof u.exam_card_password === 'string' && u.exam_card_password.startsWith('TEACHER:')) {
-                try {
-                  const meta = JSON.parse(u.exam_card_password.replace('TEACHER:', ''));
-                  return {
-                    ...u,
-                    role: 'teacher',
-                    teacher_type: meta.type || 'guru_kelas',
-                    grade_class: meta.rombel || u.grade_class,
-                    assigned_subject_name: meta.subject || u.assigned_subject_name,
-                    assigned_classes: meta.assigned || (u.grade_class ? [u.grade_class] : []),
-                    nip: meta.nip || u.nip
-                  };
-                } catch (e) {}
-              }
-              if (u.role === 'teacher') {
-                return {
-                  ...u,
-                  role: 'teacher',
-                  teacher_type: u.teacher_type || (u.assigned_subject_name?.includes('PJOK') || u.assigned_subject_name?.includes('Agama') ? 'guru_mapel' : 'guru_kelas'),
-                  assigned_classes: u.assigned_classes || (u.grade_class ? [u.grade_class] : [])
-                };
-              }
-              return u;
-            };
-
-            const cached = localStorage.getItem('sasi_users_cache');
-            const localUsers = cached ? JSON.parse(cached) : [];
-            const userMap = new Map();
-            MOCK_USERS.forEach((u) => userMap.set(u.username.toLowerCase(), u));
-            localUsers.forEach((u: any) => userMap.set(u.username.toLowerCase(), decodeTeacherProfile(u)));
-            data.forEach((u: any) => userMap.set(u.username.toLowerCase(), decodeTeacherProfile(u)));
-            localStorage.setItem('sasi_users_cache', JSON.stringify(Array.from(userMap.values())));
-          } catch (e) {}
-        }
-      } catch (err) {}
-    };
-
-    prefetchUsersFromCloud();
-    return () => { isMounted = false; };
-  }, []);
+  // CATATAN PENGHEMATAN KUOTA EGRESS:
+  // Prefetch seluruh isi tabel user_profiles telah DIHAPUS.
+  // Otentikasi siswa & petugas sudah otomatis memverifikasi langsung via username spesifik (.eq('username', ...).maybeSingle()).
 
   // Countdown timer for OTP
   useEffect(() => {
@@ -160,17 +111,16 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
 
     let matched: any = null;
 
-    // 1. Prioritas Utama: Cari langsung ke Cloud Supabase user_profiles
+    // 1. Prioritas Utama: Cari langsung ke Cloud Supabase user_profiles spesifik username
     try {
-      const { data: cloudUsers } = await supabase
+      const { data: cloudUser } = await supabase
         .from('user_profiles')
         .select('*')
-        .or('role.eq.super_admin,role.eq.assistant_admin,role.eq.proctor,role.eq.teacher');
+        .eq('username', emailTrimmed)
+        .maybeSingle();
 
-      if (cloudUsers && cloudUsers.length > 0) {
-        matched = cloudUsers.find(
-          (u: any) => u.username.toLowerCase() === emailTrimmed || u.username.toLowerCase().trim() === emailTrimmed
-        );
+      if (cloudUser && ['super_admin', 'assistant_admin', 'proctor', 'teacher'].includes(cloudUser.role)) {
+        matched = cloudUser;
       }
     } catch (err) {}
 

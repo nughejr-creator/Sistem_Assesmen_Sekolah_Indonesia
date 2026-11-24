@@ -156,48 +156,63 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
     }
   };
 
+  // Cache butir soal per package_id agar hemat kuota egress Supabase (Lazy Load on demand)
+  const [sessionQuestionsMap, setSessionQuestionsMap] = useState<Record<string, QuestionBankItem[]>>({});
+  const [isLoadingReviewQuestions, setIsLoadingReviewQuestions] = useState(false);
+
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
       setIsRefreshing(true);
       try {
-        const { data: cloudSessions } = await supabase
+        const validSchoolId = school.id ? toValidUUID(school.id) : null;
+
+        // 1. Ambil Sesi Ujian HANYA untuk sekolah ini di level database SQL
+        let sessionsQuery = supabase
           .from('exam_sessions')
           .select('*, package:exam_packages(*, subject:subjects(*))')
           .order('created_at', { ascending: false });
+        if (validSchoolId) {
+          sessionsQuery = sessionsQuery.eq('school_id', validSchoolId);
+        }
+        const { data: cloudSessions } = await sessionsQuery;
 
         if (cloudSessions && isMounted) {
-          const matched = cloudSessions.filter(s => school.id && s.school_id === school.id);
-          setSessions(matched as ExamSession[]);
+          setSessions(cloudSessions as ExamSession[]);
         }
 
-        const { data: cloudStudents } = await supabase
+        // 2. Ambil Siswa HANYA untuk sekolah ini di level database SQL
+        let studentsQuery = supabase
           .from('user_profiles')
           .select('*')
           .eq('role', 'student')
           .order('full_name');
+        if (validSchoolId) {
+          studentsQuery = studentsQuery.eq('school_id', validSchoolId);
+        }
+        const { data: cloudStudents } = await studentsQuery;
 
         if (cloudStudents && isMounted) {
-          const matchedStudents = cloudStudents.filter(s => school.id && s.school_id === school.id);
-          setStudents(matchedStudents);
+          setStudents(cloudStudents);
         } else if (isMounted) {
           setStudents([]);
         }
 
+        // 3. Ambil Percobaan Ujian HANYA untuk sekolah ini
         const clusterClient = getSupabaseClientForSchool(school.id);
         let combinedAttempts: any[] = [];
 
-        const { data: shardAttempts, error: shardAttErr } = await clusterClient
-          .from('student_attempts')
-          .select('*');
+        let shardQuery = clusterClient.from('student_attempts').select('*');
+        if (validSchoolId) shardQuery = shardQuery.eq('school_id', validSchoolId);
+        const { data: shardAttempts, error: shardAttErr } = await shardQuery;
 
         if (!shardAttErr && shardAttempts && shardAttempts.length > 0) {
           combinedAttempts = [...shardAttempts];
         }
 
-        const { data: cloudAttempts } = await supabase
-          .from('student_attempts')
-          .select('*');
+        let masterQuery = supabase.from('student_attempts').select('*');
+        if (validSchoolId) masterQuery = masterQuery.eq('school_id', validSchoolId);
+        const { data: cloudAttempts } = await masterQuery;
 
         if (cloudAttempts && cloudAttempts.length > 0) {
           const map = new Map<string, any>();
@@ -230,31 +245,74 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
             localStorage.setItem('sasi_attempts_cache', JSON.stringify(mappedAttempts));
           } catch (e) {}
         }
-
-        const { data: cloudQuestions } = await supabase
-          .from('question_bank')
-          .select('*, options:question_options(*)')
-          .order('created_at', { ascending: true });
-
-        if (cloudQuestions && cloudQuestions.length > 0 && isMounted) {
-          setQuestions(cloudQuestions as QuestionBankItem[]);
-        } else if (isMounted) {
-          setQuestions(MOCK_QUESTION_BANK);
-        }
+        // CATATAN PENTING PENGHEMATAN EGRESS:
+        // question_bank TIDAK lagi di-poll berkala di sini! Soal hanya diunduh on-demand saat proktor klik "Tinjau Jawaban".
       } catch (e) {
-        if (isMounted) setQuestions(MOCK_QUESTION_BANK);
+        console.warn('Gagal memuat data rekap:', e);
       } finally {
         if (isMounted) setIsRefreshing(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(() => fetchData(), 30000);
+
+    // Polling setiap 60 detik dan jeda otomatis jika tab browser sedang tidak aktif/minimized
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchData();
+    }, 60000);
+
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
   }, [school.id, manualRefreshCount]);
+
+  // Fungsi Lazy-Load butir soal spesifik sesi saat tombol Tinjau Jawaban diklik
+  const handleOpenReviewModal = async (targetStudent: UserProfile) => {
+    setSelectedStudentForReview(targetStudent);
+    setIsReviewModalOpen(true);
+
+    const packageId = activeSession?.package_id;
+    if (!packageId) return;
+
+    // Jika sudah pernah dimuat sebelumnya di sesi ini, gunakan cache memori (0 egress!)
+    if (sessionQuestionsMap[packageId] && sessionQuestionsMap[packageId].length > 0) {
+      return;
+    }
+
+    setIsLoadingReviewQuestions(true);
+    try {
+      const validPkgId = toValidUUID(packageId);
+      const { data: epqData } = await supabase
+        .from('exam_package_questions')
+        .select('question_id, order_number')
+        .eq('package_id', validPkgId)
+        .order('order_number', { ascending: true });
+
+      if (epqData && epqData.length > 0) {
+        const qIds = epqData.map((x: any) => x.question_id);
+        const { data: qData } = await supabase
+          .from('question_bank')
+          .select('*, options:question_options(*)')
+          .in('id', qIds);
+
+        if (qData && qData.length > 0) {
+          const qMap = new Map(qData.map((q: any) => [q.id, q]));
+          const ordered: QuestionBankItem[] = [];
+          epqData.forEach((epq: any) => {
+            const found = qMap.get(epq.question_id);
+            if (found) ordered.push(found as QuestionBankItem);
+          });
+          setSessionQuestionsMap(prev => ({ ...prev, [packageId]: ordered }));
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal lazy-load soal review:', err);
+    } finally {
+      setIsLoadingReviewQuestions(false);
+    }
+  };
 
   // Helper presisi mengekstrak nomor tingkatan kelas
   const extractGradeNumber = (str?: string): string => {
@@ -1083,8 +1141,7 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
                           onClick={() => {
                             const targetStudent = students.find(st => st.id === s.id);
                             if (targetStudent) {
-                              setSelectedStudentForReview(targetStudent);
-                              setIsReviewModalOpen(true);
+                              handleOpenReviewModal(targetStudent);
                             }
                           }}
                           className="px-2 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-lg text-[11px] font-bold flex items-center space-x-1 transition-colors shadow-2xs"
@@ -1213,7 +1270,11 @@ export const ExamScoreRecapView: React.FC<ExamScoreRecapViewProps> = ({
           student={selectedStudentForReview}
           attempt={attempts.find(a => a.student_id === selectedStudentForReview.id && (!activeSession || a.session_id === activeSession.id))}
           session={activeSession}
-          questions={questions.length > 0 ? questions : MOCK_QUESTION_BANK}
+          questions={
+            (activeSession?.package_id && sessionQuestionsMap[activeSession.package_id]?.length > 0)
+              ? sessionQuestionsMap[activeSession.package_id]
+              : (questions.length > 0 ? questions : MOCK_QUESTION_BANK)
+          }
           kktpThreshold={kktpThreshold}
           onSaved={(studentId, newFinalScore) => {
             setAttempts(prev => prev.map(a => {

@@ -204,46 +204,53 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
     const fetchCloudProctorData = async () => {
       try {
         const clusterClient = getSupabaseClientForSchool(school.id);
+        const validSchoolId = school.id ? toValidUUID(school.id) : null;
 
-        // 1. Fetch Students for this school (Query mandiri tanpa join lintas database)
-        const { data: shardStudents, error: shardStdErr } = await clusterClient
+        // 1. Fetch Students HANYA untuk sekolah ini di level database SQL
+        let shardStdQuery = clusterClient
           .from('user_profiles')
           .select('*')
           .eq('role', 'student')
           .order('full_name');
+        if (validSchoolId) {
+          shardStdQuery = shardStdQuery.eq('school_id', validSchoolId);
+        }
+        const { data: shardStudents, error: shardStdErr } = await shardStdQuery;
 
         let cloudStudents = (!shardStdErr && shardStudents && shardStudents.length > 0)
           ? shardStudents
           : null;
 
         if (!cloudStudents || cloudStudents.length === 0) {
-          const { data: masterStudents } = await supabase
+          let masterStdQuery = supabase
             .from('user_profiles')
             .select('*')
             .eq('role', 'student')
             .order('full_name');
+          if (validSchoolId) {
+            masterStdQuery = masterStdQuery.eq('school_id', validSchoolId);
+          }
+          const { data: masterStudents } = await masterStdQuery;
           cloudStudents = masterStudents;
         }
 
         if (cloudStudents && isMounted) {
-          const matchedStudents = cloudStudents.filter(
-            s => school.id && (s.school_id === school.id || s.school?.id === school.id)
-          );
-          setStudents(matchedStudents as UserProfile[]);
+          setStudents(cloudStudents as UserProfile[]);
         }
 
-        // 2. Fetch Sessions for this school dari Master
-        const { data: cloudSessions } = await supabase
+        // 2. Fetch Sessions HANYA untuk sekolah ini dari Master di level database SQL
+        let sessionsQuery = supabase
           .from('exam_sessions')
           .select('*, package:exam_packages(*), school:schools(*)')
           .order('created_at', { ascending: false });
+        if (validSchoolId) {
+          sessionsQuery = sessionsQuery.eq('school_id', validSchoolId);
+        }
+        const { data: cloudSessions } = await sessionsQuery;
 
         let finalSessionsList: ExamSession[] = [];
         if (cloudSessions && isMounted) {
-          const matchedSessions = cloudSessions.filter(
-            s => school.id && (s.school_id === school.id || s.school?.id === school.id)
-          );
-          finalSessionsList = matchedSessions as ExamSession[];
+          finalSessionsList = cloudSessions as ExamSession[];
           setSessions(finalSessionsList);
 
           try {
@@ -261,29 +268,34 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
           setSessions([]);
         }
 
-        // 3. Fetch Attempts dari Kluster Sekolah & Master (Hybrid Merge Aman & Resilien)
+        // 3. Fetch Attempts HANYA untuk sekolah ini dari Kluster Sekolah & Master
         let combinedAttempts: any[] = [];
         
-        const { data: shardAttempts, error: shardAttErr } = await clusterClient
+        let shardAttQuery = clusterClient
           .from('student_attempts')
           .select('*')
           .order('started_at', { ascending: false });
+        if (validSchoolId) {
+          shardAttQuery = shardAttQuery.eq('school_id', validSchoolId);
+        }
+        const { data: shardAttempts, error: shardAttErr } = await shardAttQuery;
 
         if (!shardAttErr && shardAttempts && shardAttempts.length > 0) {
           combinedAttempts = [...shardAttempts];
         }
 
-        // Ambil juga dari Master sebagai cadangan dual-sync
-        const { data: masterAttempts } = await supabase
+        let masterAttQuery = supabase
           .from('student_attempts')
           .select('*')
           .order('started_at', { ascending: false });
+        if (validSchoolId) {
+          masterAttQuery = masterAttQuery.eq('school_id', validSchoolId);
+        }
+        const { data: masterAttempts } = await masterAttQuery;
 
         if (masterAttempts && masterAttempts.length > 0) {
           const attMap = new Map<string, any>();
-          // Muat master terlebih dahulu
           masterAttempts.forEach(m => attMap.set(m.id, m));
-          // Timpa atau prioritaskan yang lebih baru / completed dari shard
           combinedAttempts.forEach(s => {
             const m = attMap.get(s.id);
             if (!m || s.status === 'completed' || (s.answered_count || 0) >= (m.answered_count || 0)) {
@@ -331,10 +343,11 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
 
     fetchCloudProctorData();
 
-    // Polling setiap 45 detik (Standar ANBK) untuk menjaga beban server database tetap di zona aman
+    // Polling setiap 60 detik (Standar ANBK) dan jeda otomatis saat tab sedang di background/minimized
     const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       fetchCloudProctorData();
-    }, 45000);
+    }, 60000);
 
     return () => { 
       isMounted = false; 
@@ -342,13 +355,18 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
     };
   }, [school.id]);
 
-  // Realtime subscription to student attempts & user_profiles from Supabase
+  // Realtime subscription to student attempts & user_profiles with school_id filter
   useEffect(() => {
     const clusterClient = getSupabaseClientForSchool(school.id);
+    const validSchoolId = school.id ? toValidUUID(school.id) : null;
+    const filterAttempt = validSchoolId ? `school_id=eq.${validSchoolId}` : undefined;
 
     const handleAttemptChange = (payload: any) => {
       if (payload.new) {
         const row: any = payload.new;
+        if (validSchoolId && row.school_id && row.school_id !== validSchoolId && row.school_id !== school.id) {
+          return;
+        }
         const matchedSession = (sessions || []).find((s: any) => s.id === row.session_id);
         const mapped: StudentAttempt = {
           id: row.id,
@@ -376,6 +394,9 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
     const handleUserChange = (payload: any) => {
       if (payload.new) {
         const updatedUser: any = payload.new;
+        if (validSchoolId && updatedUser.school_id && updatedUser.school_id !== validSchoolId && updatedUser.school_id !== school.id) {
+          return;
+        }
         setStudents(prev =>
           prev.map(s => s.id === updatedUser.id ? { ...s, ...updatedUser } : s)
         );
@@ -383,21 +404,36 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
     };
 
     const attemptsChannel = supabase
-      .channel('proctor-live-attempts-master')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_attempts' }, handleAttemptChange)
+      .channel(`proctor-live-attempts-master-${school.id || 'all'}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'student_attempts',
+        filter: filterAttempt
+      }, handleAttemptChange)
       .subscribe();
 
     const usersChannel = supabase
-      .channel('proctor-live-users-master')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, handleUserChange)
+      .channel(`proctor-live-users-master-${school.id || 'all'}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'user_profiles',
+        filter: filterAttempt
+      }, handleUserChange)
       .subscribe();
 
     const sessionsChannel = supabase
-      .channel('proctor-live-sessions-master')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions' }, (payload: any) => {
+      .channel(`proctor-live-sessions-master-${school.id || 'all'}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'exam_sessions',
+        filter: filterAttempt
+      }, (payload: any) => {
         if (payload.new) {
           const row: any = payload.new;
-          if (row.school_id && row.school_id !== school.id) {
+          if (row.school_id && row.school_id !== school.id && row.school_id !== validSchoolId) {
             return;
           }
           setSessions(prev => {
@@ -405,7 +441,7 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
             if (exists) {
               return prev.map(s => (s.id === row.id || s.token_code === row.token_code) ? { ...s, ...row } : s);
             }
-            if (row.school_id === school.id) {
+            if (row.school_id === school.id || row.school_id === validSchoolId) {
               return [row, ...prev];
             }
             return prev;
@@ -419,13 +455,23 @@ export const StudentLiveMonitoringTable: React.FC<StudentLiveMonitoringTableProp
 
     if (clusterClient !== supabase) {
       shardAttemptsChannel = clusterClient
-        .channel('proctor-live-attempts-shard')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'student_attempts' }, handleAttemptChange)
+        .channel(`proctor-live-attempts-shard-${school.id || 'all'}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'student_attempts',
+          filter: filterAttempt
+        }, handleAttemptChange)
         .subscribe();
 
       shardUsersChannel = clusterClient
-        .channel('proctor-live-users-shard')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, handleUserChange)
+        .channel(`proctor-live-users-shard-${school.id || 'all'}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'user_profiles',
+          filter: filterAttempt
+        }, handleUserChange)
         .subscribe();
     }
 

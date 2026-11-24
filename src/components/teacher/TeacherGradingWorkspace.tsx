@@ -100,15 +100,20 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
 
     const fetchTeacherData = async () => {
       try {
-        // Ambil sesi ujian sekolah
-        const { data: cloudSessions } = await supabase
+        const validSchoolId = teacher.school_id ? toValidUUID(teacher.school_id) : null;
+
+        // Ambil sesi ujian HANYA untuk sekolah ini
+        let sessionsQuery = supabase
           .from('exam_sessions')
           .select('*, package:exam_packages(*)')
           .order('created_at', { ascending: false });
+        if (validSchoolId) {
+          sessionsQuery = sessionsQuery.eq('school_id', validSchoolId);
+        }
+        const { data: cloudSessions } = await sessionsQuery;
 
         if (cloudSessions && isMounted) {
-          const matched = teacher.school_id ? cloudSessions.filter(s => s.school_id === teacher.school_id) : cloudSessions;
-          const scopedSessions = filterSessionsForTeacher(matched, teacher);
+          const scopedSessions = filterSessionsForTeacher(cloudSessions, teacher);
           setSessions(scopedSessions as ExamSession[]);
 
           setSelectedSessionId(prev => {
@@ -122,46 +127,57 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
 
         const clusterClient = getSupabaseClientForSchool(teacher.school_id);
 
-        // Ambil data siswa (Cek Kluster Sekolah, fallback Master)
+        // Ambil data siswa HANYA untuk sekolah ini
         let cloudStudentsData: any[] = [];
-        const { data: shardStudents } = await clusterClient
+        let shardStdQuery = clusterClient
           .from('user_profiles')
           .select('*')
           .eq('role', 'student')
           .order('full_name');
+        if (validSchoolId) {
+          shardStdQuery = shardStdQuery.eq('school_id', validSchoolId);
+        }
+        const { data: shardStudents } = await shardStdQuery;
 
         if (shardStudents && shardStudents.length > 0) {
           cloudStudentsData = shardStudents;
         } else {
-          const { data: masterStudents } = await supabase
+          let masterStdQuery = supabase
             .from('user_profiles')
             .select('*')
             .eq('role', 'student')
             .order('full_name');
+          if (validSchoolId) {
+            masterStdQuery = masterStdQuery.eq('school_id', validSchoolId);
+          }
+          const { data: masterStudents } = await masterStdQuery;
           cloudStudentsData = masterStudents || [];
         }
 
         if (cloudStudentsData && cloudStudentsData.length > 0 && isMounted) {
-          const matched = teacher.school_id ? cloudStudentsData.filter(s => s.school_id === teacher.school_id) : cloudStudentsData;
-          const scopedStudents = filterStudentsForTeacher(matched, teacher);
+          const scopedStudents = filterStudentsForTeacher(cloudStudentsData, teacher);
           setStudents(scopedStudents);
         } else if (isMounted) {
           setStudents([]);
         }
 
-        // Ambil student attempts dari database kluster & master (query mandiri tanpa join)
+        // Ambil student attempts HANYA untuk sekolah ini
         let combinedAttempts: any[] = [];
-        const { data: shardAttempts, error: shardAttErr } = await clusterClient
-          .from('student_attempts')
-          .select('*');
+        let shardAttQuery = clusterClient.from('student_attempts').select('*');
+        if (validSchoolId) {
+          shardAttQuery = shardAttQuery.eq('school_id', validSchoolId);
+        }
+        const { data: shardAttempts, error: shardAttErr } = await shardAttQuery;
 
         if (!shardAttErr && shardAttempts && shardAttempts.length > 0) {
           combinedAttempts = [...shardAttempts];
         }
 
-        const { data: masterAttempts } = await supabase
-          .from('student_attempts')
-          .select('*');
+        let masterAttQuery = supabase.from('student_attempts').select('*');
+        if (validSchoolId) {
+          masterAttQuery = masterAttQuery.eq('school_id', validSchoolId);
+        }
+        const { data: masterAttempts } = await masterAttQuery;
 
         if (masterAttempts && masterAttempts.length > 0) {
           const map = new Map<string, any>();
@@ -177,7 +193,7 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
 
         if (combinedAttempts.length > 0 && isMounted) {
           const mappedAttempts = combinedAttempts.map(ca => {
-            const matchedSession = cloudSessions.find((s: any) => s.id === ca.session_id);
+            const matchedSession = (cloudSessions || []).find((s: any) => s.id === ca.session_id);
             return {
               ...ca,
               session: matchedSession || ca.session
@@ -186,35 +202,43 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
           setAttempts(mappedAttempts as StudentAttempt[]);
         }
 
-        // Ambil student answers dari database kluster & master (hybrid merge multi-shard)
+        // Ambil student answers HANYA untuk attempt sekolah ini (tidak select * seluruh database!)
         let combinedAnswers: any[] = [];
-        const { data: shardAnswers } = await clusterClient
-          .from('student_answers')
-          .select('*');
+        const attemptIds = combinedAttempts.map(a => a.id).filter(Boolean);
 
-        if (shardAnswers && shardAnswers.length > 0) {
-          combinedAnswers = [...shardAnswers];
-        }
-
-        if (clusterClient !== supabase) {
-          const { data: masterAnswers } = await supabase
+        if (attemptIds.length > 0) {
+          // Chunk per 100 agar query IN tidak overload
+          const targetChunks = attemptIds.slice(0, 100);
+          const { data: shardAnswers } = await clusterClient
             .from('student_answers')
-            .select('*');
+            .select('*')
+            .in('attempt_id', targetChunks);
 
-          if (masterAnswers && masterAnswers.length > 0) {
-            const map = new Map<string, any>();
-            masterAnswers.forEach(m => {
-              const key = `${m.attempt_id}_${m.question_id}`;
-              map.set(key, m);
-            });
-            combinedAnswers.forEach(s => {
-              const key = `${s.attempt_id}_${s.question_id}`;
-              const existing = map.get(key);
-              if (!existing || (s.updated_at && (!existing.updated_at || new Date(s.updated_at) > new Date(existing.updated_at)))) {
-                map.set(key, s);
-              }
-            });
-            combinedAnswers = Array.from(map.values());
+          if (shardAnswers && shardAnswers.length > 0) {
+            combinedAnswers = [...shardAnswers];
+          }
+
+          if (clusterClient !== supabase) {
+            const { data: masterAnswers } = await supabase
+              .from('student_answers')
+              .select('*')
+              .in('attempt_id', targetChunks);
+
+            if (masterAnswers && masterAnswers.length > 0) {
+              const map = new Map<string, any>();
+              masterAnswers.forEach(m => {
+                const key = `${m.attempt_id}_${m.question_id}`;
+                map.set(key, m);
+              });
+              combinedAnswers.forEach(s => {
+                const key = `${s.attempt_id}_${s.question_id}`;
+                const existing = map.get(key);
+                if (!existing || (s.updated_at && (!existing.updated_at || new Date(s.updated_at) > new Date(existing.updated_at)))) {
+                  map.set(key, s);
+                }
+              });
+              combinedAnswers = Array.from(map.values());
+            }
           }
         }
 
@@ -227,7 +251,10 @@ export const TeacherGradingWorkspace: React.FC<TeacherGradingWorkspaceProps> = (
     };
 
     fetchTeacherData();
-    const interval = setInterval(fetchTeacherData, 45000);
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchTeacherData();
+    }, 60000);
     return () => {
       isMounted = false;
       clearInterval(interval);
