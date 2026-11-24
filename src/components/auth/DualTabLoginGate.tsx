@@ -4,7 +4,7 @@ import { MOCK_USERS } from '../../lib/mockData';
 import { supabase } from '../../lib/supabase';
 import { getClusterNodes, getClientForNode } from '../../lib/clusterManager';
 import { isPjokTeacher, isAgamaTeacher } from '../../lib/teacherScope';
-import { safeSupabaseDistributedUpdate } from '../../lib/syncHelper';
+import { safeSupabaseDistributedUpdate, toValidUUID } from '../../lib/syncHelper';
 import { 
   GraduationCap, 
   ShieldCheck, 

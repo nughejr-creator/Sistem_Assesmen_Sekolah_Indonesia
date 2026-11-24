@@ -19,6 +19,7 @@ import {
   supabase
 } from '../../lib/supabase';
 import { getSupabaseClientForSchool } from '../../lib/clusterManager';
+import { toValidUUID } from '../../lib/syncHelper';
 import { ImportExcelModal } from './ImportExcelModal';
 import { ExamCardPrintModal } from './ExamCardPrintModal';
 import { EmergencyRecoveryModal } from './EmergencyRecoveryModal';
