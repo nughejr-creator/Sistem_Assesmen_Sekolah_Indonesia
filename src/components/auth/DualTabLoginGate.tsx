@@ -36,7 +36,7 @@ interface DualTabLoginGateProps {
 export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({ 
   onLoginSuccess,
   initialTab = 'student',
-  initialToken = 'SASI26',
+  initialToken = '',
   onBackToLanding
 }) => {
   const [activeTab, setActiveTab] = useState<'student' | 'officer'>(initialTab);
@@ -44,7 +44,7 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
   // Student Form State - Mulai dalam kondisi bersih
   const [nisn, setNisn] = useState('');
   const [pin, setPin] = useState('');
-  const [token, setToken] = useState(initialToken);
+  const [token, setToken] = useState(initialToken || '');
   const [showPin, setShowPin] = useState(false);
   const [showStudentForgotModal, setShowStudentForgotModal] = useState(false);
 
@@ -259,44 +259,80 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
 
     const nisnClean = nisn.trim();
     const pinClean = pin.trim();
+    const tokenClean = token.toUpperCase().trim();
 
     if (!nisnClean || !pinClean) {
       setErrorMessage('Silakan lengkapi NISN dan PIN Password Cetak terlebih dahulu.');
       return;
     }
 
-    // Periksa token ujian aktif
-    const validTokens = new Set<string>(['SASI26']);
-    try {
-      const cachedSessions = localStorage.getItem('sasi_sessions_cache');
-      if (cachedSessions) {
-        const parsed = JSON.parse(cachedSessions);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((s: any) => {
-            if (s.token_code) validTokens.add(s.token_code.toUpperCase().trim());
-          });
-        }
-      }
-    } catch (e) {}
-
-    // Coba periksa token sesi langsung dari Supabase
-    try {
-      const { data: activeSessions } = await supabase
-        .from('exam_sessions')
-        .select('token_code')
-        .eq('is_active', true);
-      if (activeSessions) {
-        activeSessions.forEach((s: any) => {
-          if (s.token_code) validTokens.add(s.token_code.toUpperCase().trim());
-        });
-      }
-    } catch (e) {}
-
-    const tokenClean = token.toUpperCase().trim();
-    if (!validTokens.has(tokenClean)) {
-      setErrorMessage('Token Ujian tidak valid atau belum dirilis oleh Proktor Ruangan!');
+    if (!tokenClean) {
+      setErrorMessage('Silakan masukkan Token Ujian sesi aktif yang diumumkan oleh Proktor Ruangan.');
       return;
     }
+
+    // Helper validasi token sesi ujian aktif
+    const validateTokenAndSession = async (studentSchoolId?: string | null) => {
+      let matchedSession: any = null;
+      let otherSchoolFound = false;
+
+      // 1. Cari sesi aktif di database Supabase Cloud
+      try {
+        const { data: activeSessions } = await supabase
+          .from('exam_sessions')
+          .select('id, session_name, school_id, token_code, is_active, start_time, end_time')
+          .eq('token_code', tokenClean)
+          .eq('is_active', true);
+
+        if (activeSessions && activeSessions.length > 0) {
+          const validSchId = studentSchoolId ? toValidUUID(studentSchoolId) : null;
+          matchedSession = validSchId 
+            ? activeSessions.find(s => s.school_id === validSchId || !s.school_id)
+            : activeSessions[0];
+
+          if (!matchedSession && activeSessions.length > 0) {
+            otherSchoolFound = true;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Fallback cek cache sesi lokal (untuk mode offline lab lokal proktor)
+      if (!matchedSession && !otherSchoolFound) {
+        try {
+          const cached = localStorage.getItem('sasi_sessions_cache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) {
+              matchedSession = parsed.find((s: any) => 
+                (s.token_code || '').toUpperCase().trim() === tokenClean &&
+                s.is_active &&
+                (!studentSchoolId || !s.school_id || s.school_id === studentSchoolId)
+              );
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (otherSchoolFound) {
+        return { valid: false, error: 'Token Ujian ini bukan untuk sekolah Anda! Mintalah token resmi kepada Proktor sekolah Anda.' };
+      }
+
+      if (!matchedSession) {
+        return { valid: false, error: 'Token Ujian tidak valid atau sesi ujian belum diaktifkan oleh Proktor Ruangan!' };
+      }
+
+      // Validasi Jadwal Waktu
+      const now = new Date();
+      if (matchedSession.start_time && new Date(matchedSession.start_time) > now) {
+        const startStr = new Date(matchedSession.start_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return { valid: false, error: `Sesi ujian dengan token ${tokenClean} belum dibuka. Jadwal mulai pukul ${startStr} WIB.` };
+      }
+      if (matchedSession.end_time && new Date(matchedSession.end_time) < now) {
+        return { valid: false, error: `Sesi ujian dengan token ${tokenClean} telah berakhir. Hubungi Proktor jika membutuhkan perpanjangan sesi.` };
+      }
+
+      return { valid: true, session: matchedSession };
+    };
 
     // 1. Prioritas Utama: Cek langsung ke database Supabase Cloud tabel user_profiles (Master Hub & Federated Clusters)
     try {
@@ -343,6 +379,13 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
             return;
           }
 
+          // Validasi Token Sesi Ujian Aktif
+          const tokenCheck = await validateTokenAndSession(cloudStudent.school_id);
+          if (!tokenCheck.valid) {
+            setErrorMessage(tokenCheck.error);
+            return;
+          }
+
           onLoginSuccess(cloudStudent, tokenClean);
           return;
         } else {
@@ -374,6 +417,13 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
             setErrorMessage('Akun sedang aktif digunakan di perangkat lain. Silakan minta Proktor untuk mengklik tombol "Lepas Kunci"!');
             return;
           }
+
+          const tokenCheck = await validateTokenAndSession(profile.school_id);
+          if (!tokenCheck.valid) {
+            setErrorMessage(tokenCheck.error);
+            return;
+          }
+
           onLoginSuccess(profile, tokenClean);
           return;
         }
@@ -397,6 +447,12 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
 
     if (!matchedStudent) {
       setErrorMessage('NISN atau PIN Password Cetak tidak sesuai. Periksa kartu ujian Anda!');
+      return;
+    }
+
+    const tokenCheck = await validateTokenAndSession(matchedStudent.school_id);
+    if (!tokenCheck.valid) {
+      setErrorMessage(tokenCheck.error);
       return;
     }
 
@@ -868,7 +924,7 @@ export const DualTabLoginGate: React.FC<DualTabLoginGateProps> = ({
                       maxLength={8}
                       value={token}
                       onChange={(e) => setToken(e.target.value.toUpperCase())}
-                      placeholder="CONTOH: SASI26"
+                      placeholder="MASUKKAN TOKEN DARI PROKTOR"
                       className="block w-full px-4 py-2.5 bg-brand-50/50 border border-brand-200 rounded-xl text-center text-lg font-mono font-extrabold text-brand-700 tracking-widest focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all uppercase"
                     />
                   </div>

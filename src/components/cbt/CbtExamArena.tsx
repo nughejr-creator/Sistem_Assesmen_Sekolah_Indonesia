@@ -163,12 +163,12 @@ interface CbtExamArenaProps {
 
 export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
   student,
-  initialToken = 'SASI26',
+  initialToken = '',
   onLogout,
 }) => {
   // Phase state: 'confirm' (Konfirmasi Data & Token) or 'exam' (Arena CBT) or 'completed'
   const [phase, setPhase] = useState<'confirm' | 'exam' | 'completed'>('confirm');
-  const [tokenInput, setTokenInput] = useState(initialToken);
+  const [tokenInput, setTokenInput] = useState(initialToken || '');
   const [tokenError, setTokenError] = useState<string | null>(null);
 
   // Active Session & Attempt
@@ -454,10 +454,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       } catch (e) {}
     }
 
-    // Default fallback token
-    const isMockToken = inputClean === 'SASI26' || (initialToken && inputClean === initialToken.toUpperCase().trim());
-
-    if (!matchedSession && !isMockToken) {
+    if (!matchedSession) {
       setTokenError('Token tidak valid atau belum dirilis oleh Proktor Ruangan.');
       return;
     }
@@ -623,7 +620,12 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
       }
     }
 
-    let finalQuestions = sessionQuestions.length > 0 ? sessionQuestions : [...questions];
+    if (sessionQuestions.length === 0) {
+      setTokenError('Paket butir soal untuk sesi ujian ini belum siap di server. Silakan hubungi Proktor Ruangan.');
+      return;
+    }
+
+    let finalQuestions = sessionQuestions;
 
     // Hanya acak urutan soal dan opsi jika BARU PERTAMA KALI diunduh (bukan dari cache lokal)
     // agar saat siswa me-refresh halaman di tengah ujian, nomor urut soal tetap konsisten!
@@ -1317,7 +1319,7 @@ export const CbtExamArena: React.FC<CbtExamArenaProps> = ({
                   setTokenError(null);
                 }}
                 maxLength={8}
-                placeholder="TOKEN"
+                placeholder="MASUKKAN TOKEN DARI PROKTOR"
                 className="w-full text-center py-2.5 bg-brand-50 border-2 border-brand-300 rounded-xl font-mono text-xl font-black text-brand-900 tracking-widest uppercase focus:bg-white focus:ring-2 focus:ring-brand-500 transition-all"
               />
               {tokenError && (

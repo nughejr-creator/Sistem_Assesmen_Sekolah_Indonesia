@@ -602,7 +602,7 @@ export const ExamAssembly: React.FC<ExamAssemblyProps> = ({ currentUser, initial
   const [sessionEndDate, setSessionEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [sessionStartTime, setSessionStartTime] = useState('08:00');
   const [sessionEndTime, setSessionEndTime] = useState('16:00');
-  const [tokenCode, setTokenCode] = useState('SASI26');
+  const [tokenCode, setTokenCode] = useState(() => 'SAS' + Math.floor(100 + Math.random() * 900));
   const [isSessionModalFullscreen, setIsSessionModalFullscreen] = useState(false);
 
   // Toast notification

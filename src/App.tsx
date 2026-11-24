@@ -43,7 +43,7 @@ export const App: React.FC = () => {
   const [loginInitialTab, setLoginInitialTab] = useState<'student' | 'officer'>('student');
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [initialExamToken, setInitialExamToken] = useState<string>('SASI26');
+  const [initialExamToken, setInitialExamToken] = useState<string>('');
 
   // Load konfigurasi node kluster dari Cloud saat aplikasi dimuat pertama kali
   useEffect(() => {
@@ -53,9 +53,7 @@ export const App: React.FC = () => {
   // Handle open login from Landing Page (Siswa CBT atau Petugas)
   const handleOpenLogin = (tab: 'student' | 'officer', quickToken?: string) => {
     setLoginInitialTab(tab);
-    if (quickToken) {
-      setInitialExamToken(quickToken);
-    }
+    setInitialExamToken(quickToken ? quickToken.trim().toUpperCase() : '');
     setPublicViewMode('login');
   };
 

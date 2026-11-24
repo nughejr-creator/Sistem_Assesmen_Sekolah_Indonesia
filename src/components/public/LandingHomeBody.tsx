@@ -50,9 +50,9 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
 
   const handleQuickTokenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanToken = quickTokenInput.trim().toUpperCase() || 'SASI26';
+    const cleanToken = quickTokenInput.trim().toUpperCase();
     trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa');
-    onOpenLogin('student', cleanToken);
+    onOpenLogin('student', cleanToken || undefined);
   };
 
   const toggleFaq = (index: number) => {
@@ -110,7 +110,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
 
               <button
                 type="button"
-                onClick={() => { trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa'); onOpenLogin('student', 'SASI26'); }}
+                onClick={() => { trackActionClick('cbt_student_exam', 'Masuk Ujian CBT Siswa'); onOpenLogin('student'); }}
                 className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border-2 border-white/25 text-xs font-bold backdrop-blur-md transition-all flex items-center space-x-1.5 shadow-xs"
               >
                 <PlayCircle className="w-3.5 h-3.5 text-sky-400" />
@@ -146,7 +146,7 @@ export const LandingHomeBody: React.FC<LandingHomeBodyProps> = ({
                     <input
                       type="text"
                       maxLength={8}
-                      placeholder="CONTOH: SASI26"
+                      placeholder="MASUKKAN TOKEN DARI PROKTOR"
                       value={quickTokenInput}
                       onChange={(e) => setQuickTokenInput(e.target.value.toUpperCase())}
                       className="w-full px-3 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl text-center font-mono font-black text-base tracking-widest text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 uppercase transition-all"
