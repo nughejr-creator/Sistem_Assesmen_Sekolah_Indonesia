@@ -811,7 +811,9 @@ export const syncBackupDataToMasterNode = async (
     'exam_sessions',
     'teachers',
     'supervisors',
-    'question_writer_assignments'
+    'question_writer_assignments',
+    'student_attempts',
+    'student_answers'
   ];
 
   let totalRecords = 0;
